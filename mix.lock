@@ -1,0 +1,3 @@
+%{
+  "build_dot_zig": {:hex, :build_dot_zig, "0.1.1", "e90ba2af13db69dd306ca1340f8cca9aa7b90dfc4952f42683dcb9ec370cdc21", [:mix], [], "hexpm", "804e47412cc3dc30ca95a57c0bda4b24a16925d9be9e66501930e80569a68182"},
+}

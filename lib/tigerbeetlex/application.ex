@@ -1,4 +1,4 @@
-defmodule Tigerbeetlex.Application do
+defmodule TigerBeetlex.Application do
   # See https://hexdocs.pm/elixir/Application.html
   # for more information on OTP Applications
   @moduledoc false
@@ -8,13 +8,13 @@ defmodule Tigerbeetlex.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: Tigerbeetlex.Worker.start_link(arg)
-      # {Tigerbeetlex.Worker, arg}
+      # Starts a worker by calling: TigerBeetlex.Worker.start_link(arg)
+      # {TigerBeetlex.Worker, arg}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Tigerbeetlex.Supervisor]
+    opts = [strategy: :one_for_one, name: TigerBeetlex.Supervisor]
     Supervisor.start_link(children, opts)
   end
 end

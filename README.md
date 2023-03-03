@@ -1,4 +1,4 @@
-# Tigerbeetlex
+# TigerBeetlex
 
 **TODO: Add description**
 

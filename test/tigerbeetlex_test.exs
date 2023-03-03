@@ -1,8 +1,8 @@
-defmodule TigerbeetlexTest do
+defmodule TigerBeetlexTest do
   use ExUnit.Case
-  doctest Tigerbeetlex
+  doctest TigerBeetlex
 
   test "greets the world" do
-    assert Tigerbeetlex.hello() == :world
+    assert TigerBeetlex.hello() == :world
   end
 end

@@ -1,6 +1,6 @@
-defmodule Tigerbeetlex do
+defmodule TigerBeetlex do
   @moduledoc """
-  Documentation for `Tigerbeetlex`.
+  Documentation for `TigerBeetlex`.
   """
 
   @doc """
@@ -8,7 +8,7 @@ defmodule Tigerbeetlex do
 
   ## Examples
 
-      iex> Tigerbeetlex.hello()
+      iex> TigerBeetlex.hello()
       :world
 
   """

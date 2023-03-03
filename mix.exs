@@ -1,4 +1,4 @@
-defmodule Tigerbeetlex.MixProject do
+defmodule TigerBeetlex.MixProject do
   use Mix.Project
 
   def project do
@@ -15,7 +15,7 @@ defmodule Tigerbeetlex.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {Tigerbeetlex.Application, []}
+      mod: {TigerBeetlex.Application, []}
     ]
   end
 

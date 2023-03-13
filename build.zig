@@ -23,7 +23,7 @@ pub fn build(b: *std.build.Builder) void {
     defer b.allocator.free(erts_include_dir);
 
     const lib = b.addSharedLibrary("tigerbeetlex", "src/tigerbeetlex.zig", .unversioned);
-    lib.addSystemIncludePath(erts_include_dir);
+    lib.addSystemIncludeDir(erts_include_dir);
     lib.linkLibC();
     lib.setBuildMode(mode);
 

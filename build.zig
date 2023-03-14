@@ -5,6 +5,8 @@ pub fn build(b: *std.build.Builder) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
+    const options = b.addOptions();
+
     // Get ERTS_INCLUDE_DIR from env, which should be passed by :build_dot_zig
     const erts_include_dir = std.process.getEnvVarOwned(b.allocator, "ERTS_INCLUDE_DIR") catch blk: {
         // Fallback to extracting it from the erlang shell so we can also execute zig build manually
@@ -24,6 +26,9 @@ pub fn build(b: *std.build.Builder) void {
 
     const lib = b.addSharedLibrary("tigerbeetlex", "src/tigerbeetlex.zig", .unversioned);
     lib.addSystemIncludeDir(erts_include_dir);
+    lib.addPackagePath("tigerbeetle", "src/tb_client.zig");
+    lib.addPackagePath("vsr", "src/vsr.zig");
+    lib.addOptions("vsr_options", options);
     lib.linkLibC();
     lib.setBuildMode(mode);
 

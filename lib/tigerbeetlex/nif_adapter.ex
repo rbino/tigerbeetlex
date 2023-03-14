@@ -15,7 +15,7 @@ defmodule TigerBeetlex.NifAdapter do
 
   @spec client_init(
           cluster_id :: non_neg_integer(),
-          addresses :: charlist(),
+          addresses :: binary(),
           max_concurrency :: pos_integer()
         ) ::
           {:ok, Types.client()} | Types.client_init_errors()

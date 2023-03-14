@@ -23,7 +23,10 @@ defmodule TigerBeetlex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:build_dot_zig, "~> 0.1.0", runtime: false}
+      {:build_dot_zig, "~> 0.1.0", runtime: false},
+      {:zigler, "~> 0.9.1", runtime: false},
+      # Needed to make Zigler work
+      {:ex_doc, "== 0.29.0", runtime: false, override: true}
     ]
   end
 end

@@ -4,7 +4,7 @@ pub const beam = @import("beam");
 pub const e = @import("erl_nif");
 pub const resource = beam.resource;
 
-pub const tb = @import("tb_client.zig");
+pub const tb_client = @import("tb_client.zig");
 
 // TODO: are these needed?
 pub const vsr = @import("vsr");
@@ -25,8 +25,8 @@ fn raise(env: ?*e.ErlNifEnv, reason: []const u8) e.ErlNifTerm {
 }
 
 const Client = struct {
-    c_client: tb.tb_client_t,
-    packet_pool: tb.tb_packet_list_t,
+    c_client: tb_client.tb_client_t,
+    packet_pool: tb_client.tb_packet_list_t,
 };
 
 export fn client_init(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
@@ -44,11 +44,11 @@ export fn client_init(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF
         return beam.raise_function_clause_error(env);
     if (max_concurrency > packet_counts_max) return beam.raise_function_clause_error(env);
 
-    var c_client: tb.tb_client_t = undefined;
-    var packet_pool: tb.tb_packet_list_t = undefined;
+    var c_client: tb_client.tb_client_t = undefined;
+    var packet_pool: tb_client.tb_packet_list_t = undefined;
 
     // TODO: beam.large_allocator is not thread-safe, is this ok?
-    const status = tb.client_init(
+    const status = tb_client.client_init(
         beam.large_allocator,
         &c_client,
         &packet_pool,
@@ -88,8 +88,8 @@ export fn client_init(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF
 
 export fn on_completion(
     context: usize,
-    client: tb.tb_client_t,
-    packet: *tb.tb_packet_t,
+    client: tb_client.tb_client_t,
+    packet: *tb_client.tb_packet_t,
     result_ptr: ?[*]const u8,
     result_len: u32,
 ) void {
@@ -101,10 +101,10 @@ export fn on_completion(
     // TODO
 }
 
-export fn client_deinit(_: ?*e.ErlNifEnv, ptr: ?*anyopaque) void {
+export fn client_resource_deinit(_: ?*e.ErlNifEnv, ptr: ?*anyopaque) void {
     if (ptr) |p| {
         const client: *Client = @ptrCast(*Client, @alignCast(@alignOf(*Client), p));
-        tb.tb_client_deinit(client.c_client);
+        tb_client.tb_client_deinit(client.c_client);
     } else unreachable;
 }
 
@@ -142,7 +142,7 @@ export fn nif_load(env: ?*e.ErlNifEnv, _: [*c]?*anyopaque, _: e.ErlNifTerm) c_in
         env,
         null,
         "tigerbeetlex_client",
-        client_deinit,
+        client_resource_deinit,
         e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
         null,
     );

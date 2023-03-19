@@ -22,4 +22,8 @@ defmodule TigerBeetlex.NifAdapter do
   def client_init(_cluster_id, _addresses, _max_concurrency) do
     :erlang.nif_error(:nif_not_loaded)
   end
+
+  @spec create_account_batch(capacity :: non_neg_integer()) ::
+          {:ok, Types.account_batch()} | Types.create_account_batch_errors()
+  def create_account_batch(_capacity), do: :erlang.nif_error(:nif_not_loaded)
 end

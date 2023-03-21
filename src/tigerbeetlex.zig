@@ -30,6 +30,27 @@ fn raise(env: ?*e.ErlNifEnv, reason: []const u8) e.ErlNifTerm {
     return e.enif_raise_exception(env, beam.make_atom(env, reason));
 }
 
+// TODO: this is missing from Zigler and it's more ergonomic than doing fetch + update
+pub fn resource_ptr(comptime T: type, environment: beam.env, res_typ: beam.resource_type, res_trm: e.ErlNifTerm) !*T {
+    var obj: ?*anyopaque = undefined;
+
+    if (0 == e.enif_get_resource(environment, res_trm, res_typ, @ptrCast([*c]?*anyopaque, &obj))) {
+        return resource.ResourceError.FetchError;
+    }
+
+    // according to the erlang documentation:
+    // the pointer received in *objp is guaranteed to be valid at least as long as the
+    // resource handle term is valid.
+
+    if (obj == null) {
+        unreachable;
+    }
+
+    var val: *T = @ptrCast(*T, @alignCast(@alignOf(*T), obj));
+
+    return val;
+}
+
 const Client = struct {
     c_client: tb_client.tb_client_t,
     packet_pool: tb_client.tb_packet_list_t,
@@ -128,6 +149,25 @@ export fn create_account_batch(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const 
     return beam.make_ok_term(env, account_batch_resource);
 }
 
+export fn add_account(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    if (argc != 1) unreachable;
+
+    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
+
+    const account_batch = resource_ptr(AccountBatch, env, account_batch_resource_type, args[0]) catch |err|
+        switch (err) {
+        error.FetchError => return beam.make_error_atom(env, "invalid_account_batch"),
+    };
+
+    if (account_batch.len + 1 > account_batch.capacity) {
+        return beam.make_error_atom(env, "account_batch_full");
+    }
+    account_batch.len += 1;
+    account_batch.accounts[account_batch.len - 1] = std.mem.zeroInit(Account, .{});
+
+    return beam.make_ok(env);
+}
+
 export fn on_completion(
     context: usize,
     client: tb_client.tb_client_t,
@@ -168,6 +208,12 @@ export var __exported_nifs__ = [_]e.ErlNifFunc{
         .name = "create_account_batch",
         .arity = 1,
         .fptr = create_account_batch,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "add_account",
+        .arity = 1,
+        .fptr = add_account,
         .flags = 0,
     },
 };

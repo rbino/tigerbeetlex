@@ -13,4 +13,8 @@ defmodule TigerBeetlex.Types do
 
   @type create_account_batch_errors ::
           {:error, :out_of_memory}
+
+  @type add_account_errors ::
+          {:error, :invalid_account_batch}
+          | {:error, :account_batch_full}
 end

@@ -179,12 +179,17 @@ export fn add_account(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF
     return beam.make_ok(env);
 }
 
-export fn set_account_id(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+fn set_account_field(
+    comptime field: std.meta.FieldEnum(Account),
+    env: ?*e.ErlNifEnv,
+    argc: c_int,
+    argv: [*c]const e.ERL_NIF_TERM,
+) e.ERL_NIF_TERM {
     if (argc != 3) unreachable;
 
     const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
 
-    var account_batch = resource_ptr(AccountBatch, env, account_batch_resource_type, args[0]) catch |err|
+    const account_batch = resource_ptr(AccountBatch, env, account_batch_resource_type, args[0]) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_account_batch"),
     };
@@ -192,126 +197,81 @@ export fn set_account_id(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_
     const idx: u32 = beam.get_u32(env, args[1]) catch
         return beam.raise_function_clause_error(env);
 
-    const id = get_u128(env, args[2]) catch
-        return beam.raise_function_clause_error(env);
-
-    // These are invalid values according to TigerBeetle's documentation
-    if (id == 0 or id == std.math.maxInt(u128)) return beam.raise_function_clause_error(env);
-
     if (idx >= account_batch.len) {
         return beam.make_error_atom(env, "out_of_bounds");
     }
-    account_batch.accounts[idx].id = id;
+
+    const account: *Account = &account_batch.accounts[idx];
+
+    switch (field) {
+        .id => {
+            const id = get_u128(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+            // These are invalid values according to TigerBeetle's documentation
+            if (id == 0 or id == std.math.maxInt(u128)) return beam.raise_function_clause_error(env);
+
+            account.id = id;
+        },
+        .user_data => {
+            const user_data = get_u128(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            account.user_data = user_data;
+        },
+        .ledger => {
+            const ledger = beam.get_u32(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            // Invalid value according to TigerBeetle's documentation
+            if (ledger == 0) return beam.raise_function_clause_error(env);
+
+            account.ledger = ledger;
+        },
+        .code => {
+            const code = beam.get_u16(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            // Invalid value according to TigerBeetle's documentation
+            if (code == 0) return beam.raise_function_clause_error(env);
+
+            account.code = code;
+        },
+        .flags => {
+            const flags_uint = beam.get_u16(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            const flags: AccountFlags = @bitCast(AccountFlags, flags_uint);
+
+            // Mutually exclusive
+            if (flags.debits_must_not_exceed_credits and flags.credits_must_not_exceed_debits)
+                return beam.raise_function_clause_error(env);
+
+            account.flags = flags;
+        },
+        else => unreachable,
+    }
 
     return beam.make_ok(env);
+}
+
+export fn set_account_id(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    return set_account_field(.id, env, argc, argv);
 }
 
 export fn set_account_user_data(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    if (argc != 3) unreachable;
-
-    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
-
-    var account_batch = resource_ptr(AccountBatch, env, account_batch_resource_type, args[0]) catch |err|
-        switch (err) {
-        error.FetchError => return beam.make_error_atom(env, "invalid_account_batch"),
-    };
-
-    const idx: u32 = beam.get_u32(env, args[1]) catch
-        return beam.raise_function_clause_error(env);
-
-    const user_data = get_u128(env, args[2]) catch
-        return beam.raise_function_clause_error(env);
-
-    if (idx >= account_batch.len) {
-        return beam.make_error_atom(env, "out_of_bounds");
-    }
-    account_batch.accounts[idx].user_data = user_data;
-
-    return beam.make_ok(env);
+    return set_account_field(.user_data, env, argc, argv);
 }
 
 export fn set_account_ledger(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    if (argc != 3) unreachable;
-
-    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
-
-    var account_batch = resource_ptr(AccountBatch, env, account_batch_resource_type, args[0]) catch |err|
-        switch (err) {
-        error.FetchError => return beam.make_error_atom(env, "invalid_account_batch"),
-    };
-
-    const idx: u32 = beam.get_u32(env, args[1]) catch
-        return beam.raise_function_clause_error(env);
-
-    const ledger = beam.get_u32(env, args[2]) catch
-        return beam.raise_function_clause_error(env);
-
-    // Invalid value according to TigerBeetle's documentation
-    if (ledger == 0) return beam.raise_function_clause_error(env);
-
-    if (idx >= account_batch.len) {
-        return beam.make_error_atom(env, "out_of_bounds");
-    }
-    account_batch.accounts[idx].ledger = ledger;
-
-    return beam.make_ok(env);
+    return set_account_field(.ledger, env, argc, argv);
 }
 
 export fn set_account_code(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    if (argc != 3) unreachable;
-
-    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
-
-    var account_batch = resource_ptr(AccountBatch, env, account_batch_resource_type, args[0]) catch |err|
-        switch (err) {
-        error.FetchError => return beam.make_error_atom(env, "invalid_account_batch"),
-    };
-
-    const idx: u32 = beam.get_u32(env, args[1]) catch
-        return beam.raise_function_clause_error(env);
-
-    const code = beam.get_u16(env, args[2]) catch
-        return beam.raise_function_clause_error(env);
-
-    // Invalid value according to TigerBeetle's documentation
-    if (code == 0) return beam.raise_function_clause_error(env);
-
-    if (idx >= account_batch.len) {
-        return beam.make_error_atom(env, "out_of_bounds");
-    }
-    account_batch.accounts[idx].code = code;
-
-    return beam.make_ok(env);
+    return set_account_field(.code, env, argc, argv);
 }
 
 export fn set_account_flags(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    if (argc != 3) unreachable;
-
-    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
-
-    var account_batch = resource_ptr(AccountBatch, env, account_batch_resource_type, args[0]) catch |err|
-        switch (err) {
-        error.FetchError => return beam.make_error_atom(env, "invalid_account_batch"),
-    };
-
-    const idx: u32 = beam.get_u32(env, args[1]) catch
-        return beam.raise_function_clause_error(env);
-
-    const flags_uint = beam.get_u16(env, args[2]) catch
-        return beam.raise_function_clause_error(env);
-
-    const flags: AccountFlags = @bitCast(AccountFlags, flags_uint);
-
-    // Mutually exclusive
-    if (flags.debits_must_not_exceed_credits and flags.credits_must_not_exceed_debits)
-        return beam.raise_function_clause_error(env);
-
-    if (idx >= account_batch.len) {
-        return beam.make_error_atom(env, "out_of_bounds");
-    }
-    account_batch.accounts[idx].flags = flags;
-
-    return beam.make_ok(env);
+    return set_account_field(.flags, env, argc, argv);
 }
 
 export fn on_completion(

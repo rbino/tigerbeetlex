@@ -30,4 +30,45 @@ defmodule TigerBeetlex.NifAdapter do
   @spec add_account(account_batch :: Types.account_batch()) ::
           :ok | Types.add_account_errors()
   def add_account(_account_batch), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_account_id(
+          account_batch :: Types.account_batch(),
+          index :: non_neg_integer(),
+          id :: Types.uint128()
+        ) ::
+          :ok | Types.account_setter_errors()
+  def set_account_id(_account_batch, _index, _id), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_account_user_data(
+          account_batch :: Types.account_batch(),
+          index :: non_neg_integer(),
+          user_data :: Types.uint128()
+        ) ::
+          :ok | Types.account_setter_errors()
+  def set_account_user_data(_account_batch, _index, _user_data),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_account_ledger(
+          account_batch :: Types.account_batch(),
+          index :: non_neg_integer(),
+          ledger :: pos_integer()
+        ) ::
+          :ok | Types.account_setter_errors()
+  def set_account_ledger(_account_batch, _index, _ledger), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_account_code(
+          account_batch :: Types.account_batch(),
+          index :: non_neg_integer(),
+          code :: pos_integer()
+        ) ::
+          :ok | Types.account_setter_errors()
+  def set_account_code(_account_batch, _index, _code), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_account_flags(
+          account_batch :: Types.account_batch(),
+          index :: non_neg_integer(),
+          flags :: non_neg_integer()
+        ) ::
+          :ok | Types.account_setter_errors()
+  def set_account_flags(_account_batch, _index, _flags), do: :erlang.nif_error(:nif_not_loaded)
 end

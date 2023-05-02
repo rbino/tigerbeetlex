@@ -10,6 +10,7 @@ pub const Packet = tb_client.tb_packet_t;
 
 pub const Account = tb.Account;
 pub const AccountFlags = tb.AccountFlags;
+pub const Transfer = tb.Transfer;
 
 // TODO: are these needed?
 pub const vsr = @import("vsr");
@@ -27,6 +28,9 @@ var client_resource_type: beam.resource_type = undefined;
 
 // The resource type for the account batch
 var account_batch_resource_type: beam.resource_type = undefined;
+
+// The resource type for the transfer batch
+var transfer_batch_resource_type: beam.resource_type = undefined;
 
 fn raise(env: ?*e.ErlNifEnv, reason: []const u8) e.ErlNifTerm {
     return e.enif_raise_exception(env, beam.make_atom(env, reason));
@@ -70,6 +74,12 @@ const Client = struct {
 
 const AccountBatch = struct {
     accounts: []Account,
+    len: u32,
+    capacity: u32,
+};
+
+const TransferBatch = struct {
+    transfers: []Transfer,
     len: u32,
     capacity: u32,
 };
@@ -164,6 +174,36 @@ export fn create_account_batch(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const 
     resource.release(env, account_batch_resource_type, account_batch_resource);
 
     return beam.make_ok_term(env, account_batch_resource);
+}
+
+export fn create_transfer_batch(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    if (argc != 1) unreachable;
+
+    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
+
+    const capacity: u32 = beam.get_u32(env, args[0]) catch
+        return beam.raise_function_clause_error(env);
+
+    const transfers = beam.large_allocator.alloc(Transfer, capacity) catch |err|
+        switch (err) {
+        error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
+    };
+
+    const transfer_batch = TransferBatch{
+        .transfers = transfers,
+        .len = 0,
+        .capacity = capacity,
+    };
+    const transfer_batch_resource = resource.create(TransferBatch, env, transfer_batch_resource_type, transfer_batch) catch |err|
+        switch (err) {
+        error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
+    };
+
+    // We immediately release the resource and just let it be managed by the garbage collector
+    // TODO: check all the corner cases to ensure this is the right thing to do
+    resource.release(env, transfer_batch_resource_type, transfer_batch_resource);
+
+    return beam.make_ok_term(env, transfer_batch_resource);
 }
 
 export fn add_account(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
@@ -395,6 +435,13 @@ export fn account_batch_resource_deinit(_: ?*e.ErlNifEnv, ptr: ?*anyopaque) void
     } else unreachable;
 }
 
+export fn transfer_batch_resource_deinit(_: ?*e.ErlNifEnv, ptr: ?*anyopaque) void {
+    if (ptr) |p| {
+        const transfer_batch: *TransferBatch = @ptrCast(*TransferBatch, @alignCast(@alignOf(*TransferBatch), p));
+        beam.large_allocator.free(transfer_batch.transfers);
+    } else unreachable;
+}
+
 export var __exported_nifs__ = [_]e.ErlNifFunc{
     e.ErlNifFunc{
         .name = "client_init",
@@ -450,6 +497,12 @@ export var __exported_nifs__ = [_]e.ErlNifFunc{
         .fptr = create_accounts,
         .flags = 0,
     },
+    e.ErlNifFunc{
+        .name = "create_transfer_batch",
+        .arity = 1,
+        .fptr = create_transfer_batch,
+        .flags = 0,
+    },
 };
 
 const entry = e.ErlNifEntry{
@@ -486,6 +539,14 @@ export fn nif_load(env: ?*e.ErlNifEnv, _: [*c]?*anyopaque, _: e.ErlNifTerm) c_in
         null,
         "tigerbeetlex_account_batch",
         account_batch_resource_deinit,
+        e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
+        null,
+    );
+    transfer_batch_resource_type = e.enif_open_resource_type(
+        env,
+        null,
+        "tigerbeetlex_transfer_batch",
+        transfer_batch_resource_deinit,
         e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
         null,
     );

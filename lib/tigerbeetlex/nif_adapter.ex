@@ -75,4 +75,8 @@ defmodule TigerBeetlex.NifAdapter do
   @spec create_accounts(client :: Types.client(), account_batch :: Types.account_batch()) ::
           {:ok, reference()} | Types.create_account_errors()
   def create_accounts(_client, _account_batch), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec create_transfer_batch(capacity :: non_neg_integer()) ::
+          {:ok, Types.transfer_batch()} | Types.create_transfer_batch_errors()
+  def create_transfer_batch(_capacity), do: :erlang.nif_error(:nif_not_loaded)
 end

@@ -3,6 +3,8 @@ defmodule TigerBeetlex.Types do
 
   @type account_batch :: reference()
 
+  @type transfer_batch :: reference()
+
   @type uint128 :: <<_::128>>
 
   @type client_init_errors ::
@@ -14,6 +16,9 @@ defmodule TigerBeetlex.Types do
           | {:error, :network_subsystem}
 
   @type create_account_batch_errors ::
+          {:error, :out_of_memory}
+
+  @type create_transfer_batch_errors ::
           {:error, :out_of_memory}
 
   @type add_account_errors ::

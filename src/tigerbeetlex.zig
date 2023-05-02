@@ -6,6 +6,7 @@ pub const resource = beam.resource;
 
 pub const tb = @import("tigerbeetle");
 pub const tb_client = @import("tb_client.zig");
+pub const Packet = tb_client.tb_packet_t;
 
 pub const Account = tb.Account;
 pub const AccountFlags = tb.AccountFlags;
@@ -71,6 +72,11 @@ const AccountBatch = struct {
     accounts: []Account,
     len: u32,
     capacity: u32,
+};
+
+const RequestContext = struct {
+    caller_pid: e.ErlNifPid,
+    request_ref_binary: e.ErlNifBinary,
 };
 
 export fn client_init(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
@@ -274,6 +280,65 @@ export fn set_account_flags(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.E
     return set_account_field(.flags, env, argc, argv);
 }
 
+export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    if (argc != 2) unreachable;
+
+    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
+
+    const client = resource_ptr(Client, env, client_resource_type, args[0]) catch |err|
+        switch (err) {
+        error.FetchError => return beam.make_error_atom(env, "invalid_client"),
+    };
+
+    var account_batch: AccountBatch = resource.fetch(AccountBatch, env, account_batch_resource_type, args[1]) catch |err|
+        switch (err) {
+        error.FetchError => return beam.make_error_atom(env, "invalid_account_batch"),
+    };
+
+    var ctx: *RequestContext = beam.allocator.create(RequestContext) catch
+        return beam.make_error_atom(env, "out_of_memory");
+
+    if (e.enif_self(env, &ctx.caller_pid) == null) unreachable;
+
+    if (client.packet_pool.pop()) |packet| {
+        const ref = beam.make_ref(env);
+        // We serialize the reference to binary since we would need an env created in
+        // TigerBeetle's thread to copy the ref into, but we don't have it and don't
+        // have any way to create it from this side, pass it to the completion function
+        // and free it
+        if (e.enif_term_to_binary(env, ref, &ctx.request_ref_binary) == 0)
+            return beam.make_error_atom(env, "out_of_memory");
+
+        packet.operation = @enumToInt(tb_client.tb_operation_t.create_accounts);
+        // TODO: how much does this need to be valid? Should we increment the refcount on the
+        // resource to avoid it gets garbage collected while this is in-flight?
+        packet.data = account_batch.accounts.ptr;
+        packet.data_size = @sizeOf(Account) * account_batch.len;
+        packet.user_data = ctx;
+        packet.status = .ok;
+
+        var packets: tb_client.tb_packet_list_t = .{};
+        packets.head = packet;
+        packets.tail = packet;
+
+        tb_client.tb_client_submit(client.c_client, &packets);
+
+        if (packet.status != .ok) {
+            beam.allocator.destroy(ctx);
+        }
+
+        return switch (packet.status) {
+            .ok => beam.make_ok_term(env, ref),
+            .too_much_data => beam.make_error_atom(env, "too_much_data"),
+            .invalid_operation => beam.make_error_atom(env, "invalid_operation"),
+            .invalid_data_size => beam.make_error_atom(env, "invalid_data_size"),
+        };
+    } else {
+        beam.allocator.destroy(ctx);
+        return beam.make_error_atom(env, "too_many_requests");
+    }
+}
+
 export fn on_completion(
     context: usize,
     client: tb_client.tb_client_t,
@@ -283,10 +348,37 @@ export fn on_completion(
 ) void {
     _ = context;
     _ = client;
-    _ = packet;
-    _ = result_ptr;
-    _ = result_len;
-    // TODO
+    var ctx = @ptrCast(*RequestContext, @alignCast(@alignOf(RequestContext), packet.user_data.?));
+    defer beam.allocator.destroy(ctx);
+
+    const env = e.enif_alloc_env();
+    defer e.enif_free_env(env);
+
+    const ref_binary = &ctx.request_ref_binary;
+    defer e.enif_release_binary(ref_binary);
+    var ref: e.ERL_NIF_TERM = undefined;
+    if (e.enif_binary_to_term(env, ref_binary.data, ref_binary.size, &ref, 0) == 0) unreachable;
+
+    const caller_pid = ctx.caller_pid;
+
+    const operation = packet.operation;
+    const status = packet.status;
+    const result = if (result_ptr) |p|
+        beam.make_slice(env, p[0..result_len])
+    else
+        beam.make_nil(env);
+
+    const msg =
+        e.enif_make_tuple5(
+        env,
+        beam.make_atom(env, "tb_response"),
+        ref,
+        beam.make_u8(env, operation),
+        beam.make_u8(env, @enumToInt(status)),
+        result,
+    );
+
+    if (e.enif_send(null, &caller_pid, env, msg) == 0) unreachable;
 }
 
 export fn client_resource_deinit(_: ?*e.ErlNifEnv, ptr: ?*anyopaque) void {
@@ -350,6 +442,12 @@ export var __exported_nifs__ = [_]e.ErlNifFunc{
         .name = "set_account_flags",
         .arity = 3,
         .fptr = set_account_flags,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "create_accounts",
+        .arity = 2,
+        .fptr = create_accounts,
         .flags = 0,
     },
 };

@@ -71,4 +71,8 @@ defmodule TigerBeetlex.NifAdapter do
         ) ::
           :ok | Types.account_setter_errors()
   def set_account_flags(_account_batch, _index, _flags), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec create_accounts(client :: Types.client(), account_batch :: Types.account_batch()) ::
+          {:ok, reference()} | Types.create_account_errors()
+  def create_accounts(_client, _account_batch), do: :erlang.nif_error(:nif_not_loaded)
 end

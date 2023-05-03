@@ -203,16 +203,29 @@ export fn add_account(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF
 
     const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
 
-    const account_batch = resource_ptr(AccountBatch, env, account_batch_resource_type, args[0]) catch |err|
+    return add_batch_item(Account, env, args[0]);
+}
+
+export fn add_transfer(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    if (argc != 1) unreachable;
+
+    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
+
+    return add_batch_item(Transfer, env, args[0]);
+}
+
+fn add_batch_item(comptime T: anytype, env: ?*e.ErlNifEnv, batch_term: e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    const resource_type = batch_resource_type(T);
+    const batch = resource_ptr(Batch(T), env, resource_type, batch_term) catch |err|
         switch (err) {
-        error.FetchError => return beam.make_error_atom(env, "invalid_account_batch"),
+        error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
 
-    if (account_batch.len + 1 > account_batch.items.len) {
-        return beam.make_error_atom(env, "account_batch_full");
+    if (batch.len + 1 > batch.items.len) {
+        return beam.make_error_atom(env, "batch_full");
     }
-    account_batch.len += 1;
-    account_batch.items[account_batch.len - 1] = std.mem.zeroInit(Account, .{});
+    batch.len += 1;
+    batch.items[batch.len - 1] = std.mem.zeroInit(T, .{});
 
     return beam.make_ok(env);
 }
@@ -229,7 +242,7 @@ fn set_account_field(
 
     const account_batch = resource_ptr(AccountBatch, env, account_batch_resource_type, args[0]) catch |err|
         switch (err) {
-        error.FetchError => return beam.make_error_atom(env, "invalid_account_batch"),
+        error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
 
     const idx: u32 = beam.get_u32(env, args[1]) catch
@@ -324,7 +337,7 @@ export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL
 
     var account_batch: AccountBatch = resource.fetch(AccountBatch, env, account_batch_resource_type, args[1]) catch |err|
         switch (err) {
-        error.FetchError => return beam.make_error_atom(env, "invalid_account_batch"),
+        error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
 
     var ctx: *RequestContext = beam.allocator.create(RequestContext) catch
@@ -490,6 +503,12 @@ export var __exported_nifs__ = [_]e.ErlNifFunc{
         .name = "create_transfer_batch",
         .arity = 1,
         .fptr = create_transfer_batch,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "add_transfer",
+        .arity = 1,
+        .fptr = add_transfer,
         .flags = 0,
     },
 };

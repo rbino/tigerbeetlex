@@ -79,4 +79,8 @@ defmodule TigerBeetlex.NifAdapter do
   @spec create_transfer_batch(capacity :: non_neg_integer()) ::
           {:ok, Types.transfer_batch()} | Types.create_transfer_batch_errors()
   def create_transfer_batch(_capacity), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec add_transfer(transfer_batch :: Types.transfer_batch()) ::
+          :ok | Types.add_transfer_errors()
+  def add_transfer(_transfer_batch), do: :erlang.nif_error(:nif_not_loaded)
 end

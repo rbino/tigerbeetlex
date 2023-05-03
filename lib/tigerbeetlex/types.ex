@@ -22,8 +22,12 @@ defmodule TigerBeetlex.Types do
           {:error, :out_of_memory}
 
   @type add_account_errors ::
-          {:error, :invalid_account_batch}
-          | {:error, :account_batch_full}
+          {:error, :invalid_batch}
+          | {:error, :batch_full}
+
+  @type add_transfer_errors ::
+          {:error, :invalid_batch}
+          | {:error, :batch_full}
 
   @type set_function_errors ::
           {:error, :out_of_bounds}

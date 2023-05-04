@@ -266,8 +266,6 @@ fn set_account_field(
         .id => {
             const id = get_u128(env, args[2]) catch
                 return beam.raise_function_clause_error(env);
-            // These are invalid values according to TigerBeetle's documentation
-            if (id == 0 or id == std.math.maxInt(u128)) return beam.raise_function_clause_error(env);
 
             account.id = id;
         },
@@ -281,17 +279,11 @@ fn set_account_field(
             const ledger = beam.get_u32(env, args[2]) catch
                 return beam.raise_function_clause_error(env);
 
-            // Invalid value according to TigerBeetle's documentation
-            if (ledger == 0) return beam.raise_function_clause_error(env);
-
             account.ledger = ledger;
         },
         .code => {
             const code = beam.get_u16(env, args[2]) catch
                 return beam.raise_function_clause_error(env);
-
-            // Invalid value according to TigerBeetle's documentation
-            if (code == 0) return beam.raise_function_clause_error(env);
 
             account.code = code;
         },
@@ -361,8 +353,6 @@ fn set_transfer_field(
         .id => {
             const id = get_u128(env, args[2]) catch
                 return beam.raise_function_clause_error(env);
-            // These are invalid values according to TigerBeetle's documentation
-            if (id == 0 or id == std.math.maxInt(u128)) return beam.raise_function_clause_error(env);
 
             transfer.id = id;
         },

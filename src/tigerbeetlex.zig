@@ -1,20 +1,20 @@
 const std = @import("std");
 const Mutex = std.Thread.Mutex;
 
-pub const beam = @import("beam");
-pub const e = @import("erl_nif");
-pub const resource = beam.resource;
+const beam = @import("beam");
+const e = @import("erl_nif");
+const resource = beam.resource;
 
-pub const tb = @import("tigerbeetle");
-pub const tb_client = @import("tb_client.zig");
-pub const Packet = tb_client.tb_packet_t;
+const tb = @import("tigerbeetle");
+const tb_client = @import("tb_client.zig");
+const Packet = tb_client.tb_packet_t;
+const vsr = @import("vsr");
 
-pub const Account = tb.Account;
-pub const AccountFlags = tb.AccountFlags;
-pub const Transfer = tb.Transfer;
+const Account = tb.Account;
+const AccountFlags = tb.AccountFlags;
+const Transfer = tb.Transfer;
+const TransferFlags = tb.TransferFlags;
 
-// TODO: are these needed?
-pub const vsr = @import("vsr");
 pub const vsr_options = .{
     .config_base = vsr.config.ConfigBase.default,
     .tracer_backend = vsr.config.TracerBackend.none,
@@ -22,7 +22,7 @@ pub const vsr_options = .{
 };
 
 // Taken from tb_client/context.zig
-pub const packet_counts_max = 4096;
+const packet_counts_max = 4096;
 
 // The resource type for the client
 var client_resource_type: beam.resource_type = undefined;

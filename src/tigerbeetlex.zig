@@ -124,7 +124,7 @@ export fn client_init(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF
         cluster_id,
         addresses,
         max_concurrency,
-        0,
+        @ptrToInt(e.enif_alloc_env()),
         on_completion,
     );
 
@@ -548,13 +548,12 @@ export fn on_completion(
     result_ptr: ?[*]const u8,
     result_len: u32,
 ) void {
-    _ = context;
     _ = client;
     var ctx = @ptrCast(*RequestContext, @alignCast(@alignOf(*RequestContext), packet.user_data.?));
     defer beam.general_purpose_allocator.destroy(ctx);
 
-    const env = e.enif_alloc_env();
-    defer e.enif_free_env(env);
+    const env = @intToPtr(*e.ErlNifEnv, context);
+    defer e.enif_clear_env(env);
 
     const ref_binary = &ctx.request_ref_binary;
     defer e.enif_release_binary(ref_binary);

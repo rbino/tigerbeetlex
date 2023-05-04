@@ -170,4 +170,8 @@ defmodule TigerBeetlex.NifAdapter do
           :ok | Types.transfer_setter_errors()
   def set_transfer_amount(_transfer_batch, _index, _amount),
     do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec create_transfers(client :: Types.client(), transfer_batch :: Types.transfer_batch()) ::
+          {:ok, reference()} | Types.create_transfer_errors()
+  def create_transfers(_client, _transfer_batch), do: :erlang.nif_error(:nif_not_loaded)
 end

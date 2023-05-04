@@ -37,4 +37,9 @@ defmodule TigerBeetlex.Types do
   @type set_function_errors ::
           {:error, :out_of_bounds}
           | {:error, :invalid_account_batch}
+
+  @type create_transfers_errors ::
+          {:error, :invalid_client}
+          | {:error, :invalid_batch}
+          | {:error, :out_of_memory}
 end

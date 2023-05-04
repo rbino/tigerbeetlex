@@ -469,17 +469,13 @@ export fn set_transfer_amount(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e
     return set_transfer_field(.amount, env, argc, argv);
 }
 
-export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    if (argc != 2) unreachable;
-
-    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
-
-    const client = resource_ptr(Client, env, client_resource_type, args[0]) catch |err|
+fn submit_batch(comptime T: anytype, env: ?*e.ErlNifEnv, client_term: e.ERL_NIF_TERM, batch_term: e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    const client = resource_ptr(Client, env, client_resource_type, client_term) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_client"),
     };
 
-    var account_batch: AccountBatch = resource.fetch(AccountBatch, env, account_batch_resource_type, args[1]) catch |err|
+    var batch: Batch(T) = resource.fetch(Batch(T), env, batch_resource_type(T), batch_term) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
@@ -512,11 +508,16 @@ export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL
     if (e.enif_term_to_binary(env, ref, &ctx.request_ref_binary) == 0)
         return beam.make_error_atom(env, "out_of_memory");
 
-    packet.operation = @enumToInt(tb_client.tb_operation_t.create_accounts);
+    packet.operation =
+        switch (T) {
+        Account => @enumToInt(tb_client.tb_operation_t.create_accounts),
+        Transfer => @enumToInt(tb_client.tb_operation_t.create_transfers),
+        else => unreachable,
+    };
     // TODO: how much does this need to be valid? Should we increment the refcount on the
     // resource to avoid it gets garbage collected while this is in-flight?
-    packet.data = account_batch.items.ptr;
-    packet.data_size = @sizeOf(Account) * account_batch.len;
+    packet.data = batch.items.ptr;
+    packet.data_size = @sizeOf(T) * batch.len;
     packet.user_data = ctx;
     packet.status = .ok;
 
@@ -536,6 +537,22 @@ export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL
         .invalid_operation => beam.make_error_atom(env, "invalid_operation"),
         .invalid_data_size => beam.make_error_atom(env, "invalid_data_size"),
     };
+}
+
+export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    if (argc != 2) unreachable;
+
+    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
+
+    return submit_batch(Account, env, args[0], args[1]);
+}
+
+export fn create_transfers(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    if (argc != 2) unreachable;
+
+    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
+
+    return submit_batch(Transfer, env, args[0], args[1]);
 }
 
 export fn on_completion(
@@ -730,6 +747,12 @@ export var __exported_nifs__ = [_]e.ErlNifFunc{
         .name = "set_transfer_amount",
         .arity = 3,
         .fptr = set_transfer_amount,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "create_transfers",
+        .arity = 2,
+        .fptr = create_transfers,
         .flags = 0,
     },
 };

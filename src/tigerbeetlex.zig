@@ -527,16 +527,7 @@ fn submit_batch(comptime T: anytype, env: ?*e.ErlNifEnv, client_term: e.ERL_NIF_
 
     tb_client.tb_client_submit(client.c_client, &packets);
 
-    if (packet.status != .ok) {
-        beam.general_purpose_allocator.destroy(ctx);
-    }
-
-    return switch (packet.status) {
-        .ok => beam.make_ok_term(env, ref),
-        .too_much_data => beam.make_error_atom(env, "too_much_data"),
-        .invalid_operation => beam.make_error_atom(env, "invalid_operation"),
-        .invalid_data_size => beam.make_error_atom(env, "invalid_data_size"),
-    };
+    return beam.make_ok_term(env, ref);
 }
 
 export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {

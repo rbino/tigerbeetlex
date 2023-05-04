@@ -550,7 +550,7 @@ export fn on_completion(
 ) void {
     _ = context;
     _ = client;
-    var ctx = @ptrCast(*RequestContext, @alignCast(@alignOf(RequestContext), packet.user_data.?));
+    var ctx = @ptrCast(*RequestContext, @alignCast(@alignOf(*RequestContext), packet.user_data.?));
     defer beam.general_purpose_allocator.destroy(ctx);
 
     const env = e.enif_alloc_env();

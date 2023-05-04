@@ -1,4 +1,5 @@
 const std = @import("std");
+const Mutex = std.Thread.Mutex;
 
 pub const beam = @import("beam");
 pub const e = @import("erl_nif");
@@ -69,6 +70,7 @@ pub fn get_u128(env: beam.env, src_term: e.ErlNifTerm) !u128 {
 
 const Client = struct {
     c_client: tb_client.tb_client_t,
+    packets_mutex: Mutex = .{},
     packet_pool: tb_client.tb_packet_list_t,
 };
 
@@ -91,6 +93,8 @@ const AccountBatch = Batch(Account);
 const TransferBatch = Batch(Transfer);
 
 const RequestContext = struct {
+    packets_mutex: *Mutex,
+    packet_pool: *tb_client.tb_packet_list_t,
     caller_pid: e.ErlNifPid,
     request_ref_binary: e.ErlNifBinary,
 };
@@ -142,7 +146,12 @@ export fn client_init(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF
     const client = .{ .c_client = c_client, .packet_pool = packet_pool };
     const client_resource = resource.create(Client, env, client_resource_type, client) catch |err|
         switch (err) {
-        error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
+        error.OutOfMemory => {
+            // Deinit the client
+            // TODO: do some refactoring to allow using errdefer
+            tb_client.tb_client_deinit(c_client);
+            return beam.make_error_atom(env, "out_of_memory");
+        },
     };
 
     // We immediately release the resource and just let it be managed by the garbage collector
@@ -343,45 +352,55 @@ export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL
     var ctx: *RequestContext = beam.allocator.create(RequestContext) catch
         return beam.make_error_atom(env, "out_of_memory");
 
+    ctx.packets_mutex = &client.packets_mutex;
+    ctx.packet_pool = &client.packet_pool;
+
     if (e.enif_self(env, &ctx.caller_pid) == null) unreachable;
 
-    if (client.packet_pool.pop()) |packet| {
-        const ref = beam.make_ref(env);
-        // We serialize the reference to binary since we would need an env created in
-        // TigerBeetle's thread to copy the ref into, but we don't have it and don't
-        // have any way to create it from this side, pass it to the completion function
-        // and free it
-        if (e.enif_term_to_binary(env, ref, &ctx.request_ref_binary) == 0)
-            return beam.make_error_atom(env, "out_of_memory");
+    const packet = pkt: {
+        client.packets_mutex.lock();
+        defer client.packets_mutex.unlock();
 
-        packet.operation = @enumToInt(tb_client.tb_operation_t.create_accounts);
-        // TODO: how much does this need to be valid? Should we increment the refcount on the
-        // resource to avoid it gets garbage collected while this is in-flight?
-        packet.data = account_batch.items.ptr;
-        packet.data_size = @sizeOf(Account) * account_batch.len;
-        packet.user_data = ctx;
-        packet.status = .ok;
-
-        var packets: tb_client.tb_packet_list_t = .{};
-        packets.head = packet;
-        packets.tail = packet;
-
-        tb_client.tb_client_submit(client.c_client, &packets);
-
-        if (packet.status != .ok) {
+        if (client.packet_pool.pop()) |packet| {
+            break :pkt packet;
+        } else {
             beam.allocator.destroy(ctx);
+            return beam.make_error_atom(env, "too_many_requests");
         }
+    };
 
-        return switch (packet.status) {
-            .ok => beam.make_ok_term(env, ref),
-            .too_much_data => beam.make_error_atom(env, "too_much_data"),
-            .invalid_operation => beam.make_error_atom(env, "invalid_operation"),
-            .invalid_data_size => beam.make_error_atom(env, "invalid_data_size"),
-        };
-    } else {
+    const ref = beam.make_ref(env);
+    // We serialize the reference to binary since we would need an env created in
+    // TigerBeetle's thread to copy the ref into, but we don't have it and don't
+    // have any way to create it from this side, pass it to the completion function
+    // and free it
+    if (e.enif_term_to_binary(env, ref, &ctx.request_ref_binary) == 0)
+        return beam.make_error_atom(env, "out_of_memory");
+
+    packet.operation = @enumToInt(tb_client.tb_operation_t.create_accounts);
+    // TODO: how much does this need to be valid? Should we increment the refcount on the
+    // resource to avoid it gets garbage collected while this is in-flight?
+    packet.data = account_batch.items.ptr;
+    packet.data_size = @sizeOf(Account) * account_batch.len;
+    packet.user_data = ctx;
+    packet.status = .ok;
+
+    var packets: tb_client.tb_packet_list_t = .{};
+    packets.head = packet;
+    packets.tail = packet;
+
+    tb_client.tb_client_submit(client.c_client, &packets);
+
+    if (packet.status != .ok) {
         beam.allocator.destroy(ctx);
-        return beam.make_error_atom(env, "too_many_requests");
     }
+
+    return switch (packet.status) {
+        .ok => beam.make_ok_term(env, ref),
+        .too_much_data => beam.make_error_atom(env, "too_much_data"),
+        .invalid_operation => beam.make_error_atom(env, "invalid_operation"),
+        .invalid_data_size => beam.make_error_atom(env, "invalid_data_size"),
+    };
 }
 
 export fn on_completion(
@@ -424,6 +443,13 @@ export fn on_completion(
     );
 
     if (e.enif_send(null, &caller_pid, env, msg) == 0) unreachable;
+
+    {
+        // We're done with the packet, put it back in the pool
+        ctx.packets_mutex.lock();
+        defer ctx.packets_mutex.unlock();
+        ctx.packet_pool.push(tb_client.tb_packet_list_t.from(packet));
+    }
 }
 
 export fn client_resource_deinit(_: ?*e.ErlNifEnv, ptr: ?*anyopaque) void {

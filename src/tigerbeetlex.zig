@@ -469,7 +469,7 @@ export fn set_transfer_amount(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e
     return set_transfer_field(.amount, env, argc, argv);
 }
 
-fn submit_batch(comptime T: anytype, env: ?*e.ErlNifEnv, client_term: e.ERL_NIF_TERM, batch_term: e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+fn submit_batch(comptime T: anytype, env: ?*e.ErlNifEnv, client_term: e.ERL_NIF_TERM, batch_term: e.ERL_NIF_TERM) !e.ERL_NIF_TERM {
     const client = resource_ptr(Client, env, client_resource_type, client_term) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_client"),
@@ -480,6 +480,19 @@ fn submit_batch(comptime T: anytype, env: ?*e.ErlNifEnv, client_term: e.ERL_NIF_
         error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
 
+    const packet = pkt: {
+        if (!client.packets_mutex.tryLock()) {
+            return error.MutexLocked;
+        }
+        defer client.packets_mutex.unlock();
+
+        if (client.packet_pool.pop()) |packet| {
+            break :pkt packet;
+        } else {
+            return beam.make_error_atom(env, "too_many_requests");
+        }
+    };
+
     var ctx: *RequestContext = beam.general_purpose_allocator.create(RequestContext) catch
         return beam.make_error_atom(env, "out_of_memory");
 
@@ -487,18 +500,6 @@ fn submit_batch(comptime T: anytype, env: ?*e.ErlNifEnv, client_term: e.ERL_NIF_
     ctx.packet_pool = &client.packet_pool;
 
     if (e.enif_self(env, &ctx.caller_pid) == null) unreachable;
-
-    const packet = pkt: {
-        client.packets_mutex.lock();
-        defer client.packets_mutex.unlock();
-
-        if (client.packet_pool.pop()) |packet| {
-            break :pkt packet;
-        } else {
-            beam.general_purpose_allocator.destroy(ctx);
-            return beam.make_error_atom(env, "too_many_requests");
-        }
-    };
 
     const ref = beam.make_ref(env);
     // We serialize the reference to binary since we would need an env created in
@@ -535,7 +536,9 @@ export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL
 
     const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
 
-    return submit_batch(Account, env, args[0], args[1]);
+    return submit_batch(Account, env, args[0], args[1]) catch |err| switch (err) {
+        error.MutexLocked => return e.enif_schedule_nif(env, "create_accounts", 0, create_accounts, argc, argv),
+    };
 }
 
 export fn create_transfers(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
@@ -543,7 +546,9 @@ export fn create_transfers(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ER
 
     const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
 
-    return submit_batch(Transfer, env, args[0], args[1]);
+    return submit_batch(Transfer, env, args[0], args[1]) catch |err| switch (err) {
+        error.MutexLocked => return e.enif_schedule_nif(env, "create_transfers", 0, create_transfers, argc, argv),
+    };
 }
 
 export fn on_completion(

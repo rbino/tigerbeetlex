@@ -117,9 +117,8 @@ export fn client_init(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF
     var c_client: tb_client.tb_client_t = undefined;
     var packet_pool: tb_client.tb_packet_list_t = undefined;
 
-    // TODO: beam.large_allocator is not thread-safe, is this ok?
     const status = tb_client.client_init(
-        beam.large_allocator,
+        beam.general_purpose_allocator,
         &c_client,
         &packet_pool,
         cluster_id,
@@ -184,7 +183,7 @@ export fn create_transfer_batch(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const
 }
 
 fn create_batch(comptime T: anytype, env: ?*e.ErlNifEnv, capacity: u32) e.ERL_NIF_TERM {
-    const items = beam.large_allocator.alloc(T, capacity) catch |err|
+    const items = beam.general_purpose_allocator.alloc(T, capacity) catch |err|
         switch (err) {
         error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
     };
@@ -349,7 +348,7 @@ export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL
         error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
 
-    var ctx: *RequestContext = beam.allocator.create(RequestContext) catch
+    var ctx: *RequestContext = beam.general_purpose_allocator.create(RequestContext) catch
         return beam.make_error_atom(env, "out_of_memory");
 
     ctx.packets_mutex = &client.packets_mutex;
@@ -364,7 +363,7 @@ export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL
         if (client.packet_pool.pop()) |packet| {
             break :pkt packet;
         } else {
-            beam.allocator.destroy(ctx);
+            beam.general_purpose_allocator.destroy(ctx);
             return beam.make_error_atom(env, "too_many_requests");
         }
     };
@@ -392,7 +391,7 @@ export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL
     tb_client.tb_client_submit(client.c_client, &packets);
 
     if (packet.status != .ok) {
-        beam.allocator.destroy(ctx);
+        beam.general_purpose_allocator.destroy(ctx);
     }
 
     return switch (packet.status) {
@@ -413,7 +412,7 @@ export fn on_completion(
     _ = context;
     _ = client;
     var ctx = @ptrCast(*RequestContext, @alignCast(@alignOf(RequestContext), packet.user_data.?));
-    defer beam.allocator.destroy(ctx);
+    defer beam.general_purpose_allocator.destroy(ctx);
 
     const env = e.enif_alloc_env();
     defer e.enif_free_env(env);
@@ -464,7 +463,7 @@ fn batch_deinit_fn(comptime T: anytype) fn (env: ?*e.ErlNifEnv, ptr: ?*anyopaque
         pub fn deinit_fn(_: ?*e.ErlNifEnv, ptr: ?*anyopaque) callconv(.C) void {
             if (ptr) |p| {
                 const batch: *T = @ptrCast(*T, @alignCast(@alignOf(*T), p));
-                beam.large_allocator.free(batch.items);
+                beam.general_purpose_allocator.free(batch.items);
             } else unreachable;
         }
     }.deinit_fn;

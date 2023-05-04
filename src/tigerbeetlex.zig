@@ -333,6 +333,142 @@ export fn set_account_flags(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.E
     return set_account_field(.flags, env, argc, argv);
 }
 
+fn set_transfer_field(
+    comptime field: std.meta.FieldEnum(Transfer),
+    env: ?*e.ErlNifEnv,
+    argc: c_int,
+    argv: [*c]const e.ERL_NIF_TERM,
+) e.ERL_NIF_TERM {
+    if (argc != 3) unreachable;
+
+    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
+
+    const transfer_batch = resource_ptr(TransferBatch, env, transfer_batch_resource_type, args[0]) catch |err|
+        switch (err) {
+        error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
+    };
+
+    const idx: u32 = beam.get_u32(env, args[1]) catch
+        return beam.raise_function_clause_error(env);
+
+    if (idx >= transfer_batch.len) {
+        return beam.make_error_atom(env, "out_of_bounds");
+    }
+
+    const transfer: *Transfer = &transfer_batch.items[idx];
+
+    switch (field) {
+        .id => {
+            const id = get_u128(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+            // These are invalid values according to TigerBeetle's documentation
+            if (id == 0 or id == std.math.maxInt(u128)) return beam.raise_function_clause_error(env);
+
+            transfer.id = id;
+        },
+        .debit_account_id => {
+            const debit_account_id = get_u128(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            transfer.debit_account_id = debit_account_id;
+        },
+        .credit_account_id => {
+            const credit_account_id = get_u128(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            transfer.credit_account_id = credit_account_id;
+        },
+        .user_data => {
+            const user_data = get_u128(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            transfer.user_data = user_data;
+        },
+        .pending_id => {
+            const pending_id = get_u128(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            transfer.pending_id = pending_id;
+        },
+        .timeout => {
+            const timeout = beam.get_u64(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            transfer.timeout = timeout;
+        },
+        .ledger => {
+            const ledger = beam.get_u32(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            transfer.ledger = ledger;
+        },
+        .code => {
+            const code = beam.get_u16(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            transfer.code = code;
+        },
+        .flags => {
+            const flags_uint = beam.get_u16(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            const flags: TransferFlags = @bitCast(TransferFlags, flags_uint);
+            // TODO: mutually exclusive flags validation?
+
+            transfer.flags = flags;
+        },
+        .amount => {
+            const amount = beam.get_u64(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            transfer.amount = amount;
+        },
+        else => unreachable,
+    }
+
+    return beam.make_ok(env);
+}
+
+export fn set_transfer_id(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    return set_transfer_field(.id, env, argc, argv);
+}
+
+export fn set_transfer_debit_account_id(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    return set_transfer_field(.debit_account_id, env, argc, argv);
+}
+
+export fn set_transfer_credit_account_id(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    return set_transfer_field(.credit_account_id, env, argc, argv);
+}
+
+export fn set_transfer_user_data(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    return set_transfer_field(.user_data, env, argc, argv);
+}
+
+export fn set_transfer_pending_id(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    return set_transfer_field(.pending_id, env, argc, argv);
+}
+
+export fn set_transfer_timeout(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    return set_transfer_field(.timeout, env, argc, argv);
+}
+
+export fn set_transfer_ledger(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    return set_transfer_field(.ledger, env, argc, argv);
+}
+
+export fn set_transfer_code(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    return set_transfer_field(.code, env, argc, argv);
+}
+
+export fn set_transfer_flags(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    return set_transfer_field(.flags, env, argc, argv);
+}
+
+export fn set_transfer_amount(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
+    return set_transfer_field(.amount, env, argc, argv);
+}
+
 export fn create_accounts(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
     if (argc != 2) unreachable;
 
@@ -534,6 +670,66 @@ export var __exported_nifs__ = [_]e.ErlNifFunc{
         .name = "add_transfer",
         .arity = 1,
         .fptr = add_transfer,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "set_transfer_id",
+        .arity = 3,
+        .fptr = set_transfer_id,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "set_transfer_debit_account_id",
+        .arity = 3,
+        .fptr = set_transfer_debit_account_id,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "set_transfer_credit_account_id",
+        .arity = 3,
+        .fptr = set_transfer_credit_account_id,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "set_transfer_user_data",
+        .arity = 3,
+        .fptr = set_transfer_user_data,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "set_transfer_pending_id",
+        .arity = 3,
+        .fptr = set_transfer_pending_id,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "set_transfer_timeout",
+        .arity = 3,
+        .fptr = set_transfer_timeout,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "set_transfer_ledger",
+        .arity = 3,
+        .fptr = set_transfer_ledger,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "set_transfer_code",
+        .arity = 3,
+        .fptr = set_transfer_code,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "set_transfer_flags",
+        .arity = 3,
+        .fptr = set_transfer_flags,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "set_transfer_amount",
+        .arity = 3,
+        .fptr = set_transfer_amount,
         .flags = 0,
     },
 };

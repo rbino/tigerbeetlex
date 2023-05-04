@@ -83,4 +83,91 @@ defmodule TigerBeetlex.NifAdapter do
   @spec add_transfer(transfer_batch :: Types.transfer_batch()) ::
           :ok | Types.add_transfer_errors()
   def add_transfer(_transfer_batch), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_transfer_id(
+          transfer_batch :: Types.transfer_batch(),
+          index :: non_neg_integer(),
+          id :: Types.uint128()
+        ) ::
+          :ok | Types.transfer_setter_errors()
+  def set_transfer_id(_transfer_batch, _index, _id), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_transfer_debit_account_id(
+          transfer_batch :: Types.transfer_batch(),
+          index :: non_neg_integer(),
+          debit_account_id :: Types.uint128()
+        ) ::
+          :ok | Types.transfer_setter_errors()
+  def set_transfer_debit_account_id(_transfer_batch, _index, _debit_account_id),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_transfer_credit_account_id(
+          transfer_batch :: Types.transfer_batch(),
+          index :: non_neg_integer(),
+          credit_account_id :: Types.uint128()
+        ) ::
+          :ok | Types.transfer_setter_errors()
+  def set_transfer_credit_account_id(_transfer_batch, _index, _credit_account_id),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_transfer_user_data(
+          transfer_batch :: Types.transfer_batch(),
+          index :: non_neg_integer(),
+          user_data :: Types.uint128()
+        ) ::
+          :ok | Types.transfer_setter_errors()
+  def set_transfer_user_data(_transfer_batch, _index, _user_data),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_transfer_pending_id(
+          transfer_batch :: Types.transfer_batch(),
+          index :: non_neg_integer(),
+          pending_id :: Types.uint128()
+        ) ::
+          :ok | Types.transfer_setter_errors()
+  def set_transfer_pending_id(_transfer_batch, _index, _pending_id),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_transfer_timeout(
+          transfer_batch :: Types.transfer_batch(),
+          index :: non_neg_integer(),
+          timeout :: non_neg_integer()
+        ) ::
+          :ok | Types.transfer_setter_errors()
+  def set_transfer_timeout(_transfer_batch, _index, _timeout),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_transfer_ledger(
+          transfer_batch :: Types.transfer_batch(),
+          index :: non_neg_integer(),
+          ledger :: non_neg_integer()
+        ) ::
+          :ok | Types.transfer_setter_errors()
+  def set_transfer_ledger(_transfer_batch, _index, _ledger),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_transfer_code(
+          transfer_batch :: Types.transfer_batch(),
+          index :: non_neg_integer(),
+          code :: non_neg_integer()
+        ) ::
+          :ok | Types.transfer_setter_errors()
+  def set_transfer_code(_transfer_batch, _index, _code), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_transfer_flags(
+          transfer_batch :: Types.transfer_batch(),
+          index :: non_neg_integer(),
+          flags :: non_neg_integer()
+        ) ::
+          :ok | Types.transfer_setter_errors()
+  def set_transfer_flags(_transfer_batch, _index, _flags), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec set_transfer_amount(
+          transfer_batch :: Types.transfer_batch(),
+          index :: non_neg_integer(),
+          amount :: non_neg_integer()
+        ) ::
+          :ok | Types.transfer_setter_errors()
+  def set_transfer_amount(_transfer_batch, _index, _amount),
+    do: :erlang.nif_error(:nif_not_loaded)
 end

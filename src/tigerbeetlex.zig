@@ -9,31 +9,12 @@ const AccountBatch = account_batch.AccountBatch;
 const TransferBatch = transfer_batch.TransferBatch;
 const Client = client.Client;
 
-const tb_client = @import("tb_client.zig");
 const vsr = @import("vsr");
 pub const vsr_options = .{
     .config_base = vsr.config.ConfigBase.default,
     .tracer_backend = vsr.config.TracerBackend.none,
     .hash_log_mode = vsr.config.HashLogMode.none,
 };
-
-fn client_resource_deinit(_: ?*e.ErlNifEnv, ptr: ?*anyopaque) callconv(.C) void {
-    if (ptr) |p| {
-        const cl: *Client = @ptrCast(*Client, @alignCast(@alignOf(*Client), p));
-        tb_client.tb_client_deinit(cl.c_client);
-    } else unreachable;
-}
-
-fn batch_deinit_fn(comptime T: anytype) fn (env: ?*e.ErlNifEnv, ptr: ?*anyopaque) callconv(.C) void {
-    return struct {
-        pub fn deinit_fn(_: ?*e.ErlNifEnv, ptr: ?*anyopaque) callconv(.C) void {
-            if (ptr) |p| {
-                const b: *T = @ptrCast(*T, @alignCast(@alignOf(*T), p));
-                beam.general_purpose_allocator.free(b.items);
-            } else unreachable;
-        }
-    }.deinit_fn;
-}
 
 export var __exported_nifs__ = [_]e.ErlNifFunc{
     e.ErlNifFunc{
@@ -195,7 +176,7 @@ export fn nif_load(env: ?*e.ErlNifEnv, _: [*c]?*anyopaque, _: e.ErlNifTerm) c_in
         env,
         null,
         "tigerbeetlex_client",
-        client_resource_deinit,
+        resource_types.client_deinit_fn,
         e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
         null,
     );
@@ -203,7 +184,7 @@ export fn nif_load(env: ?*e.ErlNifEnv, _: [*c]?*anyopaque, _: e.ErlNifTerm) c_in
         env,
         null,
         "tigerbeetlex_account_batch",
-        batch_deinit_fn(AccountBatch),
+        resource_types.batch_deinit_fn(AccountBatch),
         e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
         null,
     );
@@ -211,7 +192,7 @@ export fn nif_load(env: ?*e.ErlNifEnv, _: [*c]?*anyopaque, _: e.ErlNifTerm) c_in
         env,
         null,
         "tigerbeetlex_transfer_batch",
-        batch_deinit_fn(TransferBatch),
+        resource_types.batch_deinit_fn(TransferBatch),
         e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
         null,
     );

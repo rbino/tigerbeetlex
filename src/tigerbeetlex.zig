@@ -2,6 +2,7 @@ const std = @import("std");
 const Mutex = std.Thread.Mutex;
 
 const beam = @import("beam");
+const beam_extras = @import("beam_extras.zig");
 const e = @import("erl_nif");
 const resource = beam.resource;
 
@@ -32,41 +33,6 @@ var account_batch_resource_type: beam.resource_type = undefined;
 
 // The resource type for the transfer batch
 var transfer_batch_resource_type: beam.resource_type = undefined;
-
-fn raise(env: ?*e.ErlNifEnv, reason: []const u8) e.ErlNifTerm {
-    return e.enif_raise_exception(env, beam.make_atom(env, reason));
-}
-
-// TODO: this is missing from Zigler and it's more ergonomic than doing fetch + update
-pub fn resource_ptr(comptime T: type, environment: beam.env, res_typ: beam.resource_type, res_trm: e.ErlNifTerm) !*T {
-    var obj: ?*anyopaque = undefined;
-
-    if (0 == e.enif_get_resource(environment, res_trm, res_typ, @ptrCast([*c]?*anyopaque, &obj))) {
-        return resource.ResourceError.FetchError;
-    }
-
-    // according to the erlang documentation:
-    // the pointer received in *objp is guaranteed to be valid at least as long as the
-    // resource handle term is valid.
-
-    if (obj == null) {
-        unreachable;
-    }
-
-    var val: *T = @ptrCast(*T, @alignCast(@alignOf(*T), obj));
-
-    return val;
-}
-
-pub fn get_u128(env: beam.env, src_term: e.ErlNifTerm) !u128 {
-    const bin = try beam.get_char_slice(env, src_term);
-    const required_length = @sizeOf(u128) / @sizeOf(u8);
-
-    // We represent the u128 as a 16 byte binary, little endian (required by TigerBeetle)
-    if (bin.len != required_length) return error.InvalidU128;
-
-    return std.mem.readIntNative(u128, bin[0..required_length]);
-}
 
 const Client = struct {
     c_client: tb_client.tb_client_t,
@@ -135,10 +101,10 @@ export fn client_init(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF
             .address_invalid => return beam.make_error_atom(env, "invalid_address"),
             .address_limit_exceeded => return beam.make_error_atom(env, "address_limit_exceeded"),
             // If we're here, we're out of sync with the C client
-            .packets_count_invalid => return raise(env, "client_out_of_sync"),
+            .packets_count_invalid => return beam_extras.raise(env, "client_out_of_sync"),
             .system_resources => return beam.make_error_atom(env, "system_resources"),
             .network_subsystem => return beam.make_error_atom(env, "network_subsystem"),
-            else => return raise(env, "invalid_error_code"),
+            else => return beam_extras.raise(env, "invalid_error_code"),
         }
     }
 
@@ -224,7 +190,7 @@ export fn add_transfer(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NI
 
 fn add_batch_item(comptime T: anytype, env: ?*e.ErlNifEnv, batch_term: e.ERL_NIF_TERM) e.ERL_NIF_TERM {
     const resource_type = batch_resource_type(T);
-    const batch = resource_ptr(Batch(T), env, resource_type, batch_term) catch |err|
+    const batch = beam_extras.resource_ptr(Batch(T), env, resource_type, batch_term) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
@@ -248,7 +214,7 @@ fn set_account_field(
 
     const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
 
-    const account_batch = resource_ptr(AccountBatch, env, account_batch_resource_type, args[0]) catch |err|
+    const account_batch = beam_extras.resource_ptr(AccountBatch, env, account_batch_resource_type, args[0]) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
@@ -264,13 +230,13 @@ fn set_account_field(
 
     switch (field) {
         .id => {
-            const id = get_u128(env, args[2]) catch
+            const id = beam_extras.get_u128(env, args[2]) catch
                 return beam.raise_function_clause_error(env);
 
             account.id = id;
         },
         .user_data => {
-            const user_data = get_u128(env, args[2]) catch
+            const user_data = beam_extras.get_u128(env, args[2]) catch
                 return beam.raise_function_clause_error(env);
 
             account.user_data = user_data;
@@ -335,7 +301,7 @@ fn set_transfer_field(
 
     const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
 
-    const transfer_batch = resource_ptr(TransferBatch, env, transfer_batch_resource_type, args[0]) catch |err|
+    const transfer_batch = beam_extras.resource_ptr(TransferBatch, env, transfer_batch_resource_type, args[0]) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
@@ -351,31 +317,31 @@ fn set_transfer_field(
 
     switch (field) {
         .id => {
-            const id = get_u128(env, args[2]) catch
+            const id = beam_extras.get_u128(env, args[2]) catch
                 return beam.raise_function_clause_error(env);
 
             transfer.id = id;
         },
         .debit_account_id => {
-            const debit_account_id = get_u128(env, args[2]) catch
+            const debit_account_id = beam_extras.get_u128(env, args[2]) catch
                 return beam.raise_function_clause_error(env);
 
             transfer.debit_account_id = debit_account_id;
         },
         .credit_account_id => {
-            const credit_account_id = get_u128(env, args[2]) catch
+            const credit_account_id = beam_extras.get_u128(env, args[2]) catch
                 return beam.raise_function_clause_error(env);
 
             transfer.credit_account_id = credit_account_id;
         },
         .user_data => {
-            const user_data = get_u128(env, args[2]) catch
+            const user_data = beam_extras.get_u128(env, args[2]) catch
                 return beam.raise_function_clause_error(env);
 
             transfer.user_data = user_data;
         },
         .pending_id => {
-            const pending_id = get_u128(env, args[2]) catch
+            const pending_id = beam_extras.get_u128(env, args[2]) catch
                 return beam.raise_function_clause_error(env);
 
             transfer.pending_id = pending_id;
@@ -460,7 +426,7 @@ export fn set_transfer_amount(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e
 }
 
 fn submit_batch(comptime T: anytype, env: ?*e.ErlNifEnv, client_term: e.ERL_NIF_TERM, batch_term: e.ERL_NIF_TERM) !e.ERL_NIF_TERM {
-    const client = resource_ptr(Client, env, client_resource_type, client_term) catch |err|
+    const client = beam_extras.resource_ptr(Client, env, client_resource_type, client_term) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_client"),
     };

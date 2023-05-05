@@ -1,10 +1,12 @@
 const std = @import("std");
 const Mutex = std.Thread.Mutex;
 
+const batch = @import("batch.zig");
 const beam = @import("beam");
 const beam_extras = @import("beam_extras.zig");
 const e = @import("erl_nif");
 const resource = beam.resource;
+const resource_types = @import("resource_types.zig");
 
 const tb = @import("tigerbeetle");
 const tb_client = @import("tb_client.zig");
@@ -16,6 +18,10 @@ const AccountFlags = tb.AccountFlags;
 const Transfer = tb.Transfer;
 const TransferFlags = tb.TransferFlags;
 
+const AccountBatch = batch.AccountBatch;
+const Batch = batch.Batch;
+const TransferBatch = batch.TransferBatch;
+
 pub const vsr_options = .{
     .config_base = vsr.config.ConfigBase.default,
     .tracer_backend = vsr.config.TracerBackend.none,
@@ -25,38 +31,11 @@ pub const vsr_options = .{
 // Taken from tb_client/context.zig
 const packet_counts_max = 4096;
 
-// The resource type for the client
-var client_resource_type: beam.resource_type = undefined;
-
-// The resource type for the account batch
-var account_batch_resource_type: beam.resource_type = undefined;
-
-// The resource type for the transfer batch
-var transfer_batch_resource_type: beam.resource_type = undefined;
-
 const Client = struct {
     c_client: tb_client.tb_client_t,
     packets_mutex: Mutex = .{},
     packet_pool: tb_client.tb_packet_list_t,
 };
-
-fn Batch(comptime T: anytype) type {
-    return struct {
-        items: []T,
-        len: u32,
-    };
-}
-
-fn batch_resource_type(comptime T: anytype) beam.resource_type {
-    return switch (T) {
-        Account => account_batch_resource_type,
-        Transfer => transfer_batch_resource_type,
-        else => unreachable,
-    };
-}
-
-const AccountBatch = Batch(Account);
-const TransferBatch = Batch(Transfer);
 
 const RequestContext = struct {
     packets_mutex: *Mutex,
@@ -109,7 +88,7 @@ export fn client_init(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF
     }
 
     const client = .{ .c_client = c_client, .packet_pool = packet_pool };
-    const client_resource = resource.create(Client, env, client_resource_type, client) catch |err|
+    const client_resource = resource.create(Client, env, resource_types.client, client) catch |err|
         switch (err) {
         error.OutOfMemory => {
             // Deinit the client
@@ -121,7 +100,7 @@ export fn client_init(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF
 
     // We immediately release the resource and just let it be managed by the garbage collector
     // TODO: check all the corner cases to ensure this is the right thing to do
-    resource.release(env, client_resource_type, client_resource);
+    resource.release(env, resource_types.client, client_resource);
 
     return beam.make_ok_term(env, client_resource);
 }
@@ -134,7 +113,7 @@ export fn create_account_batch(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const 
     const capacity: u32 = beam.get_u32(env, args[0]) catch
         return beam.raise_function_clause_error(env);
 
-    return create_batch(Account, env, capacity);
+    return batch.create(Account, env, capacity);
 }
 
 export fn create_transfer_batch(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
@@ -145,31 +124,7 @@ export fn create_transfer_batch(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const
     const capacity: u32 = beam.get_u32(env, args[0]) catch
         return beam.raise_function_clause_error(env);
 
-    return create_batch(Transfer, env, capacity);
-}
-
-fn create_batch(comptime T: anytype, env: ?*e.ErlNifEnv, capacity: u32) e.ERL_NIF_TERM {
-    const items = beam.general_purpose_allocator.alloc(T, capacity) catch |err|
-        switch (err) {
-        error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
-    };
-
-    const resource_type = batch_resource_type(T);
-
-    const batch = Batch(T){
-        .items = items,
-        .len = 0,
-    };
-    const batch_resource = resource.create(Batch(T), env, resource_type, batch) catch |err|
-        switch (err) {
-        error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
-    };
-
-    // We immediately release the resource and just let it be managed by the garbage collector
-    // TODO: check all the corner cases to ensure this is the right thing to do
-    resource.release(env, resource_type, batch_resource);
-
-    return beam.make_ok_term(env, batch_resource);
+    return batch.create(Transfer, env, capacity);
 }
 
 export fn add_account(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
@@ -177,7 +132,7 @@ export fn add_account(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF
 
     const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
 
-    return add_batch_item(Account, env, args[0]);
+    return batch.add_item(Account, env, args[0]);
 }
 
 export fn add_transfer(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
@@ -185,23 +140,7 @@ export fn add_transfer(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NI
 
     const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
 
-    return add_batch_item(Transfer, env, args[0]);
-}
-
-fn add_batch_item(comptime T: anytype, env: ?*e.ErlNifEnv, batch_term: e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    const resource_type = batch_resource_type(T);
-    const batch = beam_extras.resource_ptr(Batch(T), env, resource_type, batch_term) catch |err|
-        switch (err) {
-        error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
-    };
-
-    if (batch.len + 1 > batch.items.len) {
-        return beam.make_error_atom(env, "batch_full");
-    }
-    batch.len += 1;
-    batch.items[batch.len - 1] = std.mem.zeroInit(T, .{});
-
-    return beam.make_ok(env);
+    return batch.add_item(Transfer, env, args[0]);
 }
 
 fn set_account_field(
@@ -214,7 +153,7 @@ fn set_account_field(
 
     const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
 
-    const account_batch = beam_extras.resource_ptr(AccountBatch, env, account_batch_resource_type, args[0]) catch |err|
+    const account_batch = beam_extras.resource_ptr(AccountBatch, env, resource_types.account_batch, args[0]) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
@@ -301,7 +240,7 @@ fn set_transfer_field(
 
     const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
 
-    const transfer_batch = beam_extras.resource_ptr(TransferBatch, env, transfer_batch_resource_type, args[0]) catch |err|
+    const transfer_batch = beam_extras.resource_ptr(TransferBatch, env, resource_types.transfer_batch, args[0]) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
@@ -425,13 +364,13 @@ export fn set_transfer_amount(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e
     return set_transfer_field(.amount, env, argc, argv);
 }
 
-fn submit_batch(comptime T: anytype, env: ?*e.ErlNifEnv, client_term: e.ERL_NIF_TERM, batch_term: e.ERL_NIF_TERM) !e.ERL_NIF_TERM {
-    const client = beam_extras.resource_ptr(Client, env, client_resource_type, client_term) catch |err|
+fn submit_batch(comptime T: anytype, env: ?*e.ErlNifEnv, client_term: e.ERL_NIF_TERM, payload_term: e.ERL_NIF_TERM) !e.ERL_NIF_TERM {
+    const client = beam_extras.resource_ptr(Client, env, resource_types.client, client_term) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_client"),
     };
 
-    var batch: Batch(T) = resource.fetch(Batch(T), env, batch_resource_type(T), batch_term) catch |err|
+    var payload: Batch(T) = resource.fetch(Batch(T), env, resource_types.from_batch_type(T), payload_term) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
@@ -473,8 +412,8 @@ fn submit_batch(comptime T: anytype, env: ?*e.ErlNifEnv, client_term: e.ERL_NIF_
     };
     // TODO: how much does this need to be valid? Should we increment the refcount on the
     // resource to avoid it gets garbage collected while this is in-flight?
-    packet.data = batch.items.ptr;
-    packet.data_size = @sizeOf(T) * batch.len;
+    packet.data = payload.items.ptr;
+    packet.data_size = @sizeOf(T) * payload.len;
     packet.user_data = ctx;
     packet.status = .ok;
 
@@ -555,7 +494,7 @@ export fn on_completion(
     }
 }
 
-export fn client_resource_deinit(_: ?*e.ErlNifEnv, ptr: ?*anyopaque) void {
+fn client_resource_deinit(_: ?*e.ErlNifEnv, ptr: ?*anyopaque) callconv(.C) void {
     if (ptr) |p| {
         const client: *Client = @ptrCast(*Client, @alignCast(@alignOf(*Client), p));
         tb_client.tb_client_deinit(client.c_client);
@@ -566,8 +505,8 @@ fn batch_deinit_fn(comptime T: anytype) fn (env: ?*e.ErlNifEnv, ptr: ?*anyopaque
     return struct {
         pub fn deinit_fn(_: ?*e.ErlNifEnv, ptr: ?*anyopaque) callconv(.C) void {
             if (ptr) |p| {
-                const batch: *T = @ptrCast(*T, @alignCast(@alignOf(*T), p));
-                beam.general_purpose_allocator.free(batch.items);
+                const b: *T = @ptrCast(*T, @alignCast(@alignOf(*T), p));
+                beam.general_purpose_allocator.free(b.items);
             } else unreachable;
         }
     }.deinit_fn;
@@ -729,7 +668,7 @@ export fn nif_init() *const e.ErlNifEntry {
 }
 
 export fn nif_load(env: ?*e.ErlNifEnv, _: [*c]?*anyopaque, _: e.ErlNifTerm) c_int {
-    client_resource_type = e.enif_open_resource_type(
+    resource_types.client = e.enif_open_resource_type(
         env,
         null,
         "tigerbeetlex_client",
@@ -737,7 +676,7 @@ export fn nif_load(env: ?*e.ErlNifEnv, _: [*c]?*anyopaque, _: e.ErlNifTerm) c_in
         e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
         null,
     );
-    account_batch_resource_type = e.enif_open_resource_type(
+    resource_types.account_batch = e.enif_open_resource_type(
         env,
         null,
         "tigerbeetlex_account_batch",
@@ -745,7 +684,7 @@ export fn nif_load(env: ?*e.ErlNifEnv, _: [*c]?*anyopaque, _: e.ErlNifTerm) c_in
         e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
         null,
     );
-    transfer_batch_resource_type = e.enif_open_resource_type(
+    resource_types.transfer_batch = e.enif_open_resource_type(
         env,
         null,
         "tigerbeetlex_transfer_batch",

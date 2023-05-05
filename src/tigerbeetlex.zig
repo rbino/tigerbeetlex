@@ -171,7 +171,7 @@ export fn nif_init() *const e.ErlNifEntry {
     return &entry;
 }
 
-export fn nif_load(env: ?*e.ErlNifEnv, _: [*c]?*anyopaque, _: e.ErlNifTerm) c_int {
+export fn nif_load(env: beam.env, _: [*c]?*anyopaque, _: beam.term) c_int {
     resource_types.client = e.enif_open_resource_type(
         env,
         null,

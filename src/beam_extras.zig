@@ -4,12 +4,12 @@ const e = @import("erl_nif");
 const resource = beam.resource;
 
 /// Raise a generic exception
-pub fn raise(env: ?*e.ErlNifEnv, reason: []const u8) e.ErlNifTerm {
+pub fn raise(env: beam.env, reason: []const u8) beam.term {
     return e.enif_raise_exception(env, beam.make_atom(env, reason));
 }
 
 /// Return a pointer to a mutable resource, more ergonomic than doing fetch + update
-pub fn resource_ptr(comptime T: type, environment: beam.env, res_typ: beam.resource_type, res_trm: e.ErlNifTerm) !*T {
+pub fn resource_ptr(comptime T: type, environment: beam.env, res_typ: beam.resource_type, res_trm: beam.term) !*T {
     var obj: ?*anyopaque = undefined;
 
     if (0 == e.enif_get_resource(environment, res_trm, res_typ, @ptrCast([*c]?*anyopaque, &obj))) {
@@ -30,7 +30,7 @@ pub fn resource_ptr(comptime T: type, environment: beam.env, res_typ: beam.resou
 }
 
 /// Extract a u128 from a binary (little endian) term
-pub fn get_u128(env: beam.env, src_term: e.ErlNifTerm) !u128 {
+pub fn get_u128(env: beam.env, src_term: beam.term) !u128 {
     const bin = try beam.get_char_slice(env, src_term);
     const required_length = @sizeOf(u128) / @sizeOf(u8);
 

@@ -1,12 +1,14 @@
 const std = @import("std");
 const Mutex = std.Thread.Mutex;
 
+const account_batch = @import("account_batch.zig");
 const batch = @import("batch.zig");
 const beam = @import("beam");
 const beam_extras = @import("beam_extras.zig");
 const e = @import("erl_nif");
 const resource = beam.resource;
 const resource_types = @import("resource_types.zig");
+const AccountBatch = account_batch.AccountBatch;
 
 const tb = @import("tigerbeetle");
 const tb_client = @import("tb_client.zig");
@@ -14,11 +16,9 @@ const Packet = tb_client.tb_packet_t;
 const vsr = @import("vsr");
 
 const Account = tb.Account;
-const AccountFlags = tb.AccountFlags;
 const Transfer = tb.Transfer;
 const TransferFlags = tb.TransferFlags;
 
-const AccountBatch = batch.AccountBatch;
 const Batch = batch.Batch;
 const TransferBatch = batch.TransferBatch;
 
@@ -105,17 +105,6 @@ export fn client_init(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF
     return beam.make_ok_term(env, client_resource);
 }
 
-export fn create_account_batch(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    if (argc != 1) unreachable;
-
-    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
-
-    const capacity: u32 = beam.get_u32(env, args[0]) catch
-        return beam.raise_function_clause_error(env);
-
-    return batch.create(Account, env, capacity);
-}
-
 export fn create_transfer_batch(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
     if (argc != 1) unreachable;
 
@@ -127,107 +116,12 @@ export fn create_transfer_batch(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const
     return batch.create(Transfer, env, capacity);
 }
 
-export fn add_account(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    if (argc != 1) unreachable;
-
-    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
-
-    return batch.add_item(Account, env, args[0]);
-}
-
 export fn add_transfer(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
     if (argc != 1) unreachable;
 
     const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
 
     return batch.add_item(Transfer, env, args[0]);
-}
-
-fn set_account_field(
-    comptime field: std.meta.FieldEnum(Account),
-    env: ?*e.ErlNifEnv,
-    argc: c_int,
-    argv: [*c]const e.ERL_NIF_TERM,
-) e.ERL_NIF_TERM {
-    if (argc != 3) unreachable;
-
-    const args = @ptrCast([*]const e.ERL_NIF_TERM, argv)[0..@intCast(usize, argc)];
-
-    const account_batch = beam_extras.resource_ptr(AccountBatch, env, resource_types.account_batch, args[0]) catch |err|
-        switch (err) {
-        error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
-    };
-
-    const idx: u32 = beam.get_u32(env, args[1]) catch
-        return beam.raise_function_clause_error(env);
-
-    if (idx >= account_batch.len) {
-        return beam.make_error_atom(env, "out_of_bounds");
-    }
-
-    const account: *Account = &account_batch.items[idx];
-
-    switch (field) {
-        .id => {
-            const id = beam_extras.get_u128(env, args[2]) catch
-                return beam.raise_function_clause_error(env);
-
-            account.id = id;
-        },
-        .user_data => {
-            const user_data = beam_extras.get_u128(env, args[2]) catch
-                return beam.raise_function_clause_error(env);
-
-            account.user_data = user_data;
-        },
-        .ledger => {
-            const ledger = beam.get_u32(env, args[2]) catch
-                return beam.raise_function_clause_error(env);
-
-            account.ledger = ledger;
-        },
-        .code => {
-            const code = beam.get_u16(env, args[2]) catch
-                return beam.raise_function_clause_error(env);
-
-            account.code = code;
-        },
-        .flags => {
-            const flags_uint = beam.get_u16(env, args[2]) catch
-                return beam.raise_function_clause_error(env);
-
-            const flags: AccountFlags = @bitCast(AccountFlags, flags_uint);
-
-            // Mutually exclusive
-            if (flags.debits_must_not_exceed_credits and flags.credits_must_not_exceed_debits)
-                return beam.raise_function_clause_error(env);
-
-            account.flags = flags;
-        },
-        else => unreachable,
-    }
-
-    return beam.make_ok(env);
-}
-
-export fn set_account_id(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    return set_account_field(.id, env, argc, argv);
-}
-
-export fn set_account_user_data(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    return set_account_field(.user_data, env, argc, argv);
-}
-
-export fn set_account_ledger(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    return set_account_field(.ledger, env, argc, argv);
-}
-
-export fn set_account_code(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    return set_account_field(.code, env, argc, argv);
-}
-
-export fn set_account_flags(env: ?*e.ErlNifEnv, argc: c_int, argv: [*c]const e.ERL_NIF_TERM) e.ERL_NIF_TERM {
-    return set_account_field(.flags, env, argc, argv);
 }
 
 fn set_transfer_field(
@@ -522,43 +416,43 @@ export var __exported_nifs__ = [_]e.ErlNifFunc{
     e.ErlNifFunc{
         .name = "create_account_batch",
         .arity = 1,
-        .fptr = create_account_batch,
+        .fptr = account_batch.create,
         .flags = 0,
     },
     e.ErlNifFunc{
         .name = "add_account",
         .arity = 1,
-        .fptr = add_account,
+        .fptr = account_batch.add_account,
         .flags = 0,
     },
     e.ErlNifFunc{
         .name = "set_account_id",
         .arity = 3,
-        .fptr = set_account_id,
+        .fptr = account_batch.set_account_id,
         .flags = 0,
     },
     e.ErlNifFunc{
         .name = "set_account_user_data",
         .arity = 3,
-        .fptr = set_account_user_data,
+        .fptr = account_batch.set_account_user_data,
         .flags = 0,
     },
     e.ErlNifFunc{
         .name = "set_account_ledger",
         .arity = 3,
-        .fptr = set_account_ledger,
+        .fptr = account_batch.set_account_ledger,
         .flags = 0,
     },
     e.ErlNifFunc{
         .name = "set_account_code",
         .arity = 3,
-        .fptr = set_account_code,
+        .fptr = account_batch.set_account_code,
         .flags = 0,
     },
     e.ErlNifFunc{
         .name = "set_account_flags",
         .arity = 3,
-        .fptr = set_account_flags,
+        .fptr = account_batch.set_account_flags,
         .flags = 0,
     },
     e.ErlNifFunc{

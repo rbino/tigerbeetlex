@@ -92,12 +92,27 @@ pub fn init(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) 
     return beam.make_ok_term(env, client_resource);
 }
 
-fn submit_batch(comptime T: anytype, env: beam.env, client_term: beam.term, payload_term: beam.term) !beam.term {
+fn batch_item_type_for_operation(comptime operation: tb_client.tb_operation_t) type {
+    return switch (operation) {
+        .create_accounts => Account,
+        .create_transfers => Transfer,
+        .lookup_accounts, .lookup_transfers => u128,
+        else => unreachable,
+    };
+}
+
+fn submit(
+    comptime operation: tb_client.tb_operation_t,
+    env: beam.env,
+    client_term: beam.term,
+    payload_term: beam.term,
+) !beam.term {
     const client = beam_extras.resource_ptr(Client, env, resource_types.client, client_term) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_client"),
     };
 
+    const T = batch_item_type_for_operation(operation);
     var payload: Batch(T) = resource.fetch(Batch(T), env, resource_types.from_batch_type(T), payload_term) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
@@ -132,12 +147,8 @@ fn submit_batch(comptime T: anytype, env: beam.env, client_term: beam.term, payl
     if (e.enif_term_to_binary(env, ref, &ctx.request_ref_binary) == 0)
         return beam.make_error_atom(env, "out_of_memory");
 
-    packet.operation =
-        switch (T) {
-        Account => @enumToInt(tb_client.tb_operation_t.create_accounts),
-        Transfer => @enumToInt(tb_client.tb_operation_t.create_transfers),
-        else => unreachable,
-    };
+    packet.operation = @enumToInt(operation);
+
     // TODO: how much does this need to be valid? Should we increment the refcount on the
     // resource to avoid it gets garbage collected while this is in-flight?
     packet.data = payload.items.ptr;
@@ -159,7 +170,7 @@ pub fn create_accounts(env: beam.env, argc: c_int, argv: [*c]const beam.term) ca
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
-    return submit_batch(Account, env, args[0], args[1]) catch |err| switch (err) {
+    return submit(.create_accounts, env, args[0], args[1]) catch |err| switch (err) {
         error.MutexLocked => return e.enif_schedule_nif(env, "create_accounts", 0, create_accounts, argc, argv),
     };
 }
@@ -169,7 +180,7 @@ pub fn create_transfers(env: beam.env, argc: c_int, argv: [*c]const beam.term) c
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
-    return submit_batch(Transfer, env, args[0], args[1]) catch |err| switch (err) {
+    return submit(.create_transfers, env, args[0], args[1]) catch |err| switch (err) {
         error.MutexLocked => return e.enif_schedule_nif(env, "create_transfers", 0, create_transfers, argc, argv),
     };
 }

@@ -24,3 +24,6 @@ tigerbeetlex-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Sometimes created in the root folder
+zig-cache/

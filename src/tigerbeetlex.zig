@@ -3,9 +3,11 @@ const e = @import("erl_nif");
 
 const account_batch = @import("account_batch.zig");
 const client = @import("client.zig");
+const id_batch = @import("id_batch.zig");
 const resource_types = @import("resource_types.zig");
 const transfer_batch = @import("transfer_batch.zig");
 const AccountBatch = account_batch.AccountBatch;
+const IdBatch = id_batch.IdBatch;
 const TransferBatch = transfer_batch.TransferBatch;
 const Client = client.Client;
 
@@ -149,6 +151,24 @@ export var __exported_nifs__ = [_]e.ErlNifFunc{
         .fptr = client.create_transfers,
         .flags = 0,
     },
+    e.ErlNifFunc{
+        .name = "create_id_batch",
+        .arity = 1,
+        .fptr = id_batch.create,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "add_id",
+        .arity = 2,
+        .fptr = id_batch.add_id,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "set_id",
+        .arity = 3,
+        .fptr = id_batch.set_id,
+        .flags = 0,
+    },
 };
 
 const entry = e.ErlNifEntry{
@@ -185,6 +205,14 @@ export fn nif_load(env: beam.env, _: [*c]?*anyopaque, _: beam.term) c_int {
         null,
         "tigerbeetlex_account_batch",
         resource_types.batch_deinit_fn(AccountBatch),
+        e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
+        null,
+    );
+    resource_types.id_batch = e.enif_open_resource_type(
+        env,
+        null,
+        "tigerbeetlex_id_batch",
+        resource_types.batch_deinit_fn(IdBatch),
         e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
         null,
     );

@@ -12,12 +12,16 @@ pub var client: beam.resource_type = undefined;
 // The resource type for the account batch
 pub var account_batch: beam.resource_type = undefined;
 
+// The resource type for an ID batch
+pub var id_batch: beam.resource_type = undefined;
+
 // The resource type for the transfer batch
 pub var transfer_batch: beam.resource_type = undefined;
 
 pub fn from_batch_type(comptime T: anytype) beam.resource_type {
     return switch (T) {
         Account => account_batch,
+        u128 => id_batch,
         Transfer => transfer_batch,
         else => unreachable,
     };

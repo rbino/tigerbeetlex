@@ -37,5 +37,5 @@ pub fn get_u128(env: beam.env, src_term: beam.term) !u128 {
     // We represent the u128 as a 16 byte binary, little endian (required by TigerBeetle)
     if (bin.len != required_length) return error.InvalidU128;
 
-    return std.mem.readIntNative(u128, bin[0..required_length]);
+    return std.mem.readIntLittle(u128, bin[0..required_length]);
 }

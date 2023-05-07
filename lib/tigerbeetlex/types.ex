@@ -51,4 +51,16 @@ defmodule TigerBeetlex.Types do
           | {:error, :invalid_batch}
           | {:error, :out_of_memory}
           | {:error, :too_many_requests}
+
+  @type lookup_accounts_errors ::
+          {:error, :invalid_client}
+          | {:error, :invalid_batch}
+          | {:error, :out_of_memory}
+          | {:error, :too_many_requests}
+
+  @type lookup_transfers_errors ::
+          {:error, :invalid_client}
+          | {:error, :invalid_batch}
+          | {:error, :out_of_memory}
+          | {:error, :too_many_requests}
 end

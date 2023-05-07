@@ -169,6 +169,18 @@ export var __exported_nifs__ = [_]e.ErlNifFunc{
         .fptr = id_batch.set_id,
         .flags = 0,
     },
+    e.ErlNifFunc{
+        .name = "lookup_accounts",
+        .arity = 2,
+        .fptr = client.lookup_accounts,
+        .flags = 0,
+    },
+    e.ErlNifFunc{
+        .name = "lookup_transfers",
+        .arity = 2,
+        .fptr = client.lookup_transfers,
+        .flags = 0,
+    },
 };
 
 const entry = e.ErlNifEntry{

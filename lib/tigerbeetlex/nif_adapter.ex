@@ -186,4 +186,12 @@ defmodule TigerBeetlex.NifAdapter do
   @spec set_id(id_batch :: Types.id_batch(), index :: non_neg_integer(), id :: Types.uint128()) ::
           :ok | Types.setter_errors()
   def set_id(_id_batch, _index, _id), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec lookup_accounts(client :: Types.client(), id_batch :: Types.id_batch()) ::
+          {:ok, reference()} | Types.lookup_accounts_errors()
+  def lookup_accounts(_client, _id_batch), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec lookup_transfers(client :: Types.client(), id_batch :: Types.id_batch()) ::
+          {:ok, reference()} | Types.lookup_transfers_errors()
+  def lookup_transfers(_client, _id_batch), do: :erlang.nif_error(:nif_not_loaded)
 end

@@ -185,6 +185,26 @@ pub fn create_transfers(env: beam.env, argc: c_int, argv: [*c]const beam.term) c
     };
 }
 
+pub fn lookup_accounts(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+    if (argc != 2) unreachable;
+
+    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+
+    return submit(.lookup_accounts, env, args[0], args[1]) catch |err| switch (err) {
+        error.MutexLocked => return e.enif_schedule_nif(env, "lookup_accounts", 0, create_accounts, argc, argv),
+    };
+}
+
+pub fn lookup_transfers(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+    if (argc != 2) unreachable;
+
+    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+
+    return submit(.lookup_transfers, env, args[0], args[1]) catch |err| switch (err) {
+        error.MutexLocked => return e.enif_schedule_nif(env, "lookup_transfers", 0, create_transfers, argc, argv),
+    };
+}
+
 fn on_completion(
     context: usize,
     client: tb_client.tb_client_t,
@@ -232,4 +252,3 @@ fn on_completion(
         ctx.packet_pool.push(tb_client.tb_packet_list_t.from(packet));
     }
 }
-

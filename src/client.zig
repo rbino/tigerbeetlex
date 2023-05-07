@@ -233,14 +233,20 @@ fn on_completion(
     else
         beam.make_nil(env);
 
-    const msg =
-        e.enif_make_tuple5(
+    const response =
+        e.enif_make_tuple3(
         env,
-        beam.make_atom(env, "tb_response"),
-        ref,
-        beam.make_u8(env, operation),
         beam.make_u8(env, @enumToInt(status)),
+        beam.make_u8(env, operation),
         result,
+    );
+
+    const msg =
+        e.enif_make_tuple3(
+        env,
+        beam.make_atom(env, "tigerbeetlex_response"),
+        ref,
+        response,
     );
 
     if (e.enif_send(null, &caller_pid, env, msg) == 0) unreachable;

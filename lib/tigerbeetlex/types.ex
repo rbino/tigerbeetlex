@@ -28,6 +28,7 @@ defmodule TigerBeetlex.Types do
           {:error, :invalid_client}
           | {:error, :invalid_batch}
           | {:error, :out_of_memory}
+          | {:error, :too_many_requests}
 
   @type add_account_errors ::
           {:error, :invalid_batch}
@@ -49,4 +50,5 @@ defmodule TigerBeetlex.Types do
           {:error, :invalid_client}
           | {:error, :invalid_batch}
           | {:error, :out_of_memory}
+          | {:error, :too_many_requests}
 end

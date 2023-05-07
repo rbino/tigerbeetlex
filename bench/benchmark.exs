@@ -1,4 +1,4 @@
-{:ok, client} = TigerBeetlex.NifAdapter.client_init(0, "3000", 1)
+{:ok, client} = TigerBeetlex.Processless.Client.connect(0, "3000", 1)
 
 samples = 1_000_000
 batch_size = 8191
@@ -15,46 +15,34 @@ bench = fn ->
   {total, max} =
     Enum.reduce(chunks, {0, 0}, fn chunk, {time_total_us, max_batch_us} ->
       start_batch = :erlang.monotonic_time()
-      {:ok, batch} = TigerBeetlex.NifAdapter.create_transfer_batch(batch_size)
+      {:ok, batch} = TigerBeetlex.TransferBatch.new(batch_size)
 
       Enum.each(chunk, fn idx ->
-        :ok = TigerBeetlex.NifAdapter.add_transfer(batch)
-
-        :ok =
-          TigerBeetlex.NifAdapter.set_transfer_id(batch, idx, <<0::unsigned-little-size(128)>>)
-
-        :ok =
-          TigerBeetlex.NifAdapter.set_transfer_debit_account_id(
-            batch,
-            idx,
-            <<0::unsigned-little-size(128)>>
+        {:ok, _batch} =
+          TigerBeetlex.TransferBatch.add_transfer(batch,
+            id: <<0::unsigned-little-size(128)>>,
+            debit_account_id: <<0::unsigned-little-size(128)>>,
+            credit_account_id: <<0::unsigned-little-size(128)>>,
+            ledger: 1,
+            code: 1,
+            amount: 10
           )
-
-        :ok =
-          TigerBeetlex.NifAdapter.set_transfer_credit_account_id(
-            batch,
-            idx,
-            <<0::unsigned-little-size(128)>>
-          )
-
-        :ok = TigerBeetlex.NifAdapter.set_transfer_ledger(batch, idx, 1)
-        :ok = TigerBeetlex.NifAdapter.set_transfer_code(batch, idx, 1)
-        :ok = TigerBeetlex.NifAdapter.set_transfer_amount(batch, idx, 10)
       end)
 
       submit_fun = fn ->
-        {:ok, ref} = TigerBeetlex.NifAdapter.create_transfers(client, batch)
+        {:ok, ref} = TigerBeetlex.Processless.Client.create_transfers(client, batch)
 
         receive do
-          {:tigerbeetlex_response, ^ref, response} -> response
+          {:tigerbeetlex_response, ^ref, response} ->
+            TigerBeetlex.Processless.Response.to_stream(response)
         end
       end
 
       {elapsed, response} = :timer.tc(submit_fun)
 
-      {_operation, _status, result} = response
+      {:ok, stream} = response
 
-      if byte_size(result) / 8 != length(chunk), do: raise("Invalid result")
+      if length(Enum.to_list(stream)) != length(chunk), do: raise("Invalid result")
 
       max = max(max_batch_us, elapsed)
       total = time_total_us + elapsed

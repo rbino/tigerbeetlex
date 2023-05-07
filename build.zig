@@ -3,7 +3,8 @@ const std = @import("std");
 pub fn build(b: *std.build.Builder) void {
     // Standard release options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
-    const mode = b.standardReleaseOptions();
+    // TODO: toggle this from mix.exs when build_dot_zig supports it
+    const mode = .ReleaseSafe;
 
     const options = b.addOptions();
 

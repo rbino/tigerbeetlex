@@ -26,7 +26,8 @@ defmodule TigerBeetlex.MixProject do
       {:build_dot_zig, "~> 0.1.0", runtime: false},
       {:zigler, "~> 0.9.1", runtime: false},
       # Needed to make Zigler work
-      {:ex_doc, "== 0.29.0", runtime: false, override: true}
+      {:ex_doc, "== 0.29.0", runtime: false, override: true},
+      {:typed_struct, "~> 0.3.0"}
     ]
   end
 end

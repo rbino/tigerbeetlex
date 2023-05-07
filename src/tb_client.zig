@@ -6,10 +6,7 @@ pub usingnamespace tb;
 const constants = @import("tigerbeetle/src/constants.zig");
 const Storage = @import("tigerbeetle/src/storage.zig").Storage;
 const MessageBus = @import("tigerbeetle/src/message_bus.zig").MessageBusClient;
-const StateMachine = @import("tigerbeetle/src/state_machine.zig").StateMachineType(Storage, .{
-    .message_body_size_max = constants.message_body_size_max,
-    .lsm_batch_multiple = constants.lsm_batch_multiple,
-});
+const StateMachine = @import("tigerbeetle/src/state_machine.zig").StateMachineType(Storage, constants.state_machine_config);
 
 const ContextType = @import("tigerbeetle/src/clients/c/tb_client/context.zig").ContextType;
 const ContextImplementation = @import("tigerbeetle/src/clients/c/tb_client/context.zig").ContextImplementation;

@@ -16,6 +16,8 @@ pub const vsr_options = .{
     .config_base = vsr.config.ConfigBase.default,
     .tracer_backend = vsr.config.TracerBackend.none,
     .hash_log_mode = vsr.config.HashLogMode.none,
+    .config_aof_record = false,
+    .config_aof_recovery = false,
 };
 
 export var __exported_nifs__ = [_]e.ErlNifFunc{

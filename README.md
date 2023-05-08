@@ -1,6 +1,10 @@
 # TigerBeetlex
 
-**TODO: Add description**
+Elixir client for [TigerBeetle](https://github.com/tigerbeetledb/tigerbeetle).
+
+## Usage
+
+More documentation is coming, for now check out the integration test in the `test` directory.
 
 ## Installation
 

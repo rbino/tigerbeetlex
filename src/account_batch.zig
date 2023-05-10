@@ -32,102 +32,73 @@ pub fn add_account(env: beam.env, argc: c_int, argv: [*c]const beam.term) callco
     };
 }
 
-fn set_account_field(
+pub const set_account_id = field_setter_fn(.id);
+pub const set_account_user_data = field_setter_fn(.user_data);
+pub const set_account_ledger = field_setter_fn(.ledger);
+pub const set_account_code = field_setter_fn(.code);
+pub const set_account_flags = field_setter_fn(.flags);
+
+fn field_setter_fn(comptime field: std.meta.FieldEnum(Account)) fn (
+    beam.env,
+    c_int,
+    [*c]const beam.term,
+) callconv(.C) beam.term {
+    const field_name = @tagName(field);
+    const setter_name = "set_account_" ++ field_name;
+
+    return struct {
+        fn setter_fn(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+            if (argc != 3) unreachable;
+
+            const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+
+            const account_batch = beam_extras.resource_ptr(AccountBatch, env, resource_types.account_batch, args[0]) catch |err|
+                switch (err) {
+                error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
+            };
+
+            const idx: u32 = beam.get_u32(env, args[1]) catch
+                return beam.raise_function_clause_error(env);
+
+            const term_to_value = term_to_value_fn(field);
+            const new_value = term_to_value(env, args[2]) catch
+                return beam.raise_function_clause_error(env);
+
+            {
+                if (!account_batch.mutex.tryLock()) {
+                    return e.enif_schedule_nif(env, setter_name, 0, setter_fn, argc, argv);
+                }
+                defer account_batch.mutex.unlock();
+
+                if (idx >= account_batch.len) {
+                    return beam.make_error_atom(env, "out_of_bounds");
+                }
+
+                const account: *Account = &account_batch.items[idx];
+
+                @field(account, field_name) = new_value;
+            }
+
+            return beam.make_ok(env);
+        }
+    }.setter_fn;
+}
+
+fn term_to_value_fn(
     comptime field: std.meta.FieldEnum(Account),
-    env: beam.env,
-    argc: c_int,
-    argv: [*c]const beam.term,
-) !beam.term {
-    if (argc != 3) unreachable;
-
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
-
-    const account_batch = beam_extras.resource_ptr(AccountBatch, env, resource_types.account_batch, args[0]) catch |err|
-        switch (err) {
-        error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
-    };
-
-    const idx: u32 = beam.get_u32(env, args[1]) catch
-        return beam.raise_function_clause_error(env);
-
-    {
-        if (!account_batch.mutex.tryLock()) {
-            return error.MutexLocked;
-        }
-        defer account_batch.mutex.unlock();
-
-        if (idx >= account_batch.len) {
-            return beam.make_error_atom(env, "out_of_bounds");
-        }
-
-        const account: *Account = &account_batch.items[idx];
-
-        switch (field) {
-            .id => {
-                const id = beam_extras.get_u128(env, args[2]) catch
-                    return beam.raise_function_clause_error(env);
-
-                account.id = id;
-            },
-            .user_data => {
-                const user_data = beam_extras.get_u128(env, args[2]) catch
-                    return beam.raise_function_clause_error(env);
-
-                account.user_data = user_data;
-            },
-            .ledger => {
-                const ledger = beam.get_u32(env, args[2]) catch
-                    return beam.raise_function_clause_error(env);
-
-                account.ledger = ledger;
-            },
-            .code => {
-                const code = beam.get_u16(env, args[2]) catch
-                    return beam.raise_function_clause_error(env);
-
-                account.code = code;
-            },
-            .flags => {
-                const flags_uint = beam.get_u16(env, args[2]) catch
-                    return beam.raise_function_clause_error(env);
-
-                const flags: AccountFlags = @bitCast(AccountFlags, flags_uint);
-
-                account.flags = flags;
-            },
-            else => unreachable,
-        }
-    }
-
-    return beam.make_ok(env);
-}
-
-pub fn set_account_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    return set_account_field(.id, env, argc, argv) catch |err| switch (err) {
-        error.MutexLocked => return e.enif_schedule_nif(env, "set_account_id", 0, set_account_id, argc, argv),
+) fn (beam.env, beam.term) beam.Error!std.meta.fieldInfo(Account, field).field_type {
+    return switch (field) {
+        .id, .user_data => beam_extras.get_u128,
+        .ledger => beam.get_u32,
+        .code => beam.get_u16,
+        .flags => term_to_account_flags,
+        else => unreachable,
     };
 }
 
-pub fn set_account_user_data(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    return set_account_field(.user_data, env, argc, argv) catch |err| switch (err) {
-        error.MutexLocked => return e.enif_schedule_nif(env, "set_account_user_data", 0, set_account_user_data, argc, argv),
-    };
-}
+fn term_to_account_flags(env: beam.env, term: beam.term) beam.Error!AccountFlags {
+    const flags_uint = beam.get_u16(env, term) catch
+        return beam.Error.FunctionClauseError;
 
-pub fn set_account_ledger(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    return set_account_field(.ledger, env, argc, argv) catch |err| switch (err) {
-        error.MutexLocked => return e.enif_schedule_nif(env, "set_account_ledger", 0, set_account_ledger, argc, argv),
-    };
-}
-
-pub fn set_account_code(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    return set_account_field(.code, env, argc, argv) catch |err| switch (err) {
-        error.MutexLocked => return e.enif_schedule_nif(env, "set_account_code", 0, set_account_code, argc, argv),
-    };
-}
-
-pub fn set_account_flags(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    return set_account_field(.flags, env, argc, argv) catch |err| switch (err) {
-        error.MutexLocked => return e.enif_schedule_nif(env, "set_account_flags", 0, set_account_flags, argc, argv),
-    };
+    return @bitCast(AccountFlags, flags_uint);
 }

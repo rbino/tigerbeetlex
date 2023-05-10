@@ -93,10 +93,6 @@ fn set_account_field(
 
                 const flags: AccountFlags = @bitCast(AccountFlags, flags_uint);
 
-                // Mutually exclusive
-                if (flags.debits_must_not_exceed_credits and flags.credits_must_not_exceed_debits)
-                    return beam.raise_function_clause_error(env);
-
                 account.flags = flags;
             },
             else => unreachable,

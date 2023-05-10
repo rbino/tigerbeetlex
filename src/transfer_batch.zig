@@ -116,7 +116,6 @@ fn set_transfer_field(
                     return beam.raise_function_clause_error(env);
 
                 const flags: TransferFlags = @bitCast(TransferFlags, flags_uint);
-                // TODO: mutually exclusive flags validation?
 
                 transfer.flags = flags;
             },

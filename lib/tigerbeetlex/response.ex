@@ -1,4 +1,4 @@
-defmodule TigerBeetlex.Processless.Response do
+defmodule TigerBeetlex.Response do
   use TypedStruct
 
   alias TigerBeetlex.{

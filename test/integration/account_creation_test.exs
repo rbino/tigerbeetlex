@@ -4,14 +4,11 @@ defmodule TigerBeetlex.SimpleTest do
   alias TigerBeetlex.{
     Account,
     AccountBatch,
+    Client,
     IDBatch,
+    Response,
     TransferBatch,
     Transfer
-  }
-
-  alias TigerBeetlex.Processless.{
-    Client,
-    Response
   }
 
   test "a simple sequence of operations works" do

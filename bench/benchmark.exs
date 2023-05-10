@@ -1,4 +1,10 @@
-{:ok, client} = TigerBeetlex.Processless.Client.connect(0, "3000", 1)
+alias TigerBeetlex.{
+  Client,
+  Response,
+  TransferBatch
+}
+
+{:ok, client} = Client.connect(0, "3000", 1)
 
 samples = 1_000_000
 batch_size = 8191
@@ -15,11 +21,11 @@ bench = fn ->
   {total, max} =
     Enum.reduce(chunks, {0, 0}, fn chunk, {time_total_us, max_batch_us} ->
       start_batch = :erlang.monotonic_time()
-      {:ok, batch} = TigerBeetlex.TransferBatch.new(batch_size)
+      {:ok, batch} = TransferBatch.new(batch_size)
 
       Enum.each(chunk, fn idx ->
         {:ok, _batch} =
-          TigerBeetlex.TransferBatch.add_transfer(batch,
+          TransferBatch.add_transfer(batch,
             id: <<0::unsigned-little-size(128)>>,
             debit_account_id: <<0::unsigned-little-size(128)>>,
             credit_account_id: <<0::unsigned-little-size(128)>>,
@@ -30,11 +36,11 @@ bench = fn ->
       end)
 
       submit_fun = fn ->
-        {:ok, ref} = TigerBeetlex.Processless.Client.create_transfers(client, batch)
+        {:ok, ref} = Client.create_transfers(client, batch)
 
         receive do
           {:tigerbeetlex_response, ^ref, response} ->
-            TigerBeetlex.Processless.Response.to_stream(response)
+            Response.to_stream(response)
         end
       end
 

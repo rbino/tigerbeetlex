@@ -1,11 +1,11 @@
-defmodule TigerBeetlex.Processless.Client do
+defmodule TigerBeetlex.Client do
   use TypedStruct
 
   typedstruct opaque: true do
     field :ref, reference(), enforce: true
   end
 
-  alias TigerBeetlex.Processless.Client
+  alias TigerBeetlex.Client
 
   alias TigerBeetlex.AccountBatch
   alias TigerBeetlex.IDBatch

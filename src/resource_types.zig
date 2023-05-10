@@ -36,7 +36,7 @@ pub fn client_deinit_fn(_: beam.env, ptr: ?*anyopaque) callconv(.C) void {
 
 pub fn batch_deinit_fn(comptime T: anytype) fn (env: beam.env, ptr: ?*anyopaque) callconv(.C) void {
     return struct {
-        pub fn deinit_fn(_: beam.env, ptr: ?*anyopaque) callconv(.C) void {
+        fn deinit_fn(_: beam.env, ptr: ?*anyopaque) callconv(.C) void {
             if (ptr) |p| {
                 const b: *T = @ptrCast(*T, @alignCast(@alignOf(*T), p));
                 beam.general_purpose_allocator.free(b.items);

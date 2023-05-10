@@ -22,7 +22,7 @@ pub fn Batch(comptime T: anytype) type {
 pub fn create(comptime T: anytype, env: beam.env, capacity: u32) beam.term {
     const items = beam.general_purpose_allocator.alloc(T, capacity) catch |err|
         switch (err) {
-            error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
+        error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
     };
 
     const resource_type = resource_types.from_batch_type(T);
@@ -33,7 +33,7 @@ pub fn create(comptime T: anytype, env: beam.env, capacity: u32) beam.term {
     };
     const batch_resource = resource.create(Batch(T), env, resource_type, batch) catch |err|
         switch (err) {
-            error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
+        error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
     };
 
     // We immediately release the resource and just let it be managed by the garbage collector
@@ -47,7 +47,7 @@ pub fn add_item(comptime T: anytype, env: beam.env, batch_term: beam.term) beam.
     const resource_type = resource_types.from_batch_type(T);
     const batch = beam_extras.resource_ptr(Batch(T), env, resource_type, batch_term) catch |err|
         switch (err) {
-            error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
+        error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
 
     if (batch.len + 1 > batch.items.len) {

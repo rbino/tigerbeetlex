@@ -15,7 +15,14 @@ defmodule TigerBeetlex.CreateAccountError do
           | :ledger_must_not_be_zero
           | :code_must_not_be_zero
           | :debits_pending_must_be_zero
-          | :debits_posted_mus_be_zero
+          | :debits_posted_must_be_zero
+          | :credits_pending_must_be_zero
+          | :credits_posted_must_be_zero
+          | :exists_with_different_flags
+          | :exists_with_different_user_data
+          | :exists_with_different_ledger
+          | :exists_with_different_code
+          | :exists
 
   # Taken from tb_client.h
   @result_to_atom_map [
@@ -30,7 +37,14 @@ defmodule TigerBeetlex.CreateAccountError do
                         :ledger_must_not_be_zero,
                         :code_must_not_be_zero,
                         :debits_pending_must_be_zero,
-                        :debits_posted_mus_be_zero
+                        :debits_posted_must_be_zero,
+                        :credits_pending_must_be_zero,
+                        :credits_posted_must_be_zero,
+                        :exists_with_different_flags,
+                        :exists_with_different_user_data,
+                        :exists_with_different_ledger,
+                        :exists_with_different_code,
+                        :exists
                       ]
                       |> Enum.with_index(1)
                       |> Enum.into(%{}, fn {reason, idx} -> {idx, reason} end)

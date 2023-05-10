@@ -1,7 +1,9 @@
 const std = @import("std");
+const Mutex = std.Thread.Mutex;
 
 const beam = @import("beam");
 const beam_extras = @import("beam_extras.zig");
+const e = @import("erl_nif");
 const resource = beam.resource;
 const resource_types = @import("resource_types.zig");
 
@@ -14,6 +16,7 @@ pub const TransferBatch = Batch(Transfer);
 
 pub fn Batch(comptime T: anytype) type {
     return struct {
+        mutex: Mutex = .{},
         items: []T,
         len: u32,
     };
@@ -43,18 +46,24 @@ pub fn create(comptime T: anytype, env: beam.env, capacity: u32) beam.term {
     return beam.make_ok_term(env, batch_resource);
 }
 
-pub fn add_item(comptime T: anytype, env: beam.env, batch_term: beam.term) beam.term {
+pub fn add_item(comptime T: anytype, env: beam.env, batch_term: beam.term) !beam.term {
     const resource_type = resource_types.from_batch_type(T);
     const batch = beam_extras.resource_ptr(Batch(T), env, resource_type, batch_term) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
 
-    if (batch.len + 1 > batch.items.len) {
-        return beam.make_error_atom(env, "batch_full");
+    {
+        if (!batch.mutex.tryLock()) {
+            return error.MutexLocked;
+        }
+        defer batch.mutex.unlock();
+        if (batch.len + 1 > batch.items.len) {
+            return beam.make_error_atom(env, "batch_full");
+        }
+        batch.len += 1;
+        batch.items[batch.len - 1] = std.mem.zeroInit(T, .{});
     }
-    batch.len += 1;
-    batch.items[batch.len - 1] = std.mem.zeroInit(T, .{});
 
     return beam.make_ok(env);
 }

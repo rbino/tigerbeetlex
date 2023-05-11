@@ -1,10 +1,12 @@
-alias TigerBeetlex.{
-  Client,
-  Response,
-  TransferBatch
-}
+alias TigerBeetlex.TransferBatch
 
-{:ok, client} = Client.connect(0, "3000", 1)
+{:ok, _pid} =
+  TigerBeetlex.start_link(
+    name: :tb,
+    cluster_id: 0,
+    addresses: "3000",
+    max_concurrency: 1
+  )
 
 samples = 1_000_000
 batch_size = 8191
@@ -20,10 +22,9 @@ bench = fn ->
 
   {total, max} =
     Enum.reduce(chunks, {0, 0}, fn chunk, {time_total_us, max_batch_us} ->
-      start_batch = :erlang.monotonic_time()
       {:ok, batch} = TransferBatch.new(batch_size)
 
-      Enum.each(chunk, fn idx ->
+      Enum.each(chunk, fn _idx ->
         {:ok, _batch} =
           TransferBatch.add_transfer(batch,
             id: <<0::unsigned-little-size(128)>>,
@@ -35,16 +36,7 @@ bench = fn ->
           )
       end)
 
-      submit_fun = fn ->
-        {:ok, ref} = Client.create_transfers(client, batch)
-
-        receive do
-          {:tigerbeetlex_response, ^ref, response} ->
-            Response.to_stream(response)
-        end
-      end
-
-      {elapsed, response} = :timer.tc(submit_fun)
+      {elapsed, response} = :timer.tc(fn -> TigerBeetlex.create_transfers(:tb, batch) end)
 
       {:ok, stream} = response
 

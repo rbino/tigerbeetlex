@@ -24,7 +24,7 @@ defmodule TigerBeetlex.MixProject do
   defp deps do
     [
       {:build_dot_zig, "~> 0.1.0", runtime: false},
-      {:zigler, "~> 0.9.1", runtime: false},
+      {:zigler, github: "rbino/zigler", branch: "free-large-alloc", runtime: false},
       # Needed to make Zigler work
       {:ex_doc, "== 0.29.0", runtime: false, override: true},
       {:typed_struct, "~> 0.3.0"},

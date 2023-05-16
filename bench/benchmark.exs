@@ -47,12 +47,11 @@ bench = fn ->
       {total, max}
     end)
 
-  IO.puts("Total time: #{total / 1000} ms")
-  IO.puts("Max time per batch: #{max / 1000} ms")
-  IO.puts("Transfers per second: #{samples * 1_000_000 / total}")
+  IO.puts("Total time: #{round(total / 1000)} ms")
+  IO.puts("Max time per batch: #{round(max / 1000)} ms")
+  IO.puts("Transfers per second: #{round(samples * 1_000_000 / total)}\n")
 end
 
-Enum.each(1..10, fn idx ->
-  IO.puts("Run #{idx}")
+for _idx <- 1..10 do
   bench.()
-end)
+end

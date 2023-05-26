@@ -19,9 +19,9 @@ defmodule TigerBeetlex do
     name = Keyword.fetch!(opts, :name)
     cluster_id = Keyword.fetch!(opts, :cluster_id)
     addresses = Keyword.fetch!(opts, :addresses)
-    max_concurrency = Keyword.fetch!(opts, :max_concurrency)
+    concurrency_max = Keyword.fetch!(opts, :concurrency_max)
 
-    with {:ok, client} <- Client.connect(cluster_id, addresses, max_concurrency) do
+    with {:ok, client} <- Client.connect(cluster_id, addresses, concurrency_max) do
       PartitionSupervisor.start_link(name: name, child_spec: {Server, client})
     end
   end

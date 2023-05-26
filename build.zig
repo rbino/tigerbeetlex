@@ -6,8 +6,6 @@ pub fn build(b: *std.build.Builder) void {
     // TODO: toggle this from mix.exs when build_dot_zig supports it
     const mode = .ReleaseSafe;
 
-    const options = b.addOptions();
-
     // Get ERTS_INCLUDE_DIR from env, which should be passed by :build_dot_zig
     const erts_include_dir = std.process.getEnvVarOwned(b.allocator, "ERTS_INCLUDE_DIR") catch blk: {
         // Fallback to extracting it from the erlang shell so we can also execute zig build manually
@@ -31,8 +29,6 @@ pub fn build(b: *std.build.Builder) void {
     lib.addPackagePath("beam_mutex", "deps/zigler/priv/beam/beam_mutex.zig");
     lib.addPackagePath("erl_nif", "deps/zigler/priv/beam/erl_nif.zig");
     lib.addPackagePath("tigerbeetle", "src/tigerbeetle/src/tigerbeetle.zig");
-    lib.addPackagePath("vsr", "src/vsr.zig");
-    lib.addOptions("vsr_options", options);
     lib.linkLibC();
     lib.setBuildMode(mode);
 

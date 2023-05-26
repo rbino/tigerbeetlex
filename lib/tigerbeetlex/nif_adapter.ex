@@ -16,10 +16,10 @@ defmodule TigerBeetlex.NifAdapter do
   @spec client_init(
           cluster_id :: non_neg_integer(),
           addresses :: binary(),
-          max_concurrency :: pos_integer()
+          concurrency_max :: pos_integer()
         ) ::
           {:ok, Types.client()} | Types.client_init_errors()
-  def client_init(_cluster_id, _addresses, _max_concurrency) do
+  def client_init(_cluster_id, _addresses, _concurrency_max) do
     :erlang.nif_error(:nif_not_loaded)
   end
 

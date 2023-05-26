@@ -5,7 +5,7 @@ alias TigerBeetlex.TransferBatch
     name: :tb,
     cluster_id: 0,
     addresses: "3000",
-    max_concurrency: 1
+    concurrency_max: 1
   )
 
 samples = 1_000_000

@@ -1,3 +1,4 @@
+const std = @import("std");
 const beam = @import("beam");
 const e = @import("erl_nif");
 
@@ -11,9 +12,10 @@ const IdBatch = id_batch.IdBatch;
 const TransferBatch = transfer_batch.TransferBatch;
 const Client = client.Client;
 
-const vsr = @import("vsr");
+const vsr = @import("tigerbeetle/src/vsr.zig");
 pub const vsr_options = .{
     .config_base = vsr.config.ConfigBase.default,
+    .config_log_level = std.log.Level.info,
     .tracer_backend = vsr.config.TracerBackend.none,
     .hash_log_mode = vsr.config.HashLogMode.none,
     .config_aof_record = false,

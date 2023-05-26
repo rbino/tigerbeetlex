@@ -16,13 +16,13 @@ defmodule TigerBeetlex.Client do
   @spec connect(
           cluster_id :: non_neg_integer(),
           addresses :: binary(),
-          max_concurrency :: pos_integer()
+          concurrency_max :: pos_integer()
         ) ::
           {:ok, t()} | Types.client_init_errors()
-  def connect(cluster_id, addresses, max_concurrency)
-      when cluster_id >= 0 and is_binary(addresses) and is_integer(max_concurrency) and
-             max_concurrency > 0 do
-    with {:ok, ref} <- NifAdapter.client_init(cluster_id, addresses, max_concurrency) do
+  def connect(cluster_id, addresses, concurrency_max)
+      when cluster_id >= 0 and is_binary(addresses) and is_integer(concurrency_max) and
+             concurrency_max > 0 do
+    with {:ok, ref} <- NifAdapter.client_init(cluster_id, addresses, concurrency_max) do
       {:ok, %Client{ref: ref}}
     end
   end

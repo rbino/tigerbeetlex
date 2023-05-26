@@ -1,12 +1,11 @@
 const std = @import("std");
-const Mutex = std.Thread.Mutex;
 
 const beam = @import("beam");
 const e = @import("erl_nif");
 const resource = beam.resource;
 
 const tb = @import("tigerbeetle");
-const tb_client = @import("tb_client.zig");
+const tb_client = @import("tigerbeetle/src/clients/c/tb_client.zig");
 const Account = tb.Account;
 const Transfer = tb.Transfer;
 
@@ -15,18 +14,11 @@ const beam_extras = @import("beam_extras.zig");
 const resource_types = @import("resource_types.zig");
 const Batch = batch.Batch;
 
-// Taken from tb_client/context.zig
-const packet_counts_max = 4096;
-
 pub const Client = struct {
-    c_client: tb_client.tb_client_t,
-    packets_mutex: Mutex = .{},
-    packet_pool: tb_client.tb_packet_list_t,
+    zig_client: tb_client.tb_client_t,
 };
 
 const RequestContext = struct {
-    packets_mutex: *Mutex,
-    packet_pool: *tb_client.tb_packet_list_t,
     caller_pid: beam.pid,
     request_ref_binary: beam.binary,
 };
@@ -42,45 +34,33 @@ pub fn init(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) 
     const addresses = beam.get_char_slice(env, args[1]) catch
         return beam.raise_function_clause_error(env);
 
-    const max_concurrency: u32 = beam.get_u32(env, args[2]) catch
+    const concurrency_max: u32 = beam.get_u32(env, args[2]) catch
         return beam.raise_function_clause_error(env);
-    if (max_concurrency > packet_counts_max) return beam.raise_function_clause_error(env);
 
-    var c_client: tb_client.tb_client_t = undefined;
-    var packet_pool: tb_client.tb_packet_list_t = undefined;
-
-    const status = tb_client.client_init(
+    const zig_client: tb_client.tb_client_t = tb_client.init(
         beam.general_purpose_allocator,
-        &c_client,
-        &packet_pool,
         cluster_id,
         addresses,
-        max_concurrency,
+        concurrency_max,
         @ptrToInt(e.enif_alloc_env()),
         on_completion,
-    );
+    ) catch |err| switch (err) {
+        error.Unexpected => return beam.make_error_atom(env, "unexpected"),
+        error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
+        error.AddressInvalid => return beam.make_error_atom(env, "invalid_address"),
+        error.AddressLimitExceeded => return beam.make_error_atom(env, "address_limit_exceeded"),
+        error.ConcurrencyMaxInvalid => return beam.make_error_atom(env, "invalid_concurrency_max"),
+        error.SystemResources => return beam.make_error_atom(env, "system_resources"),
+        error.NetworkSubsystemFailed => return beam.make_error_atom(env, "network_subsystem"),
+    };
 
-    if (status != .success) {
-        switch (status) {
-            .unexpected => return beam.make_error_atom(env, "unexpected"),
-            .out_of_memory => return beam.make_error_atom(env, "out_of_memory"),
-            .address_invalid => return beam.make_error_atom(env, "invalid_address"),
-            .address_limit_exceeded => return beam.make_error_atom(env, "address_limit_exceeded"),
-            // If we're here, we're out of sync with the C client
-            .packets_count_invalid => return beam_extras.raise(env, "client_out_of_sync"),
-            .system_resources => return beam.make_error_atom(env, "system_resources"),
-            .network_subsystem => return beam.make_error_atom(env, "network_subsystem"),
-            else => return beam_extras.raise(env, "invalid_error_code"),
-        }
-    }
-
-    const client = .{ .c_client = c_client, .packet_pool = packet_pool };
+    const client = .{ .zig_client = zig_client };
     const client_resource = resource.create(Client, env, resource_types.client, client) catch |err|
         switch (err) {
         error.OutOfMemory => {
             // Deinit the client
             // TODO: do some refactoring to allow using errdefer
-            tb_client.tb_client_deinit(c_client);
+            tb_client.deinit(zig_client);
             return beam.make_error_atom(env, "out_of_memory");
         },
     };
@@ -106,7 +86,7 @@ fn submit(
     env: beam.env,
     client_term: beam.term,
     payload_term: beam.term,
-) !beam.term {
+) beam.term {
     const client = beam_extras.resource_ptr(Client, env, resource_types.client, client_term) catch |err|
         switch (err) {
         error.FetchError => return beam.make_error_atom(env, "invalid_client"),
@@ -118,24 +98,19 @@ fn submit(
         error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
     };
 
-    const packet = pkt: {
-        if (!client.packets_mutex.tryLock()) {
-            return error.MutexLocked;
-        }
-        defer client.packets_mutex.unlock();
-
-        if (client.packet_pool.pop()) |packet| {
-            break :pkt packet;
-        } else {
-            return beam.make_error_atom(env, "too_many_requests");
-        }
+    var out_packet: ?*tb_client.tb_packet_t = undefined;
+    const status = tb_client.acquire_packet(client.zig_client, &out_packet);
+    const packet = switch (status) {
+        .ok => if (out_packet) |pkt| pkt else @panic("acquire packet returned null"),
+        .concurrency_max_exceeded => return beam.make_error_atom(env, "too_many_requests"),
+        .shutdown => return beam.make_error_atom(env, "shutdown"),
     };
 
-    var ctx: *RequestContext = beam.general_purpose_allocator.create(RequestContext) catch
+    var ctx: *RequestContext = beam.general_purpose_allocator.create(RequestContext) catch {
+        // TODO: do some refactoring to allow using errdefer
+        tb_client.release_packet(client.zig_client, packet);
         return beam.make_error_atom(env, "out_of_memory");
-
-    ctx.packets_mutex = &client.packets_mutex;
-    ctx.packet_pool = &client.packet_pool;
+    };
 
     if (e.enif_self(env, &ctx.caller_pid) == null) unreachable;
 
@@ -144,8 +119,11 @@ fn submit(
     // TigerBeetle's thread to copy the ref into, but we don't have it and don't
     // have any way to create it from this side, pass it to the completion function
     // and free it
-    if (e.enif_term_to_binary(env, ref, &ctx.request_ref_binary) == 0)
+    if (e.enif_term_to_binary(env, ref, &ctx.request_ref_binary) == 0) {
+        // TODO: do some refactoring to allow using errdefer
+        tb_client.release_packet(client.zig_client, packet);
         return beam.make_error_atom(env, "out_of_memory");
+    }
 
     packet.operation = @enumToInt(operation);
 
@@ -156,11 +134,7 @@ fn submit(
     packet.user_data = ctx;
     packet.status = .ok;
 
-    var packets: tb_client.tb_packet_list_t = .{};
-    packets.head = packet;
-    packets.tail = packet;
-
-    tb_client.tb_client_submit(client.c_client, &packets);
+    tb_client.submit(client.zig_client, packet);
 
     return beam.make_ok_term(env, ref);
 }
@@ -170,9 +144,7 @@ pub fn create_accounts(env: beam.env, argc: c_int, argv: [*c]const beam.term) ca
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
-    return submit(.create_accounts, env, args[0], args[1]) catch |err| switch (err) {
-        error.MutexLocked => return e.enif_schedule_nif(env, "create_accounts", 0, create_accounts, argc, argv),
-    };
+    return submit(.create_accounts, env, args[0], args[1]);
 }
 
 pub fn create_transfers(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
@@ -180,9 +152,7 @@ pub fn create_transfers(env: beam.env, argc: c_int, argv: [*c]const beam.term) c
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
-    return submit(.create_transfers, env, args[0], args[1]) catch |err| switch (err) {
-        error.MutexLocked => return e.enif_schedule_nif(env, "create_transfers", 0, create_transfers, argc, argv),
-    };
+    return submit(.create_transfers, env, args[0], args[1]);
 }
 
 pub fn lookup_accounts(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
@@ -190,9 +160,7 @@ pub fn lookup_accounts(env: beam.env, argc: c_int, argv: [*c]const beam.term) ca
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
-    return submit(.lookup_accounts, env, args[0], args[1]) catch |err| switch (err) {
-        error.MutexLocked => return e.enif_schedule_nif(env, "lookup_accounts", 0, create_accounts, argc, argv),
-    };
+    return submit(.lookup_accounts, env, args[0], args[1]);
 }
 
 pub fn lookup_transfers(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
@@ -200,9 +168,7 @@ pub fn lookup_transfers(env: beam.env, argc: c_int, argv: [*c]const beam.term) c
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
-    return submit(.lookup_transfers, env, args[0], args[1]) catch |err| switch (err) {
-        error.MutexLocked => return e.enif_schedule_nif(env, "lookup_transfers", 0, create_transfers, argc, argv),
-    };
+    return submit(.lookup_transfers, env, args[0], args[1]);
 }
 
 fn on_completion(
@@ -212,7 +178,6 @@ fn on_completion(
     result_ptr: ?[*]const u8,
     result_len: u32,
 ) callconv(.C) void {
-    _ = client;
     var ctx = @ptrCast(*RequestContext, @alignCast(@alignOf(*RequestContext), packet.user_data.?));
     defer beam.general_purpose_allocator.destroy(ctx);
 
@@ -251,10 +216,6 @@ fn on_completion(
 
     if (e.enif_send(null, &caller_pid, env, msg) == 0) unreachable;
 
-    {
-        // We're done with the packet, put it back in the pool
-        ctx.packets_mutex.lock();
-        defer ctx.packets_mutex.unlock();
-        ctx.packet_pool.push(tb_client.tb_packet_list_t.from(packet));
-    }
+    // We're done with the packet, put it back in the pool
+    tb_client.release_packet(client, packet);
 }

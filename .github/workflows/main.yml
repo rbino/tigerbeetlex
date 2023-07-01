@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  pull_request:
+  # Run when pushing to stable branches
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: true
+      matrix:
+        otp: ["25.3"]
+        elixir: ["1.14"]
+        zig: ["0.9.1"]
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install OTP and Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: ${{ matrix.zig }}
+
+      - name: Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v2
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-zig${{ matrix.zig }}-${{ hashFiles('**/mix.lock') }}
+
+      - name: Install and compile dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: mix do deps.get --only test, deps.compile
+
+      - name: Check Elixir formatting
+        run: mix format --check-formatted
+
+      - name: Check Zig formatting
+        run: zig fmt --check src/*.zig
+
+      - name: Check no unused dependencies
+        run: mix do deps.get, deps.unlock --check-unused
+        if: ${{ steps.cache-deps.outputs.cache-hit != 'true' }}
+
+      - name: Compile with --warnings-as-errors
+        run: mix compile --warnings-as-errors --force
+
+      # Don't cache PLTs based on mix.lock hash, as Dialyzer can incrementally update even old ones
+      # Cache key based on Elixir & Erlang version (also useful when running in matrix)
+      - name: Cache Dialyzer's PLT
+        uses: actions/cache@v2
+        id: cache-plt
+        with:
+          path: priv/plts
+          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}
+
+      # Create PLTs if no cache was found
+      - name: Create PLTs
+        if: steps.cache-plt.outputs.cache-hit != 'true'
+        run: mix dialyzer --plt
+
+      - name: Run Dialyzer
+        run: mix dialyzer --format github
+
+  test:
+    name: Test (Elixir ${{ matrix.elixir }}, OTP ${{ matrix.otp }}, Zig ${{ matrix.zig }}
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # TODO: add OTP 26 + Elixir 1.15, right now there seem to be some problems with setup-beam,
+          # see https://github.com/erlef/setup-beam/issues/220
+          - otp: "25.3"
+            elixir: "1.14"
+            zig: "0.9.1"
+
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Start Docker and wait for it to be up
+        working-directory: ./test/docker
+        run: |
+          docker-compose up --detach
+          ./health-check-services.sh
+
+      - name: Install OTP and Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: ${{ matrix.zig }}
+
+      - name: Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v2
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-zig${{ matrix.zig }}-${{ hashFiles('**/mix.lock') }}
+
+      - name: Install and compile dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get --only test
+          mix deps.compile
+
+      - name: Run tests
+        run: mix test
+
+      - name: Dump Docker logs on failure
+        uses: jwalton/gh-docker-logs@v1
+        if: failure()

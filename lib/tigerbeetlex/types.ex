@@ -5,6 +5,8 @@ defmodule TigerBeetlex.Types do
 
   @type transfer_batch :: reference()
 
+  @type id_batch :: reference()
+
   @type uint128 :: <<_::128>>
 
   @type client_init_errors ::

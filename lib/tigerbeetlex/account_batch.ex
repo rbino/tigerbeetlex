@@ -1,7 +1,7 @@
 defmodule TigerBeetlex.AccountBatch do
   use TypedStruct
 
-  typedstruct opaque: true do
+  typedstruct do
     field :ref, reference(), enforce: true
     # TODO: we already track this internally in the resource, we should probably read the info
     # from there

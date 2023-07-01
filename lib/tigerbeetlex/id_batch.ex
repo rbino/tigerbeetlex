@@ -1,7 +1,7 @@
 defmodule TigerBeetlex.IDBatch do
   use TypedStruct
 
-  typedstruct opaque: true do
+  typedstruct do
     field :ref, reference(), enforce: true
   end
 

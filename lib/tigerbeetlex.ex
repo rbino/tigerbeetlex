@@ -30,7 +30,7 @@ defmodule TigerBeetlex do
           name :: PartitionSupervisor.name(),
           account_batch :: TigerBeetlex.AccountBatch.t()
         ) ::
-          {:ok, Stream.t()} | Types.create_accounts_errors()
+          {:ok, Enumerable.t()} | Types.create_accounts_errors()
   def create_accounts(name, %AccountBatch{} = account_batch) do
     via_tuple(name)
     |> GenServer.call({:create_accounts, account_batch})
@@ -40,7 +40,7 @@ defmodule TigerBeetlex do
           name :: PartitionSupervisor.name(),
           transfer_batch :: TigerBeetlex.TransferBatch.t()
         ) ::
-          {:ok, Stream.t()} | Types.create_transfers_errors()
+          {:ok, Enumerable.t()} | Types.create_transfers_errors()
   def create_transfers(name, %TransferBatch{} = transfer_batch) do
     via_tuple(name)
     |> GenServer.call({:create_transfers, transfer_batch})
@@ -50,7 +50,7 @@ defmodule TigerBeetlex do
           name :: PartitionSupervisor.name(),
           id_batch :: TigerBeetlex.IDBatch.t()
         ) ::
-          {:ok, Stream.t()} | Types.lookup_accounts_errors()
+          {:ok, Enumerable.t()} | Types.lookup_accounts_errors()
   def lookup_accounts(name, %IDBatch{} = id_batch) do
     via_tuple(name)
     |> GenServer.call({:lookup_accounts, id_batch})
@@ -60,7 +60,7 @@ defmodule TigerBeetlex do
           name :: PartitionSupervisor.name(),
           id_batch :: TigerBeetlex.IDBatch.t()
         ) ::
-          {:ok, Stream.t()} | Types.lookup_transfers_errors()
+          {:ok, Enumerable.t()} | Types.lookup_transfers_errors()
   def lookup_transfers(name, %IDBatch{} = id_batch) do
     via_tuple(name)
     |> GenServer.call({:lookup_transfers, id_batch})

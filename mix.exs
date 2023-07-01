@@ -28,7 +28,8 @@ defmodule TigerBeetlex.MixProject do
       # Needed to make Zigler work
       {:ex_doc, "== 0.29.0", runtime: false, override: true},
       {:typed_struct, "~> 0.3.0"},
-      {:elixir_uuid, "~> 1.2", only: :test}
+      {:elixir_uuid, "~> 1.2", only: :test},
+      {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false}
     ]
   end
 end

@@ -3,9 +3,6 @@ defmodule TigerBeetlex.TransferBatch do
 
   typedstruct do
     field :ref, reference(), enforce: true
-    # TODO: we already track this internally in the resource, we should probably read the info
-    # from there
-    field :length, non_neg_integer(), default: 0
   end
 
   alias TigerBeetlex.TransferBatch
@@ -16,18 +13,18 @@ defmodule TigerBeetlex.TransferBatch do
           {:ok, t()} | Types.create_transfer_batch_errors()
   def new(capacity) when is_integer(capacity) and capacity > 0 do
     with {:ok, ref} <- NifAdapter.create_transfer_batch(capacity) do
-      {:ok, %TransferBatch{ref: ref, length: 0}}
+      {:ok, %TransferBatch{ref: ref}}
     end
   end
 
   @spec add_transfer(batch :: t(), opts :: keyword()) ::
           {:ok, t()} | Types.add_transfer_errors() | Types.set_function_errors()
   def add_transfer(%TransferBatch{} = batch, opts) do
-    %TransferBatch{ref: ref, length: length} = batch
+    %TransferBatch{ref: ref} = batch
 
-    with :ok <- NifAdapter.add_transfer(ref),
-         :ok <- set_fields(ref, length, opts) do
-      {:ok, %{batch | length: length + 1}}
+    with {:ok, new_length} <- NifAdapter.add_transfer(ref),
+         :ok <- set_fields(ref, new_length - 1, opts) do
+      {:ok, batch}
     end
   end
 

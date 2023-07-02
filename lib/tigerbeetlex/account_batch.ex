@@ -3,9 +3,6 @@ defmodule TigerBeetlex.AccountBatch do
 
   typedstruct do
     field :ref, reference(), enforce: true
-    # TODO: we already track this internally in the resource, we should probably read the info
-    # from there
-    field :length, non_neg_integer(), default: 0
   end
 
   alias TigerBeetlex.AccountBatch
@@ -16,18 +13,18 @@ defmodule TigerBeetlex.AccountBatch do
           {:ok, t()} | Types.create_account_batch_errors()
   def new(capacity) when is_integer(capacity) and capacity > 0 do
     with {:ok, ref} <- NifAdapter.create_account_batch(capacity) do
-      {:ok, %AccountBatch{ref: ref, length: 0}}
+      {:ok, %AccountBatch{ref: ref}}
     end
   end
 
   @spec add_account(batch :: t(), opts :: keyword()) ::
           {:ok, t()} | Types.add_account_errors() | Types.set_function_errors()
   def add_account(%AccountBatch{} = batch, opts) do
-    %AccountBatch{ref: ref, length: length} = batch
+    %AccountBatch{ref: ref} = batch
 
-    with :ok <- NifAdapter.add_account(ref),
-         :ok <- set_fields(ref, length, opts) do
-      {:ok, %{batch | length: length + 1}}
+    with {:ok, new_length} <- NifAdapter.add_account(ref),
+         :ok <- set_fields(ref, new_length - 1, opts) do
+      {:ok, batch}
     end
   end
 

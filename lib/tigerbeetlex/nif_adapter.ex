@@ -28,7 +28,7 @@ defmodule TigerBeetlex.NifAdapter do
   def create_account_batch(_capacity), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec add_account(account_batch :: Types.account_batch()) ::
-          :ok | Types.add_account_errors()
+          {:ok, new_length :: pos_integer()} | Types.add_account_errors()
   def add_account(_account_batch), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec set_account_id(
@@ -81,7 +81,7 @@ defmodule TigerBeetlex.NifAdapter do
   def create_transfer_batch(_capacity), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec add_transfer(transfer_batch :: Types.transfer_batch()) ::
-          :ok | Types.add_transfer_errors()
+          {:ok, new_length :: pos_integer()} | Types.add_transfer_errors()
   def add_transfer(_transfer_batch), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec set_transfer_id(
@@ -180,7 +180,7 @@ defmodule TigerBeetlex.NifAdapter do
   def create_id_batch(_capacity), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec add_id(id_batch :: Types.id_batch(), id :: Types.uint128()) ::
-          :ok | Types.add_id_errors()
+          {:ok, new_length :: pos_integer()} | Types.add_id_errors()
   def add_id(_id_batch, _id), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec set_id(id_batch :: Types.id_batch(), index :: non_neg_integer(), id :: Types.uint128()) ::

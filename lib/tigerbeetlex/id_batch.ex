@@ -20,7 +20,7 @@ defmodule TigerBeetlex.IDBatch do
   @spec add_id(batch :: t(), id :: Types.uint128()) ::
           {:ok, t()} | Types.add_id_errors()
   def add_id(%IDBatch{} = batch, id) do
-    with :ok <- NifAdapter.add_id(batch.ref, id) do
+    with {:ok, _new_length} <- NifAdapter.add_id(batch.ref, id) do
       {:ok, batch}
     end
   end

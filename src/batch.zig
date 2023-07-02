@@ -63,7 +63,7 @@ pub fn add_item(comptime T: anytype, env: beam.env, batch_term: beam.term) !beam
         }
         batch.len += 1;
         batch.items[batch.len - 1] = std.mem.zeroInit(T, .{});
-    }
 
-    return beam.make_ok(env);
+        return beam.make_ok_term(env, beam.make_u32(env, batch.len));
+    }
 }

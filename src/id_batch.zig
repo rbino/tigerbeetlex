@@ -46,9 +46,9 @@ pub fn add_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C
         }
         id_batch.len += 1;
         id_batch.items[id_batch.len - 1] = id;
-    }
 
-    return beam.make_ok(env);
+        return beam.make_ok_term(env, beam.make_u32(env, id_batch.len));
+    }
 }
 
 pub fn set_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {

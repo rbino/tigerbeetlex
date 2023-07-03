@@ -13,14 +13,16 @@ defmodule TigerBeetlex.Processless do
 
   @spec connect(
           cluster_id :: non_neg_integer(),
-          addresses :: binary(),
+          addresses :: [binary()],
           concurrency_max :: pos_integer()
         ) ::
           {:ok, t()} | Types.client_init_errors()
   def connect(cluster_id, addresses, concurrency_max)
-      when cluster_id >= 0 and is_binary(addresses) and is_integer(concurrency_max) and
+      when cluster_id >= 0 and is_list(addresses) and is_integer(concurrency_max) and
              concurrency_max > 0 do
-    with {:ok, ref} <- NifAdapter.client_init(cluster_id, addresses, concurrency_max) do
+    joined_addresses = Enum.join(addresses, ",")
+
+    with {:ok, ref} <- NifAdapter.client_init(cluster_id, joined_addresses, concurrency_max) do
       {:ok, %__MODULE__{ref: ref}}
     end
   end

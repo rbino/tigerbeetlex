@@ -13,7 +13,7 @@ defmodule TigerBeetlex.AccountCreationTest do
   alias TigerBeetlex.Processless, as: Client
 
   test "a simple sequence of operations works" do
-    assert {:ok, client} = Client.connect(0, "3000", 1)
+    assert {:ok, client} = Client.connect(0, ["3000"], 1)
 
     assert {:ok, account_batch} = AccountBatch.new(2)
 

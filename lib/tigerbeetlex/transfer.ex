@@ -15,7 +15,7 @@ defmodule TigerBeetlex.Transfer do
     field :timeout, non_neg_integer()
     field :ledger, non_neg_integer()
     field :code, non_neg_integer()
-    field :flags, non_neg_integer()
+    field :flags, TigerBeetlex.Transfer.Flags.t()
     field :amount, non_neg_integer()
     field :timestamp, non_neg_integer()
   end

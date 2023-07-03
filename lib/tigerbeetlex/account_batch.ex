@@ -5,6 +5,7 @@ defmodule TigerBeetlex.AccountBatch do
     field :ref, reference(), enforce: true
   end
 
+  alias TigerBeetlex.Account.Flags
   alias TigerBeetlex.AccountBatch
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.Types
@@ -41,11 +42,15 @@ defmodule TigerBeetlex.AccountBatch do
     set_fun(field).(ref, idx, value)
   end
 
-  # TODO: we should have our own setters in this module, which will have guards for input data
-  # and will handle stuff like providing the flags in a user-friendly way (e.g. a keyword list)
   defp set_fun(:id), do: &NifAdapter.set_account_id/3
   defp set_fun(:user_data), do: &NifAdapter.set_account_user_data/3
   defp set_fun(:ledger), do: &NifAdapter.set_account_ledger/3
   defp set_fun(:code), do: &NifAdapter.set_account_code/3
-  defp set_fun(:flags), do: &NifAdapter.set_account_flags/3
+
+  defp set_fun(:flags) do
+    fn ref, idx, value ->
+      flags_u16 = Flags.to_u16!(value)
+      NifAdapter.set_account_flags(ref, idx, flags_u16)
+    end
+  end
 end

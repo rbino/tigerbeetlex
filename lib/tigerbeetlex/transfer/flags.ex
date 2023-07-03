@@ -29,4 +29,28 @@ defmodule TigerBeetlex.Transfer.Flags do
       balancing_credit: balancing_credit == 1
     }
   end
+
+  def to_u16!(%Flags{} = flags) do
+    %Flags{
+      linked: linked,
+      pending: pending,
+      post_pending_transfer: post_pending_transfer,
+      void_pending_transfer: void_pending_transfer,
+      balancing_debit: balancing_debit,
+      balancing_credit: balancing_credit
+    } = flags
+
+    # We use big endian for the destination number so we can just follow the (reverse) order of
+    # the struct for the fields without manually swapping bytes
+    <<n::unsigned-big-16>> =
+      <<_padding = 0::10, bool_to_u1(balancing_credit)::1, bool_to_u1(balancing_debit)::1,
+        bool_to_u1(void_pending_transfer)::1, bool_to_u1(post_pending_transfer)::1,
+        bool_to_u1(pending)::1, bool_to_u1(linked)::1>>
+
+    n
+  end
+
+  @spec bool_to_u1(b :: boolean()) :: 0 | 1
+  defp bool_to_u1(false), do: 0
+  defp bool_to_u1(true), do: 1
 end

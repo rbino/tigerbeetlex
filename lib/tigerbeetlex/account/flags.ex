@@ -23,4 +23,24 @@ defmodule TigerBeetlex.Account.Flags do
       credits_must_not_exceed_debits: credits_must_not_exceed_debits == 1
     }
   end
+
+  def to_u16!(%Flags{} = flags) do
+    %Flags{
+      linked: linked,
+      debits_must_not_exceed_credits: debits_must_not_exceed_credits,
+      credits_must_not_exceed_debits: credits_must_not_exceed_debits
+    } = flags
+
+    # We use big endian for the destination number so we can just follow the (reverse) order of
+    # the struct for the fields without manually swapping bytes
+    <<n::unsigned-big-16>> =
+      <<_padding = 0::13, bool_to_u1(credits_must_not_exceed_debits)::1,
+        bool_to_u1(debits_must_not_exceed_credits)::1, bool_to_u1(linked)::1>>
+
+    n
+  end
+
+  @spec bool_to_u1(b :: boolean()) :: 0 | 1
+  defp bool_to_u1(false), do: 0
+  defp bool_to_u1(true), do: 1
 end

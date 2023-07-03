@@ -23,7 +23,8 @@ defmodule TigerBeetlex.AccountCreationTest do
              AccountBatch.add_account(account_batch,
                id: account_id_1,
                ledger: 1,
-               code: 1
+               code: 1,
+               flags: %Account.Flags{credits_must_not_exceed_debits: true}
              )
 
     account_id_2 = UUID.uuid4(:raw)
@@ -103,7 +104,8 @@ defmodule TigerBeetlex.AccountCreationTest do
                debits_pending: 0,
                debits_posted: 100,
                credits_pending: 0,
-               credits_posted: 0
+               credits_posted: 0,
+               flags: %Account.Flags{credits_must_not_exceed_debits: true}
              },
              %Account{
                id: ^account_id_2,

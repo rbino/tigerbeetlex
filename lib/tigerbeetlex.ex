@@ -1,9 +1,9 @@
 defmodule TigerBeetlex do
   alias TigerBeetlex.{
     AccountBatch,
-    Client,
     IDBatch,
-    Server,
+    Processless,
+    Receiver,
     TransferBatch,
     Types
   }
@@ -21,8 +21,8 @@ defmodule TigerBeetlex do
     addresses = Keyword.fetch!(opts, :addresses)
     concurrency_max = Keyword.fetch!(opts, :concurrency_max)
 
-    with {:ok, client} <- Client.connect(cluster_id, addresses, concurrency_max) do
-      PartitionSupervisor.start_link(name: name, child_spec: {Server, client})
+    with {:ok, client} <- Processless.connect(cluster_id, addresses, concurrency_max) do
+      PartitionSupervisor.start_link(name: name, child_spec: {Receiver, client})
     end
   end
 

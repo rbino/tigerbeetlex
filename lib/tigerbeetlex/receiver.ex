@@ -1,7 +1,7 @@
-defmodule TigerBeetlex.Server do
+defmodule TigerBeetlex.Receiver do
   use GenServer
 
-  alias TigerBeetlex.Client
+  alias TigerBeetlex.Processless, as: Client
   alias TigerBeetlex.Response
 
   defstruct [

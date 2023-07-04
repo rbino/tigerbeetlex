@@ -7,7 +7,7 @@ services:
       - tb-data:/data
     entrypoint: /bin/sh
     command: -c "
-        if [ ! -f "/data/0_0.tigerbeetle" ]; then
+        if [ ! -f '/data/0_0.tigerbeetle' ]; then
           /tigerbeetle format --cluster=0 --replica=0 --replica-count=1 /data/0_0.tigerbeetle;
         fi
 

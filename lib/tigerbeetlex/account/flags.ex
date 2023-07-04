@@ -1,4 +1,14 @@
 defmodule TigerBeetlex.Account.Flags do
+  @moduledoc """
+  Account Flags.
+
+  This module defines a struct that represents the flags for a TigerBeetle account. Flags are all
+  false by default.
+
+  See [TigerBeetle docs](https://docs.tigerbeetle.com/reference/accounts#flags) for the meaning
+  of the flags.
+  """
+
   use TypedStruct
 
   alias TigerBeetlex.Account.Flags
@@ -11,6 +21,11 @@ defmodule TigerBeetlex.Account.Flags do
     field :credits_must_not_exceed_debits, boolean(), default: false
   end
 
+  @doc """
+  Converts the integer representation of flags (16 bit unsigned int) in a
+  `%TigerBeetlex.Account.Flags{}` struct
+  """
+  @spec from_u16!(n :: non_neg_integer()) :: t()
   def from_u16!(n) when n >= 0 and n < 65_536 do
     # We use big endian for the source number so we can just follow the (reverse) order of
     # the struct for the fields without manually swapping bytes
@@ -24,6 +39,11 @@ defmodule TigerBeetlex.Account.Flags do
     }
   end
 
+  @doc """
+  Converts a `%TigerBeetlex.Account.Flags{}` struct to its integer representation (16 bit unsigned
+  int)
+  """
+  @spec to_u16!(flags :: t()) :: non_neg_integer()
   def to_u16!(%Flags{} = flags) do
     %Flags{
       linked: linked,

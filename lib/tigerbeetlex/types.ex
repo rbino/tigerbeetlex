@@ -1,4 +1,10 @@
 defmodule TigerBeetlex.Types do
+  @moduledoc """
+  Common typespecs.
+
+  This module provides common types that can be used in any part of the TigerBeetlex library.
+  """
+
   @type client :: reference()
 
   @type account_batch :: reference()

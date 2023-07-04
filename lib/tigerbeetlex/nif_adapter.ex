@@ -1,7 +1,5 @@
 defmodule TigerBeetlex.NifAdapter do
-  @moduledoc """
-  Documentation for `TigerBeetlex.NifAdapter`.
-  """
+  @moduledoc false
 
   alias TigerBeetlex.Types
 

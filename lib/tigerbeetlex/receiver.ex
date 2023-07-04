@@ -1,4 +1,6 @@
 defmodule TigerBeetlex.Receiver do
+  @moduledoc false
+
   use GenServer
 
   alias TigerBeetlex.Processless, as: Client

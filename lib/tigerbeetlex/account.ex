@@ -1,4 +1,13 @@
 defmodule TigerBeetlex.Account do
+  @moduledoc """
+  Account struct module.
+
+  This module defines a struct that represents a TigerBeetle account.
+
+  See [TigerBeetle docs](https://docs.tigerbeetle.com/reference/accounts) for the meaning of the
+  fields.
+  """
+
   use TypedStruct
 
   alias TigerBeetlex.Account
@@ -19,6 +28,11 @@ defmodule TigerBeetlex.Account do
     field :timestamp, non_neg_integer()
   end
 
+  @doc """
+  Converts the binary representation of an account (128 bytes) in a
+  `%TigerBeetlex.Account{}` struct
+  """
+  @spec from_binary!(bin :: <<_::1024>>) :: t()
   def from_binary!(<<_::binary-size(128)>> = bin) do
     <<id::binary-size(16), user_data::binary-size(16), _reserved::binary-size(48),
       ledger::unsigned-little-32, code::unsigned-little-16, flags::unsigned-little-16,

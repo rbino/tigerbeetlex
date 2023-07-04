@@ -1,4 +1,15 @@
 defmodule TigerBeetlex.AccountBatch do
+  @moduledoc """
+  Account Batch creation and manipulation.
+
+  This module collects functions to interact with an account batch. An Account Batch represents a
+  list of Accounts (with a maximum capacity) that will be used to submit a Create Accounts
+  operation on TigerBeetle.
+
+  The Account Batch should be treated as an opaque and underneath it is implemented with a
+  mutable NIF resource. It is safe to modify an Account Batch from multiple processes concurrently.
+  """
+
   use TypedStruct
 
   typedstruct do
@@ -10,6 +21,11 @@ defmodule TigerBeetlex.AccountBatch do
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.Types
 
+  @doc """
+  Creates a new account batch with the specified capacity.
+
+  The capacity is the maximum number of accounts that can be added to the batch.
+  """
   @spec new(capacity :: non_neg_integer()) ::
           {:ok, t()} | Types.create_account_batch_errors()
   def new(capacity) when is_integer(capacity) and capacity > 0 do
@@ -18,12 +34,56 @@ defmodule TigerBeetlex.AccountBatch do
     end
   end
 
+  @add_account_opts_schema [
+    id: [
+      required: true,
+      type: {:custom, TigerBeetlex.OptionsValidators, :validate_id, []},
+      type_doc: "a 128-bit binary ID",
+      doc: "The ID of the account."
+    ],
+    ledger: [
+      required: true,
+      type: :pos_integer,
+      doc: "The ledger of the account."
+    ],
+    code: [
+      required: true,
+      type: :pos_integer,
+      doc: "The code of the account."
+    ],
+    user_data: [
+      type: {:custom, TigerBeetlex.OptionsValidators, :validate_id, []},
+      type_doc: "a 128-bit binary ID",
+      doc: "An ID used to reference external user data."
+    ],
+    flags: [
+      type: {:struct, Flags},
+      doc: "The flags for the account."
+    ]
+  ]
+
+  @doc """
+  Adds an account to the batch. The fields of the account are passed as a keyword list.
+
+  ## Fields
+
+  These are the supported fields that can be passed in `opts` for the account
+
+  #{NimbleOptions.docs(@add_account_opts_schema)}
+
+  See [TigerBeetle docs](https://docs.tigerbeetle.com/reference/accounts) for the meaning of the
+  fields.
+  """
   @spec add_account(batch :: t(), opts :: keyword()) ::
-          {:ok, t()} | Types.add_account_errors() | Types.set_function_errors()
+          {:ok, t()}
+          | Types.add_account_errors()
+          | Types.set_function_errors()
+          | {:error, NimbleOptions.ValidationError.t()}
   def add_account(%AccountBatch{} = batch, opts) do
     %AccountBatch{ref: ref} = batch
 
-    with {:ok, new_length} <- NifAdapter.add_account(ref),
+    with {:ok, opts} <- NimbleOptions.validate(opts, @add_account_opts_schema),
+         {:ok, new_length} <- NifAdapter.add_account(ref),
          :ok <- set_fields(ref, new_length - 1, opts) do
       {:ok, batch}
     end

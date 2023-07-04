@@ -1,4 +1,13 @@
 defmodule TigerBeetlex.Transfer do
+  @moduledoc """
+  Transfer struct module.
+
+  This module defines a struct that represents a TigerBeetle transfer.
+
+  See [TigerBeetle docs](https://docs.tigerbeetle.com/reference/transfers) for the meaning of the
+  fields.
+  """
+
   use TypedStruct
 
   alias TigerBeetlex.Transfer
@@ -20,6 +29,11 @@ defmodule TigerBeetlex.Transfer do
     field :timestamp, non_neg_integer()
   end
 
+  @doc """
+  Converts the binary representation of an account (128 bytes) in a
+  `%TigerBeetlex.Transfer{}` struct
+  """
+  @spec from_binary!(bin :: <<_::1024>>) :: t()
   def from_binary!(<<_::binary-size(128)>> = bin) do
     <<id::binary-size(16), debit_account_id::binary-size(16), credit_account_id::binary-size(16),
       user_data::binary-size(16), _reserved::binary-size(16), pending_id::binary-size(16),

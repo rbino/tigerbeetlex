@@ -2,7 +2,9 @@ version: '3'
 
 services:
   tigerbeetle:
-    image: ghcr.io/tigerbeetledb/tigerbeetle:0.13.36
+    platform: linux/amd64
+    build:
+      context: ../../src/tigerbeetle
     volumes:
       - tb-data:/data
     entrypoint: /bin/sh

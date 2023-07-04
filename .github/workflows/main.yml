@@ -9,7 +9,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: true
       matrix:
@@ -95,10 +95,14 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Start Docker and wait for it to be up
+      - name: Build and start TigerBeetle and wait for it to be up
         working-directory: ./test/docker
+        env:
+          COMPOSE_DOCKER_CLI_BUILD: "1"
+          DOCKER_BUILDKIT: "1"
+          DOCKER_DEFAULT_PLATFORM: "linux/amd64"
         run: |
-          docker-compose up --detach
+          docker-compose up --detach --build
           ./health-check-services.sh
 
       - name: Install OTP and Elixir

@@ -6,6 +6,8 @@ defmodule TigerBeetlex.MixProject do
       app: :tigerbeetlex,
       version: "0.1.0",
       elixir: "~> 1.14",
+      install_zig: "0.9.1",
+      zig_build_mode: zig_build_mode(Mix.env()),
       compilers: [:build_dot_zig] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       deps: deps()
@@ -20,11 +22,14 @@ defmodule TigerBeetlex.MixProject do
     ]
   end
 
+  defp zig_build_mode(:prod), do: :release_safe
+  defp zig_build_mode(_env), do: :debug
+
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:nimble_options, "~> 1.0"},
-      {:build_dot_zig, "~> 0.1.0", runtime: false},
+      {:build_dot_zig, "~> 0.2.0", runtime: false},
       {:zigler, github: "rbino/zigler", branch: "free-large-alloc", runtime: false},
       # Needed to make Zigler work
       {:ex_doc, "== 0.29.0", runtime: false, override: true},

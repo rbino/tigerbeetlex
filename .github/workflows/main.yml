@@ -40,7 +40,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-zig${{ matrix.zig }}-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
 
       - name: Install and compile dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -77,7 +77,7 @@ jobs:
         run: mix dialyzer --format github
 
   test:
-    name: Test (Elixir ${{ matrix.elixir }}, OTP ${{ matrix.otp }}, Zig ${{ matrix.zig }}
+    name: Test (Elixir ${{ matrix.elixir }}, OTP ${{ matrix.otp }}
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -87,7 +87,6 @@ jobs:
           # see https://github.com/erlef/setup-beam/issues/220
           - otp: "25.3"
             elixir: "1.14"
-            zig: "0.9.1"
 
     steps:
       - name: Clone the repository
@@ -107,11 +106,6 @@ jobs:
           otp-version: ${{ matrix.otp }}
           elixir-version: ${{ matrix.elixir }}
 
-      - name: Install Zig
-        uses: goto-bus-stop/setup-zig@v2
-        with:
-          version: ${{ matrix.zig }}
-
       - name: Cache dependencies
         id: cache-deps
         uses: actions/cache@v2
@@ -119,7 +113,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-zig${{ matrix.zig }}-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
 
       - name: Install and compile dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'

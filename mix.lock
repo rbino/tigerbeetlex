@@ -1,5 +1,6 @@
 %{
-  "build_dot_zig": {:hex, :build_dot_zig, "0.1.1", "e90ba2af13db69dd306ca1340f8cca9aa7b90dfc4952f42683dcb9ec370cdc21", [:mix], [], "hexpm", "804e47412cc3dc30ca95a57c0bda4b24a16925d9be9e66501930e80569a68182"},
+  "build_dot_zig": {:hex, :build_dot_zig, "0.2.0", "b90c3fa31fb746b0ca12bfaa46bf02cbe829bbc1c1502ee3753355db9c6e4587", [:mix], [{:castore, "~> 1.0", [hex: :castore, repo: "hexpm", optional: false]}, {:jason, "~> 1.4", [hex: :jason, repo: "hexpm", optional: false]}], "hexpm", "b2b8f1a68c20cea252dfdad5c39f0b12c7dbb82a4632cac9c153c180b9502a4c"},
+  "castore": {:hex, :castore, "1.0.3", "7130ba6d24c8424014194676d608cb989f62ef8039efd50ff4b3f33286d06db8", [:mix], [], "hexpm", "680ab01ef5d15b161ed6a95449fac5c6b8f60055677a8e79acf01b27baa4390b"},
   "dialyxir": {:hex, :dialyxir, "1.3.0", "fd1672f0922b7648ff9ce7b1b26fcf0ef56dda964a459892ad15f6b4410b5284", [:mix], [{:erlex, ">= 0.2.6", [hex: :erlex, repo: "hexpm", optional: false]}], "hexpm", "00b2a4bcd6aa8db9dcb0b38c1225b7277dca9bc370b6438715667071a304696f"},
   "earmark_parser": {:hex, :earmark_parser, "1.4.32", "fa739a0ecfa34493de19426681b23f6814573faee95dfd4b4aafe15a7b5b32c6", [:mix], [], "hexpm", "b8b0dd77d60373e77a3d7e8afa598f325e49e8663a51bcc2b88ef41838cca755"},
   "elixir_uuid": {:hex, :elixir_uuid, "1.2.1", "dce506597acb7e6b0daeaff52ff6a9043f5919a4c3315abb4143f0b00378c097", [:mix], [], "hexpm", "f7eba2ea6c3555cea09706492716b0d87397b88946e6380898c2889d68585752"},

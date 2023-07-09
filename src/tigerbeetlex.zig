@@ -22,6 +22,11 @@ pub const vsr_options = .{
     .config_aof_recovery = false,
 };
 
+// Lower the log level since currently Zig output screws up
+// Elixir output, especially in interactive shells
+// TODO: investigate why.
+pub const log_level: std.log.Level = .err;
+
 export var __exported_nifs__ = [_]e.ErlNifFunc{
     e.ErlNifFunc{
         .name = "client_init",

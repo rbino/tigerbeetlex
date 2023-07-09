@@ -4,7 +4,7 @@ alias TigerBeetlex.TransferBatch
   TigerBeetlex.start_link(
     name: :tb,
     cluster_id: 0,
-    addresses: "3000",
+    addresses: ["3000"],
     concurrency_max: 1
   )
 

@@ -34,6 +34,7 @@ pub fn build(b: *std.build.Builder) void {
     lib.linkLibC();
     lib.setBuildMode(mode);
     lib.setTarget(target);
+    lib.linker_allow_shlib_undefined = true;
 
     // Do this so `lib` doesn't get prepended to the lib name, see https://github.com/ziglang/zig/issues/2231
     const install = b.addInstallLibFile(lib.getOutputLibSource(), "tigerbeetlex.so");

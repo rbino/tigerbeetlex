@@ -76,6 +76,33 @@ jobs:
       - name: Run Dialyzer
         run: mix dialyzer --format github
 
+  macos-build:
+    runs-on: macos-13
+    name: Build on MacOS
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install Elixir
+        run: |
+          brew update
+          brew install elixir
+
+      - name: Setup mix
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+
+      - name: Install and compile dependencies
+        run: |
+          mix deps.get
+          mix deps.compile
+
+      - name: Build
+        run: mix compile
+
   test:
     name: Test (Elixir ${{ matrix.elixir }}, OTP ${{ matrix.otp }}
     runs-on: ubuntu-20.04

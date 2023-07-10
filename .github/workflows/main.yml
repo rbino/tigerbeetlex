@@ -40,7 +40,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-zig${{ matrix.zig }}-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
 
       - name: Install and compile dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -76,8 +76,35 @@ jobs:
       - name: Run Dialyzer
         run: mix dialyzer --format github
 
+  macos-build:
+    runs-on: macos-13
+    name: Build on MacOS
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install Elixir
+        run: |
+          brew update
+          brew install elixir
+
+      - name: Setup mix
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+
+      - name: Install and compile dependencies
+        run: |
+          mix deps.get
+          mix deps.compile
+
+      - name: Build
+        run: mix compile
+
   test:
-    name: Test (Elixir ${{ matrix.elixir }}, OTP ${{ matrix.otp }}, Zig ${{ matrix.zig }}
+    name: Test (Elixir ${{ matrix.elixir }}, OTP ${{ matrix.otp }}
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -87,13 +114,19 @@ jobs:
           # see https://github.com/erlef/setup-beam/issues/220
           - otp: "25.3"
             elixir: "1.14"
-            zig: "0.9.1"
 
     steps:
       - name: Clone the repository
         uses: actions/checkout@v2
         with:
           submodules: recursive
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
 
       - name: Start Docker and wait for it to be up
         working-directory: ./test/docker
@@ -107,11 +140,6 @@ jobs:
           otp-version: ${{ matrix.otp }}
           elixir-version: ${{ matrix.elixir }}
 
-      - name: Install Zig
-        uses: goto-bus-stop/setup-zig@v2
-        with:
-          version: ${{ matrix.zig }}
-
       - name: Cache dependencies
         id: cache-deps
         uses: actions/cache@v2
@@ -119,7 +147,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-zig${{ matrix.zig }}-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
 
       - name: Install and compile dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'

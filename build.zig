@@ -3,8 +3,10 @@ const std = @import("std");
 pub fn build(b: *std.build.Builder) void {
     // Standard release options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
-    // TODO: toggle this from mix.exs when build_dot_zig supports it
-    const mode = .ReleaseSafe;
+    const mode = b.standardReleaseOptions();
+
+    // Allow passing an explicit target
+    const target = b.standardTargetOptions(.{});
 
     // Get ERTS_INCLUDE_DIR from env, which should be passed by :build_dot_zig
     const erts_include_dir = std.process.getEnvVarOwned(b.allocator, "ERTS_INCLUDE_DIR") catch blk: {
@@ -31,6 +33,8 @@ pub fn build(b: *std.build.Builder) void {
     lib.addPackagePath("tigerbeetle", "src/tigerbeetle/src/tigerbeetle.zig");
     lib.linkLibC();
     lib.setBuildMode(mode);
+    lib.setTarget(target);
+    lib.linker_allow_shlib_undefined = true;
 
     // Do this so `lib` doesn't get prepended to the lib name, see https://github.com/ziglang/zig/issues/2231
     const install = b.addInstallLibFile(lib.getOutputLibSource(), "tigerbeetlex.so");

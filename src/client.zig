@@ -77,7 +77,6 @@ fn batch_item_type_for_operation(comptime operation: tb_client.tb_operation_t) t
         .create_accounts => Account,
         .create_transfers => Transfer,
         .lookup_accounts, .lookup_transfers => u128,
-        else => unreachable,
     };
 }
 

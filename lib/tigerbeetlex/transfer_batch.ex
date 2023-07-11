@@ -37,27 +37,27 @@ defmodule TigerBeetlex.TransferBatch do
   @add_transfer_opts_schema [
     id: [
       required: true,
-      type: {:custom, TigerBeetlex.OptionsValidators, :validate_id, []},
+      type: :binary,
       type_doc: "a 128-bit binary ID",
       doc: "The ID of the transfer."
     ],
     debit_account_id: [
-      type: {:custom, TigerBeetlex.OptionsValidators, :validate_id, []},
+      type: :binary,
       type_doc: "a 128-bit binary ID",
       doc: "The ID of the debit account."
     ],
     credit_account_id: [
-      type: {:custom, TigerBeetlex.OptionsValidators, :validate_id, []},
+      type: :binary,
       type_doc: "a 128-bit binary ID",
       doc: "The ID of the credit account."
     ],
     user_data: [
-      type: {:custom, TigerBeetlex.OptionsValidators, :validate_id, []},
+      type: :binary,
       type_doc: "a 128-bit binary ID",
       doc: "An ID used to reference external user data."
     ],
     pending_id: [
-      type: {:custom, TigerBeetlex.OptionsValidators, :validate_id, []},
+      type: :binary,
       type_doc: "a 128-bit binary ID",
       doc: "The ID of the pending transfer to be posted or voided."
     ],
@@ -103,8 +103,7 @@ defmodule TigerBeetlex.TransferBatch do
   def add_transfer(%TransferBatch{} = batch, opts) do
     %TransferBatch{ref: ref} = batch
 
-    with {:ok, opts} <- NimbleOptions.validate(opts, @add_transfer_opts_schema),
-         {:ok, new_length} <- NifAdapter.add_transfer(ref),
+    with {:ok, new_length} <- NifAdapter.add_transfer(ref),
          :ok <- set_fields(ref, new_length - 1, opts) do
       {:ok, batch}
     end

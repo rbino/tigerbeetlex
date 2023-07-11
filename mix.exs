@@ -29,7 +29,7 @@ defmodule TigerBeetlex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:nimble_options, "~> 1.0"},
+      {:nimble_options, "~> 1.0", tuntime: false},
       {:build_dot_zig, "~> 0.2.0", runtime: false},
       {:zigler, github: "rbino/zigler", branch: "free-large-alloc", runtime: false},
       # Needed to make Zigler work

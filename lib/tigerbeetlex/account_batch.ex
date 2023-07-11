@@ -37,7 +37,7 @@ defmodule TigerBeetlex.AccountBatch do
   @add_account_opts_schema [
     id: [
       required: true,
-      type: {:custom, TigerBeetlex.OptionsValidators, :validate_id, []},
+      type: :binary,
       type_doc: "a 128-bit binary ID",
       doc: "The ID of the account."
     ],
@@ -52,7 +52,7 @@ defmodule TigerBeetlex.AccountBatch do
       doc: "The code of the account."
     ],
     user_data: [
-      type: {:custom, TigerBeetlex.OptionsValidators, :validate_id, []},
+      type: :binary,
       type_doc: "a 128-bit binary ID",
       doc: "An ID used to reference external user data."
     ],
@@ -82,8 +82,7 @@ defmodule TigerBeetlex.AccountBatch do
   def add_account(%AccountBatch{} = batch, opts) do
     %AccountBatch{ref: ref} = batch
 
-    with {:ok, opts} <- NimbleOptions.validate(opts, @add_account_opts_schema),
-         {:ok, new_length} <- NifAdapter.add_account(ref),
+    with {:ok, new_length} <- NifAdapter.add_account(ref),
          :ok <- set_fields(ref, new_length - 1, opts) do
       {:ok, batch}
     end

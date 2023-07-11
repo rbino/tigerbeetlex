@@ -21,6 +21,7 @@ pub const Client = struct {
 const RequestContext = struct {
     caller_pid: beam.pid,
     request_ref_binary: beam.binary,
+    payload_resource: *anyopaque,
 };
 
 pub fn init(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
@@ -124,6 +125,13 @@ fn submit(
         return beam.make_error_atom(env, "out_of_memory");
     }
 
+    // We increase the reference count on the payload resource so it doesn't get garbage
+    // collected until we release it
+    e.enif_keep_resource(&payload);
+
+    // We save the pointer in the context so we can release it later
+    ctx.payload_resource = &payload;
+
     packet.operation = @enumToInt(operation);
 
     // TODO: how much does this need to be valid? Should we increment the refcount on the
@@ -179,6 +187,9 @@ fn on_completion(
 ) callconv(.C) void {
     var ctx = @ptrCast(*RequestContext, @alignCast(@alignOf(*RequestContext), packet.user_data.?));
     defer beam.general_purpose_allocator.destroy(ctx);
+
+    // We don't need the payload anymore, let the garbage collector take care of it
+    e.enif_release_resource(ctx.payload_resource);
 
     const env = @intToPtr(*e.ErlNifEnv, context);
     defer e.enif_clear_env(env);

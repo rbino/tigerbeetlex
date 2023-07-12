@@ -3,7 +3,7 @@ defmodule TigerBeetlex.Receiver do
 
   use GenServer
 
-  alias TigerBeetlex.Processless, as: Client
+  alias TigerBeetlex
   alias TigerBeetlex.Response
 
   defstruct [
@@ -38,7 +38,7 @@ defmodule TigerBeetlex.Receiver do
   end
 
   defp send_request(from, function, arguments, state) do
-    case apply(Client, function, arguments) do
+    case apply(TigerBeetlex, function, arguments) do
       {:ok, ref} ->
         {:noreply, %{state | pending_requests: Map.put(state.pending_requests, ref, from)}}
 

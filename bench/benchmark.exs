@@ -1,7 +1,8 @@
+alias TigerBeetlex.Connection
 alias TigerBeetlex.TransferBatch
 
 {:ok, _pid} =
-  TigerBeetlex.start_link(
+  Connection.start_link(
     name: :tb,
     cluster_id: 0,
     addresses: ["3000"],
@@ -36,7 +37,7 @@ bench = fn ->
           )
       end)
 
-      {elapsed, response} = :timer.tc(fn -> TigerBeetlex.create_transfers(:tb, batch) end)
+      {elapsed, response} = :timer.tc(fn -> Connection.create_transfers(:tb, batch) end)
 
       {:ok, stream} = response
 

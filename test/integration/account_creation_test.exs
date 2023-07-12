@@ -10,10 +10,10 @@ defmodule TigerBeetlex.AccountCreationTest do
     Transfer
   }
 
-  alias TigerBeetlex.Processless, as: Client
+  alias TigerBeetlex
 
   test "a simple sequence of operations works" do
-    assert {:ok, client} = Client.connect(0, ["3000"], 1)
+    assert {:ok, client} = TigerBeetlex.connect(0, ["3000"], 1)
 
     assert {:ok, account_batch} = AccountBatch.new(2)
 
@@ -36,7 +36,7 @@ defmodule TigerBeetlex.AccountCreationTest do
                code: 1
              )
 
-    assert {:ok, ref} = Client.create_accounts(client, account_batch)
+    assert {:ok, ref} = TigerBeetlex.create_accounts(client, account_batch)
 
     assert_receive {:tigerbeetlex_response, ^ref, response}
 
@@ -58,7 +58,7 @@ defmodule TigerBeetlex.AccountCreationTest do
                amount: 100
              )
 
-    assert {:ok, ref} = Client.create_transfers(client, transfer_batch)
+    assert {:ok, ref} = TigerBeetlex.create_transfers(client, transfer_batch)
 
     assert_receive {:tigerbeetlex_response, ^ref, response}
 
@@ -70,7 +70,7 @@ defmodule TigerBeetlex.AccountCreationTest do
 
     assert {:ok, id_batch} = IDBatch.add_id(id_batch, transfer_id)
 
-    assert {:ok, ref} = Client.lookup_transfers(client, id_batch)
+    assert {:ok, ref} = TigerBeetlex.lookup_transfers(client, id_batch)
 
     assert_receive {:tigerbeetlex_response, ^ref, response}
 
@@ -90,7 +90,7 @@ defmodule TigerBeetlex.AccountCreationTest do
     assert {:ok, id_batch} = IDBatch.add_id(id_batch, account_id_1)
     assert {:ok, id_batch} = IDBatch.add_id(id_batch, account_id_2)
 
-    assert {:ok, ref} = Client.lookup_accounts(client, id_batch)
+    assert {:ok, ref} = TigerBeetlex.lookup_accounts(client, id_batch)
 
     assert_receive {:tigerbeetlex_response, ^ref, response}
 

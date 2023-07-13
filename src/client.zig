@@ -226,10 +226,10 @@ fn on_completion(
         response,
     );
 
-    if (e.enif_send(null, &caller_pid, env, msg) == 0) unreachable;
-
     // We're done with the packet, put it back in the pool
     tb_client.release_packet(client, packet);
+
+    if (e.enif_send(null, &caller_pid, env, msg) == 0) unreachable;
 }
 
 fn client_resource_deinit_fn(_: beam.env, ptr: ?*anyopaque) callconv(.C) void {

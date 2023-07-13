@@ -1,5 +1,5 @@
 const std = @import("std");
-const assert = std.testing.assert;
+const assert = std.debug.assert;
 
 const batch = @import("batch.zig");
 const beam = @import("beam");
@@ -10,7 +10,7 @@ pub const IdBatch = batch.Batch(u128);
 pub const IdBatchResource = batch.BatchResource(u128);
 
 pub fn create(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    if (argc != 1) unreachable;
+    assert(argc == 1);
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
@@ -22,7 +22,7 @@ pub fn create(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C
 
 pub fn add_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
     // We don't use beam.add_item since we increase len and directly add the id in a single call
-    if (argc != 2) unreachable;
+    assert(argc == 2);
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
@@ -53,7 +53,7 @@ pub fn add_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C
 }
 
 pub fn set_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    if (argc != 3) unreachable;
+    assert(argc == 3);
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 

@@ -1,4 +1,5 @@
 const std = @import("std");
+const assert = std.debug.assert;
 
 const beam = @import("beam");
 const e = @import("erl_nif");
@@ -26,7 +27,7 @@ const RequestContext = struct {
 };
 
 pub fn init(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    if (argc != 3) unreachable;
+    assert(argc == 3);
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
@@ -113,7 +114,7 @@ fn submit(
         return beam.make_error_atom(env, "out_of_memory");
     };
 
-    if (e.enif_self(env, &ctx.caller_pid) == null) unreachable;
+    assert(e.enif_self(env, &ctx.caller_pid) != null);
 
     const ref = beam.make_ref(env);
     // We serialize the reference to binary since we would need an env created in
@@ -148,7 +149,7 @@ fn submit(
 }
 
 pub fn create_accounts(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    if (argc != 2) unreachable;
+    assert(argc == 2);
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
@@ -156,7 +157,7 @@ pub fn create_accounts(env: beam.env, argc: c_int, argv: [*c]const beam.term) ca
 }
 
 pub fn create_transfers(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    if (argc != 2) unreachable;
+    assert(argc == 2);
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
@@ -164,7 +165,7 @@ pub fn create_transfers(env: beam.env, argc: c_int, argv: [*c]const beam.term) c
 }
 
 pub fn lookup_accounts(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    if (argc != 2) unreachable;
+    assert(argc == 2);
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
@@ -172,7 +173,7 @@ pub fn lookup_accounts(env: beam.env, argc: c_int, argv: [*c]const beam.term) ca
 }
 
 pub fn lookup_transfers(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    if (argc != 2) unreachable;
+    assert(argc == 2);
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
@@ -199,7 +200,7 @@ fn on_completion(
     const ref_binary = &ctx.request_ref_binary;
     defer e.enif_release_binary(ref_binary);
     var ref: beam.term = undefined;
-    if (e.enif_binary_to_term(env, ref_binary.data, ref_binary.size, &ref, 0) == 0) unreachable;
+    assert(e.enif_binary_to_term(env, ref_binary.data, ref_binary.size, &ref, 0) != 0);
 
     const caller_pid = ctx.caller_pid;
 
@@ -229,7 +230,7 @@ fn on_completion(
     // We're done with the packet, put it back in the pool
     tb_client.release_packet(client, packet);
 
-    if (e.enif_send(null, &caller_pid, env, msg) == 0) unreachable;
+    assert(e.enif_send(null, &caller_pid, env, msg) != 0);
 }
 
 fn client_resource_deinit_fn(_: beam.env, ptr: ?*anyopaque) callconv(.C) void {

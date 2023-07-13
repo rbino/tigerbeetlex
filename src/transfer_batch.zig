@@ -1,4 +1,5 @@
 const std = @import("std");
+const assert = std.debug.assert;
 
 const batch = @import("batch.zig");
 const beam = @import("beam");
@@ -12,7 +13,7 @@ pub const TransferBatch = batch.Batch(Transfer);
 pub const TransferBatchResource = batch.BatchResource(Transfer);
 
 pub fn create(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    if (argc != 1) unreachable;
+    assert(argc == 1);
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
@@ -23,7 +24,7 @@ pub fn create(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C
 }
 
 pub fn add_transfer(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-    if (argc != 1) unreachable;
+    assert(argc == 1);
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
@@ -53,7 +54,7 @@ fn field_setter_fn(comptime field: std.meta.FieldEnum(Transfer)) fn (
 
     return struct {
         fn setter_fn(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
-            if (argc != 3) unreachable;
+            assert(argc == 3);
 
             const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 

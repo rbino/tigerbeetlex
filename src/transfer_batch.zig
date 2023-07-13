@@ -4,12 +4,12 @@ const batch = @import("batch.zig");
 const beam = @import("beam");
 const beam_extras = @import("beam_extras.zig");
 const e = @import("erl_nif");
-const resource_types = @import("resource_types.zig");
 
 const tb = @import("tigerbeetle");
 const Transfer = tb.Transfer;
 const TransferFlags = tb.TransferFlags;
 pub const TransferBatch = batch.Batch(Transfer);
+pub const TransferBatchResource = batch.BatchResource(Transfer);
 
 pub fn create(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
     if (argc != 1) unreachable;
@@ -57,10 +57,12 @@ fn field_setter_fn(comptime field: std.meta.FieldEnum(Transfer)) fn (
 
             const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
-            const transfer_batch = beam_extras.resource_ptr(TransferBatch, env, resource_types.transfer_batch, args[0]) catch |err|
+            const batch_term = args[0];
+            const transfer_batch_resource = TransferBatchResource.from_term_handle(env, batch_term) catch |err|
                 switch (err) {
-                error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
+                error.InvalidResourceTerm => return beam.make_error_atom(env, "invalid_batch"),
             };
+            const transfer_batch = transfer_batch_resource.ptr();
 
             const idx: u32 = beam.get_u32(env, args[1]) catch
                 return beam.raise_function_clause_error(env);

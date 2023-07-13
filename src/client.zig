@@ -2,7 +2,6 @@ const std = @import("std");
 
 const beam = @import("beam");
 const e = @import("erl_nif");
-const resource = beam.resource;
 
 const tb = @import("tigerbeetle");
 const tb_client = @import("tigerbeetle/src/clients/c/tb_client.zig");
@@ -11,17 +10,19 @@ const Transfer = tb.Transfer;
 
 const batch = @import("batch.zig");
 const beam_extras = @import("beam_extras.zig");
-const resource_types = @import("resource_types.zig");
 const Batch = batch.Batch;
+const BatchResource = batch.BatchResource;
+const Resource = @import("resource.zig").Resource;
 
 pub const Client = struct {
     zig_client: tb_client.tb_client_t,
 };
+pub const ClientResource = Resource(Client, client_resource_deinit_fn);
 
 const RequestContext = struct {
     caller_pid: beam.pid,
     request_ref_binary: beam.binary,
-    payload_resource: *anyopaque,
+    payload_resource_ptr: *anyopaque,
 };
 
 pub fn init(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
@@ -56,7 +57,7 @@ pub fn init(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) 
     };
 
     const client = .{ .zig_client = zig_client };
-    const client_resource = resource.create(Client, env, resource_types.client, client) catch |err|
+    const client_resource = ClientResource.init(client) catch |err|
         switch (err) {
         error.OutOfMemory => {
             // Deinit the client
@@ -65,12 +66,10 @@ pub fn init(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) 
             return beam.make_error_atom(env, "out_of_memory");
         },
     };
+    const term_handle = client_resource.term_handle(env);
+    client_resource.release();
 
-    // We immediately release the resource and just let it be managed by the garbage collector
-    // TODO: check all the corner cases to ensure this is the right thing to do
-    resource.release(env, resource_types.client, client_resource);
-
-    return beam.make_ok_term(env, client_resource);
+    return beam.make_ok_term(env, term_handle);
 }
 
 fn batch_item_type_for_operation(comptime operation: tb_client.tb_operation_t) type {
@@ -87,16 +86,18 @@ fn submit(
     client_term: beam.term,
     payload_term: beam.term,
 ) beam.term {
-    const client = beam_extras.resource_ptr(Client, env, resource_types.client, client_term) catch |err|
+    const client_resource = ClientResource.from_term_handle(env, client_term) catch |err|
         switch (err) {
-        error.FetchError => return beam.make_error_atom(env, "invalid_client"),
+        error.InvalidResourceTerm => return beam.make_error_atom(env, "invalid_client"),
     };
+    const client = client_resource.ptr_const();
 
     const T = batch_item_type_for_operation(operation);
-    var payload: Batch(T) = resource.fetch(Batch(T), env, resource_types.from_batch_type(T), payload_term) catch |err|
+    const payload_resource = BatchResource(T).from_term_handle(env, payload_term) catch |err|
         switch (err) {
-        error.FetchError => return beam.make_error_atom(env, "invalid_batch"),
+        error.InvalidResourceTerm => return beam.make_error_atom(env, "invalid_batch"),
     };
+    const payload = payload_resource.ptr_const();
 
     var out_packet: ?*tb_client.tb_packet_t = undefined;
     const status = tb_client.acquire_packet(client.zig_client, &out_packet);
@@ -127,10 +128,10 @@ fn submit(
 
     // We increase the reference count on the payload resource so it doesn't get garbage
     // collected until we release it
-    e.enif_keep_resource(&payload);
+    payload_resource.keep();
 
-    // We save the pointer in the context so we can release it later
-    ctx.payload_resource = &payload;
+    // We save the raw pointer in the context so we can release it later with enif_release_resource
+    ctx.payload_resource_ptr = payload_resource.raw_ptr;
 
     packet.operation = @enumToInt(operation);
 
@@ -189,7 +190,8 @@ fn on_completion(
     defer beam.general_purpose_allocator.destroy(ctx);
 
     // We don't need the payload anymore, let the garbage collector take care of it
-    e.enif_release_resource(ctx.payload_resource);
+    // This is a raw resource pointer so we directly call enif_release_resource
+    e.enif_release_resource(ctx.payload_resource_ptr);
 
     const env = @intToPtr(*e.ErlNifEnv, context);
     defer e.enif_clear_env(env);
@@ -228,4 +230,14 @@ fn on_completion(
 
     // We're done with the packet, put it back in the pool
     tb_client.release_packet(client, packet);
+}
+
+fn client_resource_deinit_fn(_: beam.env, ptr: ?*anyopaque) callconv(.C) void {
+    if (ptr) |p| {
+        const cl: *Client = @ptrCast(*Client, @alignCast(@alignOf(*Client), p));
+        // TODO: this can now potentially block for a long time since it waits
+        // for all the requests to be drained, investigate what it is blocking
+        // and if this needs to be done in a separate thread
+        tb_client.deinit(cl.zig_client);
+    } else unreachable;
 }

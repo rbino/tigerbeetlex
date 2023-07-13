@@ -5,12 +5,17 @@ const e = @import("erl_nif");
 const account_batch = @import("account_batch.zig");
 const client = @import("client.zig");
 const id_batch = @import("id_batch.zig");
-const resource_types = @import("resource_types.zig");
+const resource = @import("resource.zig");
 const transfer_batch = @import("transfer_batch.zig");
 const AccountBatch = account_batch.AccountBatch;
 const IdBatch = id_batch.IdBatch;
 const TransferBatch = transfer_batch.TransferBatch;
 const Client = client.Client;
+
+const ClientResource = client.ClientResource;
+const AccountBatchResource = account_batch.AccountBatchResource;
+const IdBatchResource = id_batch.IdBatchResource;
+const TransferBatchResource = transfer_batch.TransferBatchResource;
 
 const vsr = @import("tigerbeetle/src/vsr.zig");
 pub const vsr_options = .{
@@ -213,37 +218,9 @@ export fn nif_init() *const e.ErlNifEntry {
 }
 
 export fn nif_load(env: beam.env, _: [*c]?*anyopaque, _: beam.term) c_int {
-    resource_types.client = e.enif_open_resource_type(
-        env,
-        null,
-        "tigerbeetlex_client",
-        resource_types.client_deinit_fn,
-        e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
-        null,
-    );
-    resource_types.account_batch = e.enif_open_resource_type(
-        env,
-        null,
-        "tigerbeetlex_account_batch",
-        resource_types.batch_deinit_fn(AccountBatch),
-        e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
-        null,
-    );
-    resource_types.id_batch = e.enif_open_resource_type(
-        env,
-        null,
-        "tigerbeetlex_id_batch",
-        resource_types.batch_deinit_fn(IdBatch),
-        e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
-        null,
-    );
-    resource_types.transfer_batch = e.enif_open_resource_type(
-        env,
-        null,
-        "tigerbeetlex_transfer_batch",
-        resource_types.batch_deinit_fn(TransferBatch),
-        e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
-        null,
-    );
+    ClientResource.create_type(env);
+    AccountBatchResource.create_type(env);
+    IdBatchResource.create_type(env);
+    TransferBatchResource.create_type(env);
     return 0;
 }

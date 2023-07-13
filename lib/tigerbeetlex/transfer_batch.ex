@@ -134,7 +134,7 @@ defmodule TigerBeetlex.TransferBatch do
   defp set_fun(:flags) do
     fn ref, idx, value ->
       flags_u16 = Flags.to_u16!(value)
-      NifAdapter.set_account_flags(ref, idx, flags_u16)
+      NifAdapter.set_transfer_flags(ref, idx, flags_u16)
     end
   end
 

@@ -18,6 +18,14 @@ defmodule TigerBeetlex.Connection do
   }
 
   @start_link_opts_schema [
+    name: [
+      type: :atom,
+      required: true,
+      doc: """
+      The name of the Connection process. The same atom has to be passed to all the other functions
+      as first argument.
+      """
+    ],
     cluster_id: [
       type: :non_neg_integer,
       required: true,
@@ -95,6 +103,11 @@ defmodule TigerBeetlex.Connection do
     {tigerbeetlex_opts, partition_supervisor_opts} = Keyword.split(opts, @start_link_opts_keys)
     tigerbeetlex_opts = NimbleOptions.validate!(tigerbeetlex_opts, @start_link_opts_schema)
 
+    # :name is actually a PartitionSupervisor key, but we validate it in the schema since
+    # it's required
+    {name, tigerbeetlex_opts} = Keyword.pop!(tigerbeetlex_opts, :name)
+    partition_supervisor_opts = Keyword.put(partition_supervisor_opts, :name, name)
+
     cluster_id = Keyword.fetch!(tigerbeetlex_opts, :cluster_id)
     addresses = Keyword.fetch!(tigerbeetlex_opts, :addresses)
     concurrency_max = Keyword.fetch!(tigerbeetlex_opts, :concurrency_max)
@@ -108,7 +121,7 @@ defmodule TigerBeetlex.Connection do
   @doc """
   Creates a batch of accounts.
 
-  `name` is either a PID or a name atom if `:name` was passed to `start_link/1`.
+  `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
   `account_batch` is a `%TigerBeetlex.AccountBatch{}`, see `TigerBeetlex.AccountBatch` for
   the functions to create and manipulate it.
@@ -156,7 +169,7 @@ defmodule TigerBeetlex.Connection do
   @doc """
   Creates a batch of transfers.
 
-  `name` is either a PID or a name atom if `:name` was passed to `start_link/1`.
+  `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
   `transfer_batch` is a `%TigerBeetlex.TransferBatch{}`, see `TigerBeetlex.TransferBatch` for
   the functions to create and manipulate it.
@@ -218,7 +231,7 @@ defmodule TigerBeetlex.Connection do
   @doc """
   Lookup a batch of accounts.
 
-  `name` is either a PID or a name atom if `:name` was passed to `start_link/1`.
+  `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
   `id_batch` is a `%TigerBeetlex.IDBatch{}`, see `TigerBeetlex.IDBatch` for the functions to
   create and manipulate it.
@@ -252,7 +265,7 @@ defmodule TigerBeetlex.Connection do
   @doc """
   Lookup a batch of transfers.
 
-  `name` is either a PID or a name atom if `:name` was passed to `start_link/1`.
+  `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
   `id_batch` is a `%TigerBeetlex.IDBatch{}`, see `TigerBeetlex.IDBatch` for the functions to
   create and manipulate it.

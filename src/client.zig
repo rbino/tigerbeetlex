@@ -15,9 +15,7 @@ const Batch = batch.Batch;
 const BatchResource = batch.BatchResource;
 const Resource = @import("resource.zig").Resource;
 
-pub const Client = struct {
-    zig_client: tb_client.tb_client_t,
-};
+pub const Client = tb_client.tb_client_t;
 pub const ClientResource = Resource(Client, client_resource_deinit_fn);
 
 const RequestContext = struct {
@@ -40,7 +38,7 @@ pub fn init(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) 
     const concurrency_max: u32 = beam.get_u32(env, args[2]) catch
         return beam.raise_function_clause_error(env);
 
-    const zig_client: tb_client.tb_client_t = tb_client.init(
+    const client: tb_client.tb_client_t = tb_client.init(
         beam.general_purpose_allocator,
         cluster_id,
         addresses,
@@ -57,13 +55,12 @@ pub fn init(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) 
         error.NetworkSubsystemFailed => return beam.make_error_atom(env, "network_subsystem"),
     };
 
-    const client = .{ .zig_client = zig_client };
     const client_resource = ClientResource.init(client) catch |err|
         switch (err) {
         error.OutOfMemory => {
             // Deinit the client
             // TODO: do some refactoring to allow using errdefer
-            tb_client.deinit(zig_client);
+            tb_client.deinit(client);
             return beam.make_error_atom(env, "out_of_memory");
         },
     };
@@ -91,7 +88,7 @@ fn submit(
         switch (err) {
         error.InvalidResourceTerm => return beam.make_error_atom(env, "invalid_client"),
     };
-    const client = client_resource.ptr_const();
+    const client = client_resource.value();
 
     const T = batch_item_type_for_operation(operation);
     const payload_resource = BatchResource(T).from_term_handle(env, payload_term) catch |err|
@@ -101,7 +98,7 @@ fn submit(
     const payload = payload_resource.ptr_const();
 
     var out_packet: ?*tb_client.tb_packet_t = undefined;
-    const status = tb_client.acquire_packet(client.zig_client, &out_packet);
+    const status = tb_client.acquire_packet(client, &out_packet);
     const packet = switch (status) {
         .ok => if (out_packet) |pkt| pkt else @panic("acquire packet returned null"),
         .concurrency_max_exceeded => return beam.make_error_atom(env, "too_many_requests"),
@@ -110,7 +107,7 @@ fn submit(
 
     var ctx: *RequestContext = beam.general_purpose_allocator.create(RequestContext) catch {
         // TODO: do some refactoring to allow using errdefer
-        tb_client.release_packet(client.zig_client, packet);
+        tb_client.release_packet(client, packet);
         return beam.make_error_atom(env, "out_of_memory");
     };
 
@@ -123,7 +120,7 @@ fn submit(
     // and free it
     if (e.enif_term_to_binary(env, ref, &ctx.request_ref_binary) == 0) {
         // TODO: do some refactoring to allow using errdefer
-        tb_client.release_packet(client.zig_client, packet);
+        tb_client.release_packet(client, packet);
         return beam.make_error_atom(env, "out_of_memory");
     }
 
@@ -143,7 +140,7 @@ fn submit(
     packet.user_data = ctx;
     packet.status = .ok;
 
-    tb_client.submit(client.zig_client, packet);
+    tb_client.submit(client, packet);
 
     return beam.make_ok_term(env, ref);
 }
@@ -239,6 +236,6 @@ fn client_resource_deinit_fn(_: beam.env, ptr: ?*anyopaque) callconv(.C) void {
         // TODO: this can now potentially block for a long time since it waits
         // for all the requests to be drained, investigate what it is blocking
         // and if this needs to be done in a separate thread
-        tb_client.deinit(cl.zig_client);
+        tb_client.deinit(cl.*);
     } else unreachable;
 }

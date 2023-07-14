@@ -114,6 +114,8 @@ jobs:
           # see https://github.com/erlef/setup-beam/issues/220
           - otp: "25.3"
             elixir: "1.14"
+          - otp: "26.0.2"
+            elixir: "1.15.2"
 
     steps:
       - name: Clone the repository

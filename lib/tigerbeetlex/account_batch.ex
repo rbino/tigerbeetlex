@@ -34,6 +34,19 @@ defmodule TigerBeetlex.AccountBatch do
     end
   end
 
+  @doc """
+  Creates a new account batch with the specified capacity, rasing in case of an error.
+
+  The capacity is the maximum number of accounts that can be added to the batch.
+  """
+  @spec new!(capacity :: non_neg_integer()) :: t()
+  def new!(capacity) when is_integer(capacity) and capacity > 0 do
+    case NifAdapter.create_account_batch(capacity) do
+      {:ok, ref} -> %AccountBatch{ref: ref}
+      {:error, reason} -> raise reason
+    end
+  end
+
   @add_account_opts_schema [
     id: [
       required: true,
@@ -78,8 +91,20 @@ defmodule TigerBeetlex.AccountBatch do
           {:ok, t()}
           | Types.add_account_errors()
           | Types.set_function_errors()
-          | {:error, NimbleOptions.ValidationError.t()}
   def add_account(%AccountBatch{} = batch, opts) do
+    %AccountBatch{ref: ref} = batch
+
+    with {:ok, new_length} <- NifAdapter.add_account(ref),
+         :ok <- set_fields(ref, new_length - 1, opts) do
+      {:ok, batch}
+    end
+  end
+
+  @spec add_account(batch :: t(), opts :: keyword()) ::
+          {:ok, t()}
+          | Types.add_account_errors()
+          | Types.set_function_errors()
+  def add_account!(%AccountBatch{} = batch, opts) do
     %AccountBatch{ref: ref} = batch
 
     with {:ok, new_length} <- NifAdapter.add_account(ref),

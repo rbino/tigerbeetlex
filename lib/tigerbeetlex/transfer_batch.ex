@@ -99,7 +99,6 @@ defmodule TigerBeetlex.TransferBatch do
           {:ok, t()}
           | Types.add_transfer_errors()
           | Types.set_function_errors()
-          | {:error, NimbleOptions.ValidationError.t()}
   def add_transfer(%TransferBatch{} = batch, opts) do
     %TransferBatch{ref: ref} = batch
 

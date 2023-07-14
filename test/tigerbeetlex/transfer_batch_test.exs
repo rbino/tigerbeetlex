@@ -102,4 +102,31 @@ defmodule Tigerbeetlex.TransferBatchTest do
       end
     end
   end
+
+  describe "TransferBatch.add_transfer!/2" do
+    setup do
+      valid_transfer_opts = [
+        id: <<1::128>>,
+        debit_account_id: <<1::128>>,
+        credit_account_id: <<2::128>>,
+        code: 1,
+        ledger: 1,
+        amount: 42
+      ]
+
+      {:ok, valid_opts: valid_transfer_opts, batch: TransferBatch.new!(32)}
+    end
+
+    test "succeeds with valid_opts", %{batch: batch, valid_opts: opts} do
+      assert %TransferBatch{} = TransferBatch.add_transfer!(batch, opts)
+    end
+
+    test "fails when exceeding capacity", %{valid_opts: opts} do
+      batch =
+        TransferBatch.new!(1)
+        |> TransferBatch.add_transfer!(opts)
+
+      assert_raise RuntimeError, fn -> TransferBatch.add_transfer!(batch, opts) end
+    end
+  end
 end

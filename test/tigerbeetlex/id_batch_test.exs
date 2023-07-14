@@ -39,4 +39,22 @@ defmodule Tigerbeetlex.IDBatchTest do
       end
     end
   end
+
+  describe "IDBatch.add_id!/2" do
+    setup do
+      {:ok, batch: IDBatch.new!(32)}
+    end
+
+    test "succeeds with valid id", %{batch: batch} do
+      assert %IDBatch{} = IDBatch.add_id!(batch, <<1::128>>)
+    end
+
+    test "fails when exceeding capacity" do
+      batch =
+        IDBatch.new!(1)
+        |> IDBatch.add_id!(<<1::128>>)
+
+      assert_raise RuntimeError, fn -> IDBatch.add_id!(batch, <<2::128>>) end
+    end
+  end
 end

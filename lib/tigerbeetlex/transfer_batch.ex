@@ -34,6 +34,19 @@ defmodule TigerBeetlex.TransferBatch do
     end
   end
 
+  @doc """
+  Creates a new transfer batch with the specified capacity, rasing in case of an error..
+
+  The capacity is the maximum number of transfers that can be added to the batch.
+  """
+  @spec new(capacity :: non_neg_integer()) :: t()
+  def new!(capacity) when is_integer(capacity) and capacity > 0 do
+    case new(capacity) do
+      {:ok, batch} -> batch
+      {:error, reason} -> raise RuntimeError, inspect(reason)
+    end
+  end
+
   @add_transfer_opts_schema [
     id: [
       required: true,
@@ -106,6 +119,20 @@ defmodule TigerBeetlex.TransferBatch do
     with {:ok, new_length} <- NifAdapter.add_transfer(ref),
          :ok <- set_fields(ref, new_length - 1, opts) do
       {:ok, batch}
+    end
+  end
+
+  @doc """
+  Adds a transfer to the batch, raising in case of an error. The fields of the transfer are passed
+  as a keyword list.
+
+  See `add_transfer/2` for the supported options.
+  """
+  @spec add_transfer!(batch :: t(), opts :: keyword()) :: t()
+  def add_transfer!(%TransferBatch{} = batch, opts) do
+    case add_transfer(batch, opts) do
+      {:ok, batch} -> batch
+      {:error, reason} -> raise RuntimeError, inspect(reason)
     end
   end
 

@@ -24,11 +24,9 @@ bench = fn ->
 
   {total, max} =
     Enum.reduce(chunks, {0, 0}, fn chunk, {time_total_us, max_batch_us} ->
-      {:ok, batch} = TransferBatch.new(batch_size)
-
-      Enum.each(chunk, fn _idx ->
-        {:ok, _batch} =
-          TransferBatch.add_transfer(batch,
+      batch =
+        Enum.reduce(chunk, TransferBatch.new!(batch_size), fn _idx, acc ->
+          TransferBatch.add_transfer!(acc,
             id: <<0::unsigned-little-size(128)>>,
             debit_account_id: <<0::unsigned-little-size(128)>>,
             credit_account_id: <<0::unsigned-little-size(128)>>,
@@ -36,7 +34,7 @@ bench = fn ->
             code: 1,
             amount: 10
           )
-      end)
+        end)
 
       {elapsed, response} = :timer.tc(fn -> Connection.create_transfers(:tb, batch) end)
 

@@ -69,4 +69,28 @@ defmodule Tigerbeetlex.AccountBatchTest do
       end
     end
   end
+
+  describe "AccountBatch.add_account!/2" do
+    setup do
+      valid_account_opts = [
+        id: <<1::128>>,
+        code: 1,
+        ledger: 1
+      ]
+
+      {:ok, valid_opts: valid_account_opts, batch: AccountBatch.new!(32)}
+    end
+
+    test "succeeds with valid_opts", %{batch: batch, valid_opts: opts} do
+      assert %AccountBatch{} = AccountBatch.add_account!(batch, opts)
+    end
+
+    test "fails when exceeding capacity", %{valid_opts: opts} do
+      batch =
+        AccountBatch.new!(1)
+        |> AccountBatch.add_account!(opts)
+
+      assert_raise RuntimeError, fn -> AccountBatch.add_account!(batch, opts) end
+    end
+  end
 end

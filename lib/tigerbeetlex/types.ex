@@ -15,60 +15,72 @@ defmodule TigerBeetlex.Types do
 
   @type uint128 :: <<_::128>>
 
-  @type client_init_errors ::
-          {:error, :unexpected}
-          | {:error, :out_of_memory}
-          | {:error, :invalid_address}
-          | {:error, :address_limit_exceeded}
-          | {:error, :system_resources}
-          | {:error, :network_subsystem}
+  @type client_init_error ::
+          :unexpected
+          | :out_of_memory
+          | :invalid_address
+          | :address_limit_exceeded
+          | :system_resources
+          | :network_subsystem
 
-  @type create_account_batch_errors ::
-          {:error, :out_of_memory}
+  @type create_account_batch_error :: :out_of_memory
 
-  @type create_id_batch_errors ::
-          {:error, :out_of_memory}
+  @type create_id_batch_error ::
+          :out_of_memory
 
-  @type create_transfer_batch_errors ::
-          {:error, :out_of_memory}
+  @type create_transfer_batch_error ::
+          :out_of_memory
 
-  @type create_accounts_errors ::
-          {:error, :invalid_client}
-          | {:error, :invalid_batch}
-          | {:error, :out_of_memory}
-          | {:error, :too_many_requests}
+  @type create_accounts_error ::
+          :invalid_client
+          | :invalid_batch
+          | :out_of_memory
+          | :too_many_requests
 
-  @type add_account_errors ::
-          {:error, :invalid_batch}
-          | {:error, :batch_full}
+  @type add_account_error ::
+          :invalid_batch
+          | :batch_full
 
-  @type add_id_errors ::
-          {:error, :invalid_batch}
-          | {:error, :batch_full}
+  @type add_id_error ::
+          :invalid_batch
+          | :batch_full
 
-  @type add_transfer_errors ::
-          {:error, :invalid_batch}
-          | {:error, :batch_full}
+  @type add_transfer_error ::
+          :invalid_batch
+          | :batch_full
 
-  @type set_function_errors ::
-          {:error, :out_of_bounds}
-          | {:error, :invalid_account_batch}
+  @type set_function_error ::
+          :out_of_bounds
+          | :invalid_account_batch
 
-  @type create_transfers_errors ::
-          {:error, :invalid_client}
-          | {:error, :invalid_batch}
-          | {:error, :out_of_memory}
-          | {:error, :too_many_requests}
+  @type create_transfers_error ::
+          :invalid_client
+          | :invalid_batch
+          | :out_of_memory
+          | :too_many_requests
 
-  @type lookup_accounts_errors ::
-          {:error, :invalid_client}
-          | {:error, :invalid_batch}
-          | {:error, :out_of_memory}
-          | {:error, :too_many_requests}
+  @type lookup_accounts_error ::
+          :invalid_client
+          | :invalid_batch
+          | :out_of_memory
+          | :too_many_requests
 
-  @type lookup_transfers_errors ::
-          {:error, :invalid_client}
-          | {:error, :invalid_batch}
-          | {:error, :out_of_memory}
-          | {:error, :too_many_requests}
+  @type lookup_transfers_error ::
+          :invalid_client
+          | :invalid_batch
+          | :out_of_memory
+          | :too_many_requests
+
+  @type tigerbeetlex_connection_start_option ::
+          {:cluster_id, non_neg_integer()}
+          | {:addresses, [String.t()]}
+          | {:concurrency_max, [pos_integer()]}
+
+  @type partition_supervisor_start_option :: {atom(), any()}
+
+  @type start_option ::
+          tigerbeetlex_connection_start_option()
+          | partition_supervisor_start_option()
+
+  @type start_options :: [start_option()]
 end

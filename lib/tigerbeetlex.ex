@@ -44,7 +44,7 @@ defmodule TigerBeetlex do
           addresses :: [binary()],
           concurrency_max :: pos_integer()
         ) ::
-          {:ok, t()} | Types.client_init_errors()
+          {:ok, t()} | {:error, Types.client_init_error()}
   def connect(cluster_id, addresses, concurrency_max)
       when cluster_id >= 0 and is_list(addresses) and is_integer(concurrency_max) and
              concurrency_max > 0 do
@@ -115,7 +115,7 @@ defmodule TigerBeetlex do
       #=> [%TigerBeetlex.CreateAccountError{index: 0, reason: :id_must_not_be_zero}]
   """
   @spec create_accounts(client :: t(), account_batch :: TigerBeetlex.AccountBatch.t()) ::
-          {:ok, reference()} | Types.create_accounts_errors()
+          {:ok, reference()} | {:error, Types.create_accounts_error()}
   def create_accounts(%__MODULE__{} = client, %AccountBatch{} = account_batch) do
     NifAdapter.create_accounts(client.ref, account_batch.ref)
   end
@@ -194,7 +194,7 @@ defmodule TigerBeetlex do
       #=> [%TigerBeetlex.CreateTransferError{index: 0, reason: :id_must_not_be_zero}]
   """
   @spec create_transfers(client :: t(), transfer_batch :: TigerBeetlex.TransferBatch.t()) ::
-          {:ok, reference()} | Types.create_transfers_errors()
+          {:ok, reference()} | {:error, Types.create_transfers_error()}
   def create_transfers(%__MODULE__{} = client, %TransferBatch{} = transfer_batch) do
     NifAdapter.create_transfers(client.ref, transfer_batch.ref)
   end
@@ -240,7 +240,7 @@ defmodule TigerBeetlex do
       #=> [%TigerBeetlex.Account{}]
   """
   @spec lookup_accounts(client :: t(), id_batch :: TigerBeetlex.IDBatch.t()) ::
-          {:ok, reference()} | Types.lookup_accounts_errors()
+          {:ok, reference()} | {:error, Types.lookup_accounts_error()}
   def lookup_accounts(%__MODULE__{} = client, %IDBatch{} = id_batch) do
     NifAdapter.lookup_accounts(client.ref, id_batch.ref)
   end
@@ -286,7 +286,7 @@ defmodule TigerBeetlex do
       #=> [%TigerBeetlex.Transfer{}]
   """
   @spec lookup_transfers(client :: t(), id_batch :: TigerBeetlex.IDBatch.t()) ::
-          {:ok, reference()} | Types.lookup_transfers_errors()
+          {:ok, reference()} | {:error, Types.lookup_transfers_error()}
   def lookup_transfers(%__MODULE__{} = client, %IDBatch{} = id_batch) do
     NifAdapter.lookup_transfers(client.ref, id_batch.ref)
   end

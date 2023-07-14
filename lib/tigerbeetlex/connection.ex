@@ -99,6 +99,8 @@ defmodule TigerBeetlex.Connection do
           name: :tb
         )
   """
+  @spec start_link(opts :: Types.start_options()) ::
+          Supervisor.on_start() | {:error, Types.client_init_error()}
   def start_link(opts) do
     {tigerbeetlex_opts, partition_supervisor_opts} = Keyword.split(opts, @start_link_opts_keys)
     tigerbeetlex_opts = NimbleOptions.validate!(tigerbeetlex_opts, @start_link_opts_schema)
@@ -160,7 +162,7 @@ defmodule TigerBeetlex.Connection do
           name :: PartitionSupervisor.name(),
           account_batch :: TigerBeetlex.AccountBatch.t()
         ) ::
-          {:ok, Enumerable.t()} | Types.create_accounts_errors()
+          {:ok, Enumerable.t()} | {:error, Types.create_accounts_error()}
   def create_accounts(name, %AccountBatch{} = account_batch) do
     via_tuple(name)
     |> GenServer.call({:create_accounts, account_batch})
@@ -222,7 +224,7 @@ defmodule TigerBeetlex.Connection do
           name :: PartitionSupervisor.name(),
           transfer_batch :: TigerBeetlex.TransferBatch.t()
         ) ::
-          {:ok, Enumerable.t()} | Types.create_transfers_errors()
+          {:ok, Enumerable.t()} | {:error, Types.create_transfers_error()}
   def create_transfers(name, %TransferBatch{} = transfer_batch) do
     via_tuple(name)
     |> GenServer.call({:create_transfers, transfer_batch})
@@ -256,7 +258,7 @@ defmodule TigerBeetlex.Connection do
           name :: PartitionSupervisor.name(),
           id_batch :: TigerBeetlex.IDBatch.t()
         ) ::
-          {:ok, Enumerable.t()} | Types.lookup_accounts_errors()
+          {:ok, Enumerable.t()} | {:error, Types.lookup_accounts_error()}
   def lookup_accounts(name, %IDBatch{} = id_batch) do
     via_tuple(name)
     |> GenServer.call({:lookup_accounts, id_batch})
@@ -290,7 +292,7 @@ defmodule TigerBeetlex.Connection do
           name :: PartitionSupervisor.name(),
           id_batch :: TigerBeetlex.IDBatch.t()
         ) ::
-          {:ok, Enumerable.t()} | Types.lookup_transfers_errors()
+          {:ok, Enumerable.t()} | {:error, Types.lookup_transfers_error()}
   def lookup_transfers(name, %IDBatch{} = id_batch) do
     via_tuple(name)
     |> GenServer.call({:lookup_transfers, id_batch})

@@ -27,7 +27,7 @@ defmodule TigerBeetlex.TransferBatch do
   The capacity is the maximum number of transfers that can be added to the batch.
   """
   @spec new(capacity :: non_neg_integer()) ::
-          {:ok, t()} | Types.create_transfer_batch_errors()
+          {:ok, t()} | {:error, Types.create_transfer_batch_error()}
   def new(capacity) when is_integer(capacity) and capacity > 0 do
     with {:ok, ref} <- NifAdapter.create_transfer_batch(capacity) do
       {:ok, %TransferBatch{ref: ref}}
@@ -39,7 +39,7 @@ defmodule TigerBeetlex.TransferBatch do
 
   The capacity is the maximum number of transfers that can be added to the batch.
   """
-  @spec new(capacity :: non_neg_integer()) :: t()
+  @spec new!(capacity :: non_neg_integer()) :: t()
   def new!(capacity) when is_integer(capacity) and capacity > 0 do
     case new(capacity) do
       {:ok, batch} -> batch
@@ -110,9 +110,7 @@ defmodule TigerBeetlex.TransferBatch do
   """
   @spec add_transfer(batch :: t(), opts :: keyword()) ::
           {:ok, t()}
-          | Types.add_transfer_errors()
-          | Types.set_function_errors()
-          | {:error, NimbleOptions.ValidationError.t()}
+          | {:error, Types.add_transfer_error() | Types.set_function_error()}
   def add_transfer(%TransferBatch{} = batch, opts) do
     %TransferBatch{ref: ref} = batch
 

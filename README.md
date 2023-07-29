@@ -25,10 +25,6 @@ be found at <https://hexdocs.pm/tigerbeetlex>.
 
 ## Contributing
 
-Prerequisites: The current beta version of TigerBeetle is pinned to zig `0.9.1`, you'll need
-a zig executable binary in your `PATH` to compile the tigerbeetle git tree dependency in
-`./src/tigerbeetle` and a running TigerBeetle instance running on `127.0.0.1:3000`:
-
 ### Setup
 
 ```bash

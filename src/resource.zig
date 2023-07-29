@@ -9,7 +9,7 @@ pub const Error = error{
     OutOfMemory,
 };
 
-const DeinitFn = fn (beam.env, ?*anyopaque) callconv(.C) void;
+const DeinitFn = *const fn (beam.env, ?*anyopaque) callconv(.C) void;
 
 pub fn Resource(comptime T: anytype, comptime deinit_fn: ?DeinitFn) type {
     return struct {

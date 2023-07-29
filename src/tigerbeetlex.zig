@@ -19,10 +19,10 @@ const TransferBatchResource = transfer_batch.TransferBatchResource;
 
 const vsr = @import("tigerbeetle/src/vsr.zig");
 pub const vsr_options = .{
-    .config_base = vsr.config.ConfigBase.default,
+    .config_base = .default,
     .config_log_level = std.log.Level.info,
-    .tracer_backend = vsr.config.TracerBackend.none,
-    .hash_log_mode = vsr.config.HashLogMode.none,
+    .tracer_backend = .none,
+    .hash_log_mode = .none,
     .config_aof_record = false,
     .config_aof_recovery = false,
 };

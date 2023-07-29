@@ -15,7 +15,7 @@ jobs:
       matrix:
         otp: ["25.3"]
         elixir: ["1.14"]
-        zig: ["0.9.1"]
+        zig: ["0.10.1"]
     steps:
       - name: Clone the repository
         uses: actions/checkout@v2

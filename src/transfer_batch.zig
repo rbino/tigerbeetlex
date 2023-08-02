@@ -3,7 +3,7 @@ const assert = std.debug.assert;
 
 const batch = @import("batch.zig");
 const beam = @import("beam.zig");
-const e = @import("erl_nif.zig");
+const scheduler = beam.scheduler;
 
 const tb = @import("tigerbeetle");
 const Transfer = tb.Transfer;
@@ -28,7 +28,7 @@ pub fn add_transfer(env: beam.env, argc: c_int, argv: [*c]const beam.term) callc
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
     return batch.add_item(Transfer, env, args[0]) catch |err| switch (err) {
-        error.MutexLocked => return e.enif_schedule_nif(env, "add_transfer", 0, add_transfer, argc, argv),
+        error.MutexLocked => return scheduler.reschedule(env, "add_transfer", add_transfer, argc, argv),
     };
 }
 
@@ -73,7 +73,7 @@ fn field_setter_fn(comptime field: std.meta.FieldEnum(Transfer)) fn (
 
             {
                 if (!transfer_batch.mutex.tryLock()) {
-                    return e.enif_schedule_nif(env, setter_name, 0, setter_fn, argc, argv);
+                    return scheduler.reschedule(env, setter_name, add_transfer, argc, argv);
                 }
                 defer transfer_batch.mutex.unlock();
 

@@ -3,7 +3,7 @@ const assert = std.debug.assert;
 
 const batch = @import("batch.zig");
 const beam = @import("beam.zig");
-const e = @import("erl_nif.zig");
+const scheduler = beam.scheduler;
 
 pub const IdBatch = batch.Batch(u128);
 pub const IdBatchResource = batch.BatchResource(u128);
@@ -37,7 +37,7 @@ pub fn add_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C
 
     {
         if (!id_batch.mutex.tryLock()) {
-            return e.enif_schedule_nif(env, "add_id", 0, add_id, argc, argv);
+            return scheduler.reschedule(env, "add_id", add_id, argc, argv);
         }
         defer id_batch.mutex.unlock();
 
@@ -68,7 +68,7 @@ pub fn set_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C
 
     {
         if (!id_batch.mutex.tryLock()) {
-            return e.enif_schedule_nif(env, "set_id", 0, set_id, argc, argv);
+            return scheduler.reschedule(env, "set_id", set_id, argc, argv);
         }
         defer id_batch.mutex.unlock();
 

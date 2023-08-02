@@ -3,7 +3,7 @@ const assert = std.debug.assert;
 
 const batch = @import("batch.zig");
 const beam = @import("beam.zig");
-const e = @import("erl_nif.zig");
+const scheduler = beam.scheduler;
 
 const tb = @import("tigerbeetle");
 const Account = tb.Account;
@@ -28,7 +28,7 @@ pub fn add_account(env: beam.env, argc: c_int, argv: [*c]const beam.term) callco
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
     return batch.add_item(Account, env, args[0]) catch |err| switch (err) {
-        error.MutexLocked => return e.enif_schedule_nif(env, "add_account", 0, add_account, argc, argv),
+        error.MutexLocked => return scheduler.reschedule(env, "add_account", add_account, argc, argv),
     };
 }
 
@@ -68,7 +68,7 @@ fn field_setter_fn(comptime field: std.meta.FieldEnum(Account)) fn (
 
             {
                 if (!account_batch.mutex.tryLock()) {
-                    return e.enif_schedule_nif(env, setter_name, 0, setter_fn, argc, argv);
+                    return scheduler.reschedule(env, setter_name, setter_fn, argc, argv);
                 }
                 defer account_batch.mutex.unlock();
 

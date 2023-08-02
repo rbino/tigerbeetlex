@@ -99,6 +99,20 @@ pub fn make_u32(env_: env, val: u32) term {
     return e.enif_make_uint(env_, val);
 }
 
+/// Creates an BEAM tuple from a Zig tuple of terms
+pub fn make_tuple(env_: env, tuple: anytype) term {
+    const type_info = @typeInfo(@TypeOf(tuple));
+    if (type_info != .Struct or !type_info.Struct.is_tuple)
+        @compileError("invalid argument to make_tuple: not a tuple");
+
+    var tuple_list: [tuple.len]term = undefined;
+    inline for (tuple_list) |*tuple_item, index| {
+        const tuple_term = tuple[index];
+        tuple_item.* = tuple_term;
+    }
+    return e.enif_make_tuple_from_array(env_, &tuple_list, tuple.len);
+}
+
 pub const GetError = error{ArgumentError};
 
 /// Extract a binary from a term, returning it as a slice

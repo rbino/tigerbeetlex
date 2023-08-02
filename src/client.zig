@@ -209,21 +209,12 @@ fn on_completion(
     else
         beam.make_nil(env);
 
-    const response =
-        e.enif_make_tuple3(
-        env,
-        beam.make_u8(env, @enumToInt(status)),
-        beam.make_u8(env, operation),
-        result,
-    );
+    const status_term = beam.make_u8(env, @enumToInt(status));
+    const operation_term = beam.make_u8(env, operation);
+    const response = beam.make_tuple(env, .{ status_term, operation_term, result });
 
-    const msg =
-        e.enif_make_tuple3(
-        env,
-        beam.make_atom(env, "tigerbeetlex_response"),
-        ref,
-        response,
-    );
+    const tag = beam.make_atom(env, "tigerbeetlex_response");
+    const msg = beam.make_tuple(env, .{ tag, ref, response });
 
     // We're done with the packet, put it back in the pool
     tb_client.release_packet(client, packet);

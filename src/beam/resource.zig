@@ -1,8 +1,8 @@
 const std = @import("std");
 
 const assert = std.debug.assert;
-const beam = @import("beam.zig");
-const e = @import("erl_nif.zig");
+const beam = @import("../beam.zig");
+const e = @import("../erl_nif.zig");
 
 pub const Error = error{
     InvalidResourceTerm,
@@ -86,12 +86,12 @@ pub fn Resource(comptime T: anytype, comptime deinit_fn: ?DeinitFn) type {
 
         /// Decreases the refcount of a resource
         pub fn release(self: Self) void {
-            e.enif_release_resource(self.raw_ptr);
+            raw_release(self.raw_ptr);
         }
 
         /// Increases the refcount of a resource
         pub fn keep(self: Self) void {
-            e.enif_keep_resource(self.raw_ptr);
+            raw_keep(self.raw_ptr);
         }
 
         /// Returns the allocation size of the resource
@@ -119,4 +119,14 @@ pub fn Resource(comptime T: anytype, comptime deinit_fn: ?DeinitFn) type {
             return resource_type.?.beam_type;
         }
     };
+}
+
+/// Increases the refcount of a resource from its raw object pointer
+pub fn raw_keep(raw_ptr: *anyopaque) void {
+    e.enif_keep_resource(raw_ptr);
+}
+
+/// Decreases the refcount of a resource from its raw object pointer
+pub fn raw_release(raw_ptr: *anyopaque) void {
+    e.enif_release_resource(raw_ptr);
 }

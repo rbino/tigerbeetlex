@@ -1,11 +1,11 @@
 const std = @import("std");
 const beam = @import("beam.zig");
+const resource = beam.resource;
 const e = @import("erl_nif.zig");
 
 const account_batch = @import("account_batch.zig");
 const client = @import("client.zig");
 const id_batch = @import("id_batch.zig");
-const resource = @import("resource.zig");
 const transfer_batch = @import("transfer_batch.zig");
 const AccountBatch = account_batch.AccountBatch;
 const IdBatch = id_batch.IdBatch;

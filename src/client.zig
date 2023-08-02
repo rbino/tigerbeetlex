@@ -3,6 +3,8 @@ const assert = std.debug.assert;
 
 const beam = @import("beam.zig");
 const e = @import("erl_nif.zig");
+const resource = beam.resource;
+const Resource = resource.Resource;
 
 const tb = @import("tigerbeetle");
 const tb_client = @import("tigerbeetle/src/clients/c/tb_client.zig");
@@ -12,7 +14,6 @@ const Transfer = tb.Transfer;
 const batch = @import("batch.zig");
 const Batch = batch.Batch;
 const BatchResource = batch.BatchResource;
-const Resource = @import("resource.zig").Resource;
 
 pub const Client = tb_client.tb_client_t;
 pub const ClientResource = Resource(Client, client_resource_deinit_fn);
@@ -127,7 +128,7 @@ fn submit(
     // collected until we release it
     payload_resource.keep();
 
-    // We save the raw pointer in the context so we can release it later with enif_release_resource
+    // We save the raw pointer in the context so we can release it later with resource.raw_release
     ctx.payload_resource_ptr = payload_resource.raw_ptr;
 
     packet.operation = @enumToInt(operation);
@@ -187,8 +188,8 @@ fn on_completion(
     defer beam.general_purpose_allocator.destroy(ctx);
 
     // We don't need the payload anymore, let the garbage collector take care of it
-    // This is a raw resource pointer so we directly call enif_release_resource
-    e.enif_release_resource(ctx.payload_resource_ptr);
+    // This is a raw object pointer so we call resource.raw_release
+    resource.raw_release(ctx.payload_resource_ptr);
 
     const env = @intToPtr(*e.ErlNifEnv, context);
     defer e.enif_clear_env(env);

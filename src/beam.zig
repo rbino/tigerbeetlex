@@ -7,6 +7,7 @@ const e = @import("erl_nif.zig");
 
 pub const allocator = @import("beam/allocator.zig");
 pub const binary = e.ErlNifBinary;
+pub const resource = @import("beam/resource.zig");
 pub const env = ?*e.ErlNifEnv;
 pub const pid = e.ErlNifPid;
 pub const resource_type = ?*e.ErlNifResourceType;

@@ -6,9 +6,10 @@ const std = @import("std");
 const e = @import("erl_nif.zig");
 
 pub const allocator = @import("beam/allocator.zig");
-pub const binary = e.ErlNifBinary;
 pub const resource = @import("beam/resource.zig");
 pub const scheduler = @import("beam/scheduler.zig");
+
+pub const Binary = @import("beam/Binary.zig");
 pub const env = ?*e.ErlNifEnv;
 pub const pid = e.ErlNifPid;
 pub const resource_type = ?*e.ErlNifResourceType;
@@ -102,7 +103,7 @@ pub const GetError = error{ArgumentError};
 
 /// Extract a binary from a term, returning it as a slice
 pub fn get_char_slice(env_: env, src_term: term) GetError![]u8 {
-    var bin: binary = undefined;
+    var bin: e.ErlNifBinary = undefined;
     if (e.enif_inspect_binary(env_, src_term, &bin) == 0) {
         return GetError.ArgumentError;
     }
@@ -153,4 +154,16 @@ pub fn get_u16(env_: env, src_term: term) GetError!u16 {
     }
 
     return @intCast(u16, result);
+}
+
+pub const TermToBinaryError = error{OutOfMemory};
+
+/// Serializes a term to a beam.Binary
+pub fn term_to_binary(env_: env, src_term: term) TermToBinaryError!Binary {
+    var bin: e.ErlNifBinary = undefined;
+    if (e.enif_term_to_binary(env_, src_term, &bin) == 0) {
+        return error.OutOfMemory;
+    }
+
+    return Binary{ .binary = bin };
 }

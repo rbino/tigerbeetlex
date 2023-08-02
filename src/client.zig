@@ -20,7 +20,7 @@ pub const ClientResource = Resource(Client, client_resource_deinit_fn);
 
 const RequestContext = struct {
     caller_pid: beam.pid,
-    request_ref_binary: beam.binary,
+    request_ref_binary: beam.Binary,
     payload_resource_ptr: *anyopaque,
 };
 
@@ -118,11 +118,11 @@ fn submit(
     // TigerBeetle's thread to copy the ref into, but we don't have it and don't
     // have any way to create it from this side, pass it to the completion function
     // and free it
-    if (e.enif_term_to_binary(env, ref, &ctx.request_ref_binary) == 0) {
+    ctx.request_ref_binary = beam.term_to_binary(env, ref) catch {
         // TODO: do some refactoring to allow using errdefer
         tb_client.release_packet(client, packet);
         return beam.make_error_atom(env, "out_of_memory");
-    }
+    };
 
     // We increase the reference count on the payload resource so it doesn't get garbage
     // collected until we release it
@@ -194,10 +194,9 @@ fn on_completion(
     const env = @intToPtr(*e.ErlNifEnv, context);
     defer e.enif_clear_env(env);
 
-    const ref_binary = &ctx.request_ref_binary;
-    defer e.enif_release_binary(ref_binary);
-    var ref: beam.term = undefined;
-    assert(e.enif_binary_to_term(env, ref_binary.data, ref_binary.size, &ref, 0) != 0);
+    var ref_binary = ctx.request_ref_binary;
+    defer ref_binary.release();
+    const ref = ref_binary.to_term(env) catch unreachable;
 
     const caller_pid = ctx.caller_pid;
 

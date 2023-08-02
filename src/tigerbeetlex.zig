@@ -1,7 +1,7 @@
 const std = @import("std");
 const beam = @import("beam.zig");
+const nif = beam.nif;
 const resource = beam.resource;
-const e = @import("erl_nif.zig");
 
 const account_batch = @import("account_batch.zig");
 const client = @import("client.zig");
@@ -32,195 +32,46 @@ pub const vsr_options = .{
 // TODO: investigate why.
 pub const log_level: std.log.Level = .err;
 
-export var __exported_nifs__ = [_]e.ErlNifFunc{
-    e.ErlNifFunc{
-        .name = "client_init",
-        .arity = 3,
-        .fptr = client.init,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "create_account_batch",
-        .arity = 1,
-        .fptr = account_batch.create,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "add_account",
-        .arity = 1,
-        .fptr = account_batch.add_account,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_account_id",
-        .arity = 3,
-        .fptr = account_batch.set_account_id,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_account_user_data",
-        .arity = 3,
-        .fptr = account_batch.set_account_user_data,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_account_ledger",
-        .arity = 3,
-        .fptr = account_batch.set_account_ledger,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_account_code",
-        .arity = 3,
-        .fptr = account_batch.set_account_code,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_account_flags",
-        .arity = 3,
-        .fptr = account_batch.set_account_flags,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "create_accounts",
-        .arity = 2,
-        .fptr = client.create_accounts,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "create_transfer_batch",
-        .arity = 1,
-        .fptr = transfer_batch.create,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "add_transfer",
-        .arity = 1,
-        .fptr = transfer_batch.add_transfer,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_transfer_id",
-        .arity = 3,
-        .fptr = transfer_batch.set_transfer_id,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_transfer_debit_account_id",
-        .arity = 3,
-        .fptr = transfer_batch.set_transfer_debit_account_id,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_transfer_credit_account_id",
-        .arity = 3,
-        .fptr = transfer_batch.set_transfer_credit_account_id,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_transfer_user_data",
-        .arity = 3,
-        .fptr = transfer_batch.set_transfer_user_data,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_transfer_pending_id",
-        .arity = 3,
-        .fptr = transfer_batch.set_transfer_pending_id,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_transfer_timeout",
-        .arity = 3,
-        .fptr = transfer_batch.set_transfer_timeout,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_transfer_ledger",
-        .arity = 3,
-        .fptr = transfer_batch.set_transfer_ledger,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_transfer_code",
-        .arity = 3,
-        .fptr = transfer_batch.set_transfer_code,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_transfer_flags",
-        .arity = 3,
-        .fptr = transfer_batch.set_transfer_flags,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_transfer_amount",
-        .arity = 3,
-        .fptr = transfer_batch.set_transfer_amount,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "create_transfers",
-        .arity = 2,
-        .fptr = client.create_transfers,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "create_id_batch",
-        .arity = 1,
-        .fptr = id_batch.create,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "add_id",
-        .arity = 2,
-        .fptr = id_batch.add_id,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "set_id",
-        .arity = 3,
-        .fptr = id_batch.set_id,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "lookup_accounts",
-        .arity = 2,
-        .fptr = client.lookup_accounts,
-        .flags = 0,
-    },
-    e.ErlNifFunc{
-        .name = "lookup_transfers",
-        .arity = 2,
-        .fptr = client.lookup_transfers,
-        .flags = 0,
-    },
+var exported_nifs = [_]nif.FunctionEntry{
+    nif.function_entry("client_init", 3, client.init),
+    nif.function_entry("create_account_batch", 1, account_batch.create),
+    nif.function_entry("add_account", 1, account_batch.add_account),
+    nif.function_entry("set_account_id", 3, account_batch.set_account_id),
+    nif.function_entry("set_account_user_data", 3, account_batch.set_account_user_data),
+    nif.function_entry("set_account_ledger", 3, account_batch.set_account_ledger),
+    nif.function_entry("set_account_code", 3, account_batch.set_account_code),
+    nif.function_entry("set_account_flags", 3, account_batch.set_account_flags),
+    nif.function_entry("create_accounts", 2, client.create_accounts),
+    nif.function_entry("create_transfer_batch", 1, transfer_batch.create),
+    nif.function_entry("add_transfer", 1, transfer_batch.add_transfer),
+    nif.function_entry("set_transfer_id", 3, transfer_batch.set_transfer_id),
+    nif.function_entry("set_transfer_debit_account_id", 3, transfer_batch.set_transfer_debit_account_id),
+    nif.function_entry("set_transfer_credit_account_id", 3, transfer_batch.set_transfer_credit_account_id),
+    nif.function_entry("set_transfer_user_data", 3, transfer_batch.set_transfer_user_data),
+    nif.function_entry("set_transfer_pending_id", 3, transfer_batch.set_transfer_pending_id),
+    nif.function_entry("set_transfer_timeout", 3, transfer_batch.set_transfer_timeout),
+    nif.function_entry("set_transfer_ledger", 3, transfer_batch.set_transfer_ledger),
+    nif.function_entry("set_transfer_code", 3, transfer_batch.set_transfer_code),
+    nif.function_entry("set_transfer_flags", 3, transfer_batch.set_transfer_flags),
+    nif.function_entry("set_transfer_amount", 3, transfer_batch.set_transfer_amount),
+    nif.function_entry("create_transfers", 2, client.create_transfers),
+    nif.function_entry("create_id_batch", 1, id_batch.create),
+    nif.function_entry("add_id", 2, id_batch.add_id),
+    nif.function_entry("set_id", 3, id_batch.set_id),
+    nif.function_entry("lookup_accounts", 2, client.lookup_accounts),
+    nif.function_entry("lookup_transfers", 2, client.lookup_transfers),
 };
 
-const entry = e.ErlNifEntry{
-    .major = 2,
-    .minor = 16,
-    .name = "Elixir.TigerBeetlex.NifAdapter",
-    .num_of_funcs = __exported_nifs__.len,
-    .funcs = &(__exported_nifs__[0]),
-    .load = nif_load,
-    .reload = null, // currently unsupported
-    .upgrade = null, // currently unsupported
-    .unload = null, // currently unsupported
-    .vm_variant = "beam.vanilla",
-    .options = 1,
-    .sizeof_ErlNifResourceTypeInit = @sizeOf(e.ErlNifResourceTypeInit),
-    .min_erts = "erts-13.1.2",
-};
-
-export fn nif_init() *const e.ErlNifEntry {
-    return &entry;
-}
-
-export fn nif_load(env: beam.Env, _: [*c]?*anyopaque, _: beam.Term) c_int {
+fn nif_load(env: beam.Env, _: [*c]?*anyopaque, _: beam.Term) callconv(.C) c_int {
     ClientResource.create_type(env);
     AccountBatchResource.create_type(env);
     IdBatchResource.create_type(env);
     TransferBatchResource.create_type(env);
     return 0;
+}
+
+const entrypoint = nif.entrypoint("Elixir.TigerBeetlex.NifAdapter", &exported_nifs, nif_load);
+
+export fn nif_init() *const nif.Entrypoint {
+    return &entrypoint;
 }

@@ -2,9 +2,8 @@ const std = @import("std");
 const assert = std.debug.assert;
 
 const batch = @import("batch.zig");
-const beam = @import("beam");
-const beam_extras = @import("beam_extras.zig");
-const e = @import("erl_nif");
+const beam = @import("beam.zig");
+const e = @import("erl_nif.zig");
 
 pub const IdBatch = batch.Batch(u128);
 pub const IdBatchResource = batch.BatchResource(u128);
@@ -26,7 +25,7 @@ pub fn add_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C
 
     const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
 
-    const id = beam_extras.get_u128(env, args[1]) catch
+    const id = beam.get_u128(env, args[1]) catch
         return beam.raise_function_clause_error(env);
 
     const batch_term = args[0];
@@ -77,7 +76,7 @@ pub fn set_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C
             return beam.make_error_atom(env, "out_of_bounds");
         }
 
-        const id = beam_extras.get_u128(env, args[2]) catch
+        const id = beam.get_u128(env, args[2]) catch
             return beam.raise_function_clause_error(env);
 
         id_batch.items[idx] = id;

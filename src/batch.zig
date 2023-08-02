@@ -1,9 +1,8 @@
 const std = @import("std");
 const Mutex = std.Thread.Mutex;
 
-const beam = @import("beam");
-const beam_extras = @import("beam_extras.zig");
-const e = @import("erl_nif");
+const beam = @import("beam.zig");
+const e = @import("erl_nif.zig");
 const Resource = @import("resource.zig").Resource;
 
 const tb = @import("tigerbeetle");

@@ -2,9 +2,8 @@ const std = @import("std");
 const assert = std.debug.assert;
 
 const batch = @import("batch.zig");
-const beam = @import("beam");
-const beam_extras = @import("beam_extras.zig");
-const e = @import("erl_nif");
+const beam = @import("beam.zig");
+const e = @import("erl_nif.zig");
 
 const tb = @import("tigerbeetle");
 const Account = tb.Account;
@@ -89,9 +88,9 @@ fn field_setter_fn(comptime field: std.meta.FieldEnum(Account)) fn (
 
 fn term_to_value_fn(
     comptime field: std.meta.FieldEnum(Account),
-) fn (beam.env, beam.term) beam.Error!std.meta.fieldInfo(Account, field).field_type {
+) fn (beam.env, beam.term) beam.GetError!std.meta.fieldInfo(Account, field).field_type {
     return switch (field) {
-        .id, .user_data => beam_extras.get_u128,
+        .id, .user_data => beam.get_u128,
         .ledger => beam.get_u32,
         .code => beam.get_u16,
         .flags => term_to_account_flags,
@@ -99,9 +98,9 @@ fn term_to_value_fn(
     };
 }
 
-fn term_to_account_flags(env: beam.env, term: beam.term) beam.Error!AccountFlags {
+fn term_to_account_flags(env: beam.env, term: beam.term) beam.GetError!AccountFlags {
     const flags_uint = beam.get_u16(env, term) catch
-        return beam.Error.FunctionClauseError;
+        return beam.GetError.ArgumentError;
 
     return @bitCast(AccountFlags, flags_uint);
 }

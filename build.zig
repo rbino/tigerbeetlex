@@ -27,9 +27,6 @@ pub fn build(b: *std.build.Builder) void {
 
     const lib = b.addSharedLibrary("tigerbeetlex", "src/tigerbeetlex.zig", .unversioned);
     lib.addSystemIncludePath(erts_include_dir);
-    lib.addPackagePath("beam", "deps/zigler/priv/beam/beam.zig");
-    lib.addPackagePath("beam_mutex", "deps/zigler/priv/beam/beam_mutex.zig");
-    lib.addPackagePath("erl_nif", "deps/zigler/priv/beam/erl_nif.zig");
     lib.addPackagePath("tigerbeetle", "src/tigerbeetle/src/tigerbeetle.zig");
     lib.linkLibC();
     lib.setBuildMode(mode);

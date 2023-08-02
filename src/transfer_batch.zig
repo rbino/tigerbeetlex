@@ -2,9 +2,8 @@ const std = @import("std");
 const assert = std.debug.assert;
 
 const batch = @import("batch.zig");
-const beam = @import("beam");
-const beam_extras = @import("beam_extras.zig");
-const e = @import("erl_nif");
+const beam = @import("beam.zig");
+const e = @import("erl_nif.zig");
 
 const tb = @import("tigerbeetle");
 const Transfer = tb.Transfer;
@@ -94,9 +93,9 @@ fn field_setter_fn(comptime field: std.meta.FieldEnum(Transfer)) fn (
 
 fn term_to_value_fn(
     comptime field: std.meta.FieldEnum(Transfer),
-) fn (beam.env, beam.term) beam.Error!std.meta.fieldInfo(Transfer, field).field_type {
+) fn (beam.env, beam.term) beam.GetError!std.meta.fieldInfo(Transfer, field).field_type {
     return switch (field) {
-        .id, .debit_account_id, .credit_account_id, .user_data, .pending_id => beam_extras.get_u128,
+        .id, .debit_account_id, .credit_account_id, .user_data, .pending_id => beam.get_u128,
         .timeout, .amount => beam.get_u64,
         .ledger => beam.get_u32,
         .code => beam.get_u16,
@@ -105,9 +104,9 @@ fn term_to_value_fn(
     };
 }
 
-fn term_to_transfer_flags(env: beam.env, term: beam.term) beam.Error!TransferFlags {
+fn term_to_transfer_flags(env: beam.env, term: beam.term) beam.GetError!TransferFlags {
     const flags_uint = beam.get_u16(env, term) catch
-        return beam.Error.FunctionClauseError;
+        return beam.GetError.ArgumentError;
 
     return @bitCast(TransferFlags, flags_uint);
 }

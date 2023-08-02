@@ -1,8 +1,8 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
-const beam = @import("beam");
-const e = @import("erl_nif");
+const beam = @import("beam.zig");
+const e = @import("erl_nif.zig");
 
 const tb = @import("tigerbeetle");
 const tb_client = @import("tigerbeetle/src/clients/c/tb_client.zig");
@@ -10,7 +10,6 @@ const Account = tb.Account;
 const Transfer = tb.Transfer;
 
 const batch = @import("batch.zig");
-const beam_extras = @import("beam_extras.zig");
 const Batch = batch.Batch;
 const BatchResource = batch.BatchResource;
 const Resource = @import("resource.zig").Resource;

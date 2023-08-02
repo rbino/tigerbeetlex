@@ -1,6 +1,6 @@
 const std = @import("std");
-const beam = @import("beam");
-const e = @import("erl_nif");
+const beam = @import("beam.zig");
+const e = @import("erl_nif.zig");
 
 const account_batch = @import("account_batch.zig");
 const client = @import("client.zig");

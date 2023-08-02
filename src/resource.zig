@@ -1,8 +1,8 @@
 const std = @import("std");
 
 const assert = std.debug.assert;
-const beam = @import("beam");
-const e = @import("erl_nif");
+const beam = @import("beam.zig");
+const e = @import("erl_nif.zig");
 
 pub const Error = error{
     InvalidResourceTerm,

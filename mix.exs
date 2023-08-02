@@ -31,7 +31,6 @@ defmodule TigerBeetlex.MixProject do
       {:typed_struct, "~> 0.3.0"},
       {:nimble_options, "~> 1.0"},
       {:build_dot_zig, "~> 0.2.0", runtime: false},
-      {:zigler, github: "ityonemo/zigler", runtime: false},
       {:elixir_uuid, "~> 1.2", only: :test},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false}
     ]

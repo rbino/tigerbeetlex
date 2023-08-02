@@ -3,6 +3,7 @@ const assert = std.debug.assert;
 
 const beam = @import("beam.zig");
 const e = @import("erl_nif.zig");
+const process = @import("process.zig");
 const resource = beam.resource;
 const Resource = resource.Resource;
 
@@ -111,7 +112,8 @@ fn submit(
         return beam.make_error_atom(env, "out_of_memory");
     };
 
-    assert(e.enif_self(env, &ctx.caller_pid) != null);
+    // We're calling this from a process bound env so we expect not to fail
+    ctx.caller_pid = process.self(env) catch unreachable;
 
     const ref = beam.make_ref(env);
     // We serialize the reference to binary since we would need an env created in
@@ -226,7 +228,8 @@ fn on_completion(
     // We're done with the packet, put it back in the pool
     tb_client.release_packet(client, packet);
 
-    assert(e.enif_send(null, &caller_pid, env, msg) != 0);
+    // Send the result to the caller
+    process.send(caller_pid, env, msg) catch unreachable;
 }
 
 fn client_resource_deinit_fn(_: beam.env, ptr: ?*anyopaque) callconv(.C) void {

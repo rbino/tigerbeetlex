@@ -2,7 +2,6 @@ const std = @import("std");
 const assert = std.debug.assert;
 
 const beam = @import("beam.zig");
-const e = @import("erl_nif.zig");
 const process = @import("process.zig");
 const resource = beam.resource;
 const Resource = resource.Resource;
@@ -44,7 +43,7 @@ pub fn init(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) 
         cluster_id,
         addresses,
         concurrency_max,
-        @ptrToInt(e.enif_alloc_env()),
+        @ptrToInt(beam.alloc_env()),
         on_completion,
     ) catch |err| switch (err) {
         error.Unexpected => return beam.make_error_atom(env, "unexpected"),
@@ -193,8 +192,8 @@ fn on_completion(
     // This is a raw object pointer so we call resource.raw_release
     resource.raw_release(ctx.payload_resource_ptr);
 
-    const env = @intToPtr(*e.ErlNifEnv, context);
-    defer e.enif_clear_env(env);
+    const env = @intToPtr(beam.env, context);
+    defer beam.clear_env(env);
 
     var ref_binary = ctx.request_ref_binary;
     defer ref_binary.release();

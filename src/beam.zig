@@ -181,3 +181,13 @@ pub fn term_to_binary(env_: env, src_term: term) TermToBinaryError!Binary {
 
     return Binary{ .binary = bin };
 }
+
+/// Allocates a process independent environment
+pub fn alloc_env() env {
+    return e.enif_alloc_env();
+}
+
+/// Clears a process independent environment
+pub fn clear_env(env_: env) void {
+    e.enif_clear_env(env_);
+}

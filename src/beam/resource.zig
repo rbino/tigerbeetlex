@@ -9,16 +9,16 @@ pub const Error = error{
     OutOfMemory,
 };
 
-const DeinitFn = *const fn (beam.env, ?*anyopaque) callconv(.C) void;
+const DeinitFn = *const fn (beam.Env, ?*anyopaque) callconv(.C) void;
 
 pub fn Resource(comptime T: anytype, comptime deinit_fn: ?DeinitFn) type {
     return struct {
         const Self = @This();
 
         const Type = struct {
-            beam_type: beam.resource_type,
+            beam_type: beam.ResourceType,
 
-            pub fn open(env: beam.env) Type {
+            pub fn open(env: beam.Env) Type {
                 const beam_type = e.enif_open_resource_type(
                     env,
                     null,
@@ -40,7 +40,7 @@ pub fn Resource(comptime T: anytype, comptime deinit_fn: ?DeinitFn) type {
 
         /// Initializes the type of the resource. This must be called exactly once
         /// in the load or upgrade callback of the NIF.
-        pub fn create_type(env: beam.env) void {
+        pub fn create_type(env: beam.Env) void {
             // TODO: is this required or are we allowed to re-open a type?
             assert(resource_type == null);
 
@@ -69,7 +69,7 @@ pub fn Resource(comptime T: anytype, comptime deinit_fn: ?DeinitFn) type {
         }
 
         /// Recreates the resource from the term handle obtained with `term_handle`
-        pub fn from_term_handle(env: beam.env, term: beam.term) !Self {
+        pub fn from_term_handle(env: beam.Env, term: beam.Term) !Self {
             var raw_ptr: ?*anyopaque = undefined;
 
             if (0 == e.enif_get_resource(env, term, res_type(), &raw_ptr)) {
@@ -80,7 +80,7 @@ pub fn Resource(comptime T: anytype, comptime deinit_fn: ?DeinitFn) type {
         }
 
         /// Obtains a term handle to the resource
-        pub fn term_handle(self: Self, env: beam.env) beam.term {
+        pub fn term_handle(self: Self, env: beam.Env) beam.Term {
             return e.enif_make_resource(env, self.raw_ptr);
         }
 
@@ -115,7 +115,7 @@ pub fn Resource(comptime T: anytype, comptime deinit_fn: ?DeinitFn) type {
             return @ptrCast(*T, @alignCast(@alignOf(*T), self.raw_ptr));
         }
 
-        fn res_type() beam.resource_type {
+        fn res_type() beam.ResourceType {
             return resource_type.?.beam_type;
         }
     };

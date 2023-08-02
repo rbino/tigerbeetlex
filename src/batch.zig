@@ -16,7 +16,7 @@ pub fn Batch(comptime T: anytype) type {
     };
 }
 
-pub fn create(comptime T: anytype, env: beam.env, capacity: u32) beam.term {
+pub fn create(comptime T: anytype, env: beam.Env, capacity: u32) beam.Term {
     const items = beam.general_purpose_allocator.alloc(T, capacity) catch |err|
         switch (err) {
         error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
@@ -37,7 +37,7 @@ pub fn create(comptime T: anytype, env: beam.env, capacity: u32) beam.term {
     return beam.make_ok_term(env, term_handle);
 }
 
-pub fn add_item(comptime T: anytype, env: beam.env, batch_term: beam.term) !beam.term {
+pub fn add_item(comptime T: anytype, env: beam.Env, batch_term: beam.Term) !beam.Term {
     const batch_resource = BatchResource(T).from_term_handle(env, batch_term) catch |err|
         switch (err) {
         error.InvalidResourceTerm => return beam.make_error_atom(env, "invalid_batch"),
@@ -65,9 +65,9 @@ pub fn BatchResource(comptime T: anytype) type {
 
 fn batch_resource_deinit_fn(
     comptime T: anytype,
-) fn (env: beam.env, ptr: ?*anyopaque) callconv(.C) void {
+) fn (env: beam.Env, ptr: ?*anyopaque) callconv(.C) void {
     return struct {
-        fn deinit_fn(_: beam.env, ptr: ?*anyopaque) callconv(.C) void {
+        fn deinit_fn(_: beam.Env, ptr: ?*anyopaque) callconv(.C) void {
             if (ptr) |p| {
                 const batch: *T = @ptrCast(*T, @alignCast(@alignOf(*T), p));
                 beam.general_purpose_allocator.free(batch.items);

@@ -11,10 +11,10 @@ const TransferFlags = tb.TransferFlags;
 pub const TransferBatch = batch.Batch(Transfer);
 pub const TransferBatchResource = batch.BatchResource(Transfer);
 
-pub fn create(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+pub fn create(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     assert(argc == 1);
 
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
     const capacity: u32 = beam.get_u32(env, args[0]) catch
         return beam.raise_function_clause_error(env);
@@ -22,10 +22,10 @@ pub fn create(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C
     return batch.create(Transfer, env, capacity);
 }
 
-pub fn add_transfer(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+pub fn add_transfer(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     assert(argc == 1);
 
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
     return batch.add_item(Transfer, env, args[0]) catch |err| switch (err) {
         error.MutexLocked => return scheduler.reschedule(env, "add_transfer", add_transfer, argc, argv),
@@ -44,18 +44,18 @@ pub const set_transfer_flags = field_setter_fn(.flags);
 pub const set_transfer_amount = field_setter_fn(.amount);
 
 fn field_setter_fn(comptime field: std.meta.FieldEnum(Transfer)) fn (
-    beam.env,
+    beam.Env,
     c_int,
-    [*c]const beam.term,
-) callconv(.C) beam.term {
+    [*c]const beam.Term,
+) callconv(.C) beam.Term {
     const field_name = @tagName(field);
     const setter_name = "set_transfer_" ++ field_name;
 
     return struct {
-        fn setter_fn(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+        fn setter_fn(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
             assert(argc == 3);
 
-            const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+            const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
             const batch_term = args[0];
             const transfer_batch_resource = TransferBatchResource.from_term_handle(env, batch_term) catch |err|
@@ -93,7 +93,7 @@ fn field_setter_fn(comptime field: std.meta.FieldEnum(Transfer)) fn (
 
 fn term_to_value_fn(
     comptime field: std.meta.FieldEnum(Transfer),
-) fn (beam.env, beam.term) beam.GetError!std.meta.fieldInfo(Transfer, field).field_type {
+) fn (beam.Env, beam.Term) beam.GetError!std.meta.fieldInfo(Transfer, field).field_type {
     return switch (field) {
         .id, .debit_account_id, .credit_account_id, .user_data, .pending_id => beam.get_u128,
         .timeout, .amount => beam.get_u64,
@@ -104,7 +104,7 @@ fn term_to_value_fn(
     };
 }
 
-fn term_to_transfer_flags(env: beam.env, term: beam.term) beam.GetError!TransferFlags {
+fn term_to_transfer_flags(env: beam.Env, term: beam.Term) beam.GetError!TransferFlags {
     const flags_uint = beam.get_u16(env, term) catch
         return beam.GetError.ArgumentError;
 

@@ -11,10 +11,10 @@ const AccountFlags = tb.AccountFlags;
 pub const AccountBatch = batch.Batch(Account);
 pub const AccountBatchResource = batch.BatchResource(Account);
 
-pub fn create(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+pub fn create(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     assert(argc == 1);
 
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
     const capacity: u32 = beam.get_u32(env, args[0]) catch
         return beam.raise_function_clause_error(env);
@@ -22,10 +22,10 @@ pub fn create(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C
     return batch.create(Account, env, capacity);
 }
 
-pub fn add_account(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+pub fn add_account(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     assert(argc == 1);
 
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
     return batch.add_item(Account, env, args[0]) catch |err| switch (err) {
         error.MutexLocked => return scheduler.reschedule(env, "add_account", add_account, argc, argv),
@@ -39,18 +39,18 @@ pub const set_account_code = field_setter_fn(.code);
 pub const set_account_flags = field_setter_fn(.flags);
 
 fn field_setter_fn(comptime field: std.meta.FieldEnum(Account)) fn (
-    beam.env,
+    beam.Env,
     c_int,
-    [*c]const beam.term,
-) callconv(.C) beam.term {
+    [*c]const beam.Term,
+) callconv(.C) beam.Term {
     const field_name = @tagName(field);
     const setter_name = "set_account_" ++ field_name;
 
     return struct {
-        fn setter_fn(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+        fn setter_fn(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
             assert(argc == 3);
 
-            const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+            const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
             const batch_term = args[0];
             const account_batch_resource = AccountBatchResource.from_term_handle(env, batch_term) catch |err|
@@ -88,7 +88,7 @@ fn field_setter_fn(comptime field: std.meta.FieldEnum(Account)) fn (
 
 fn term_to_value_fn(
     comptime field: std.meta.FieldEnum(Account),
-) fn (beam.env, beam.term) beam.GetError!std.meta.fieldInfo(Account, field).field_type {
+) fn (beam.Env, beam.Term) beam.GetError!std.meta.fieldInfo(Account, field).field_type {
     return switch (field) {
         .id, .user_data => beam.get_u128,
         .ledger => beam.get_u32,
@@ -98,7 +98,7 @@ fn term_to_value_fn(
     };
 }
 
-fn term_to_account_flags(env: beam.env, term: beam.term) beam.GetError!AccountFlags {
+fn term_to_account_flags(env: beam.Env, term: beam.Term) beam.GetError!AccountFlags {
     const flags_uint = beam.get_u16(env, term) catch
         return beam.GetError.ArgumentError;
 

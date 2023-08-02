@@ -8,10 +8,10 @@ const scheduler = beam.scheduler;
 pub const IdBatch = batch.Batch(u128);
 pub const IdBatchResource = batch.BatchResource(u128);
 
-pub fn create(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+pub fn create(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     assert(argc == 1);
 
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
     const capacity: u32 = beam.get_u32(env, args[0]) catch
         return beam.raise_function_clause_error(env);
@@ -19,11 +19,11 @@ pub fn create(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C
     return batch.create(u128, env, capacity);
 }
 
-pub fn add_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+pub fn add_id(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     // We don't use beam.add_item since we increase len and directly add the id in a single call
     assert(argc == 2);
 
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
     const id = beam.get_u128(env, args[1]) catch
         return beam.raise_function_clause_error(env);
@@ -51,10 +51,10 @@ pub fn add_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C
     }
 }
 
-pub fn set_id(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+pub fn set_id(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     assert(argc == 3);
 
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
     const batch_term = args[0];
     const id_batch_resource = IdBatchResource.from_term_handle(env, batch_term) catch |err|

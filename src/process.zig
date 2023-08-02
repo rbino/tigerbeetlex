@@ -3,8 +3,8 @@ const e = @import("erl_nif.zig");
 
 pub const SelfError = error{NotProcessBound};
 
-pub fn self(env: beam.env) SelfError!beam.pid {
-    var result: beam.pid = undefined;
+pub fn self(env: beam.Env) SelfError!beam.Pid {
+    var result: beam.Pid = undefined;
     if (e.enif_self(env, &result) == null) {
         return error.NotProcessBound;
     }
@@ -14,7 +14,7 @@ pub fn self(env: beam.env) SelfError!beam.pid {
 
 pub const SendError = error{NotDelivered};
 
-pub fn send(dest: beam.pid, msg_env: beam.env, msg: beam.term) !void {
+pub fn send(dest: beam.Pid, msg_env: beam.Env, msg: beam.Term) !void {
     // Needed since enif_send is not const-correct
     var to_pid = dest;
 

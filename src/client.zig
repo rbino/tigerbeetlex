@@ -19,15 +19,15 @@ pub const Client = tb_client.tb_client_t;
 pub const ClientResource = Resource(Client, client_resource_deinit_fn);
 
 const RequestContext = struct {
-    caller_pid: beam.pid,
+    caller_pid: beam.Pid,
     request_ref_binary: beam.Binary,
     payload_resource_ptr: *anyopaque,
 };
 
-pub fn init(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+pub fn init(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     assert(argc == 3);
 
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
     const cluster_id: u32 = beam.get_u32(env, args[0]) catch
         return beam.raise_function_clause_error(env);
@@ -80,10 +80,10 @@ fn batch_item_type_for_operation(comptime operation: tb_client.tb_operation_t) t
 
 fn submit(
     comptime operation: tb_client.tb_operation_t,
-    env: beam.env,
-    client_term: beam.term,
-    payload_term: beam.term,
-) beam.term {
+    env: beam.Env,
+    client_term: beam.Term,
+    payload_term: beam.Term,
+) beam.Term {
     const client_resource = ClientResource.from_term_handle(env, client_term) catch |err|
         switch (err) {
         error.InvalidResourceTerm => return beam.make_error_atom(env, "invalid_client"),
@@ -146,34 +146,34 @@ fn submit(
     return beam.make_ok_term(env, ref);
 }
 
-pub fn create_accounts(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+pub fn create_accounts(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     assert(argc == 2);
 
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
     return submit(.create_accounts, env, args[0], args[1]);
 }
 
-pub fn create_transfers(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+pub fn create_transfers(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     assert(argc == 2);
 
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
     return submit(.create_transfers, env, args[0], args[1]);
 }
 
-pub fn lookup_accounts(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+pub fn lookup_accounts(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     assert(argc == 2);
 
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
     return submit(.lookup_accounts, env, args[0], args[1]);
 }
 
-pub fn lookup_transfers(env: beam.env, argc: c_int, argv: [*c]const beam.term) callconv(.C) beam.term {
+pub fn lookup_transfers(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     assert(argc == 2);
 
-    const args = @ptrCast([*]const beam.term, argv)[0..@intCast(usize, argc)];
+    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
     return submit(.lookup_transfers, env, args[0], args[1]);
 }
@@ -192,7 +192,7 @@ fn on_completion(
     // This is a raw object pointer so we call resource.raw_release
     resource.raw_release(ctx.payload_resource_ptr);
 
-    const env = @intToPtr(beam.env, context);
+    const env = @intToPtr(beam.Env, context);
     defer beam.clear_env(env);
 
     var ref_binary = ctx.request_ref_binary;
@@ -222,7 +222,7 @@ fn on_completion(
     process.send(caller_pid, env, msg) catch unreachable;
 }
 
-fn client_resource_deinit_fn(_: beam.env, ptr: ?*anyopaque) callconv(.C) void {
+fn client_resource_deinit_fn(_: beam.Env, ptr: ?*anyopaque) callconv(.C) void {
     if (ptr) |p| {
         const cl: *Client = @ptrCast(*Client, @alignCast(@alignOf(*Client), p));
         // TODO: this can now potentially block for a long time since it waits

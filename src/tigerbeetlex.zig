@@ -217,7 +217,7 @@ export fn nif_init() *const e.ErlNifEntry {
     return &entry;
 }
 
-export fn nif_load(env: beam.env, _: [*c]?*anyopaque, _: beam.term) c_int {
+export fn nif_load(env: beam.Env, _: [*c]?*anyopaque, _: beam.Term) c_int {
     ClientResource.create_type(env);
     AccountBatchResource.create_type(env);
     IdBatchResource.create_type(env);

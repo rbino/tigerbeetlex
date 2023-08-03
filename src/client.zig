@@ -21,7 +21,7 @@ pub const ClientResource = Resource(Client, client_resource_deinit_fn);
 const RequestContext = struct {
     caller_pid: beam.Pid,
     request_ref_binary: beam.Binary,
-    payload_resource_ptr: *anyopaque,
+    payload_raw_obj: *anyopaque,
 };
 
 pub fn init(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
@@ -129,13 +129,10 @@ fn submit(
     // collected until we release it
     payload_resource.keep();
 
-    // We save the raw pointer in the context so we can release it later with resource.raw_release
-    ctx.payload_resource_ptr = payload_resource.raw_ptr;
+    // We save the raw pointer in the context so we can release it later
+    ctx.payload_raw_obj = payload_resource.raw_ptr;
 
     packet.operation = @enumToInt(operation);
-
-    // TODO: how much does this need to be valid? Should we increment the refcount on the
-    // resource to avoid it gets garbage collected while this is in-flight?
     packet.data = payload.items.ptr;
     packet.data_size = @sizeOf(T) * payload.len;
     packet.user_data = ctx;
@@ -189,8 +186,7 @@ fn on_completion(
     defer beam.general_purpose_allocator.destroy(ctx);
 
     // We don't need the payload anymore, let the garbage collector take care of it
-    // This is a raw object pointer so we call resource.raw_release
-    resource.raw_release(ctx.payload_resource_ptr);
+    resource.raw_release(ctx.payload_raw_obj);
 
     const env = @intToPtr(beam.Env, context);
     defer beam.clear_env(env);
@@ -201,17 +197,14 @@ fn on_completion(
 
     const caller_pid = ctx.caller_pid;
 
-    const operation = packet.operation;
-    const status = packet.status;
+    const status = beam.make_u8(env, @enumToInt(packet.status));
+    const operation = beam.make_u8(env, packet.operation);
     const result = if (result_ptr) |p|
         beam.make_slice(env, p[0..result_len])
     else
         beam.make_nil(env);
 
-    const status_term = beam.make_u8(env, @enumToInt(status));
-    const operation_term = beam.make_u8(env, operation);
-    const response = beam.make_tuple(env, .{ status_term, operation_term, result });
-
+    const response = beam.make_tuple(env, .{ status, operation, result });
     const tag = beam.make_atom(env, "tigerbeetlex_response");
     const msg = beam.make_tuple(env, .{ tag, ref, response });
 

@@ -78,38 +78,39 @@ fn batch_item_type_for_operation(comptime operation: tb_client.tb_operation_t) t
     };
 }
 
+const SubmitError = error{
+    InvalidClientResourceTerm,
+    InvalidBatchResourceTerm,
+    TooManyRequests,
+    Shutdown,
+    OutOfMemory,
+};
+
 fn submit(
     comptime operation: tb_client.tb_operation_t,
     env: beam.Env,
     client_term: beam.Term,
     payload_term: beam.Term,
-) beam.Term {
-    const client_resource = ClientResource.from_term_handle(env, client_term) catch |err|
-        switch (err) {
-        error.InvalidResourceTerm => return beam.make_error_atom(env, "invalid_client"),
-    };
+) SubmitError!beam.Term {
+    const client_resource = ClientResource.from_term_handle(env, client_term) catch
+        return error.InvalidClientResourceTerm;
     const client = client_resource.value();
 
     const T = batch_item_type_for_operation(operation);
-    const payload_resource = BatchResource(T).from_term_handle(env, payload_term) catch |err|
-        switch (err) {
-        error.InvalidResourceTerm => return beam.make_error_atom(env, "invalid_batch"),
-    };
+    const payload_resource = BatchResource(T).from_term_handle(env, payload_term) catch
+        return error.InvalidBatchResourceTerm;
     const payload = payload_resource.ptr_const();
 
     var out_packet: ?*tb_client.tb_packet_t = undefined;
     const status = tb_client.acquire_packet(client, &out_packet);
     const packet = switch (status) {
         .ok => if (out_packet) |pkt| pkt else @panic("acquire packet returned null"),
-        .concurrency_max_exceeded => return beam.make_error_atom(env, "too_many_requests"),
-        .shutdown => return beam.make_error_atom(env, "shutdown"),
+        .concurrency_max_exceeded => return error.TooManyRequests,
+        .shutdown => return error.Shutdown,
     };
+    errdefer tb_client.release_packet(client, packet);
 
-    var ctx: *RequestContext = beam.general_purpose_allocator.create(RequestContext) catch {
-        // TODO: do some refactoring to allow using errdefer
-        tb_client.release_packet(client, packet);
-        return beam.make_error_atom(env, "out_of_memory");
-    };
+    var ctx: *RequestContext = try beam.general_purpose_allocator.create(RequestContext);
 
     // We're calling this from a process bound env so we expect not to fail
     ctx.caller_pid = process.self(env) catch unreachable;
@@ -119,11 +120,7 @@ fn submit(
     // TigerBeetle's thread to copy the ref into, but we don't have it and don't
     // have any way to create it from this side, pass it to the completion function
     // and free it
-    ctx.request_ref_binary = beam.term_to_binary(env, ref) catch {
-        // TODO: do some refactoring to allow using errdefer
-        tb_client.release_packet(client, packet);
-        return beam.make_error_atom(env, "out_of_memory");
-    };
+    ctx.request_ref_binary = try beam.term_to_binary(env, ref);
 
     // We increase the reference count on the payload resource so it doesn't get garbage
     // collected until we release it
@@ -148,7 +145,8 @@ pub fn create_accounts(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) ca
 
     const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
-    return submit(.create_accounts, env, args[0], args[1]);
+    return submit(.create_accounts, env, args[0], args[1]) catch |err|
+        handle_submit_error(env, err);
 }
 
 pub fn create_transfers(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
@@ -156,7 +154,8 @@ pub fn create_transfers(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) c
 
     const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
-    return submit(.create_transfers, env, args[0], args[1]);
+    return submit(.create_transfers, env, args[0], args[1]) catch |err|
+        handle_submit_error(env, err);
 }
 
 pub fn lookup_accounts(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
@@ -164,7 +163,8 @@ pub fn lookup_accounts(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) ca
 
     const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
-    return submit(.lookup_accounts, env, args[0], args[1]);
+    return submit(.lookup_accounts, env, args[0], args[1]) catch |err|
+        handle_submit_error(env, err);
 }
 
 pub fn lookup_transfers(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
@@ -172,7 +172,18 @@ pub fn lookup_transfers(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) c
 
     const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
 
-    return submit(.lookup_transfers, env, args[0], args[1]);
+    return submit(.lookup_transfers, env, args[0], args[1]) catch |err|
+        handle_submit_error(env, err);
+}
+
+fn handle_submit_error(env: beam.Env, err: SubmitError) beam.Term {
+    return switch (err) {
+        error.InvalidClientResourceTerm => beam.make_error_atom(env, "invalid_client_resource"),
+        error.InvalidBatchResourceTerm => beam.make_error_atom(env, "invalid_batch_resource"),
+        error.TooManyRequests => beam.make_error_atom(env, "too_many_requests"),
+        error.Shutdown => beam.make_error_atom(env, "shutdown"),
+        error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
+    };
 }
 
 fn on_completion(

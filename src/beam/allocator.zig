@@ -1,7 +1,7 @@
 // Taken from https://github.com/E-xyza/zigler/blob/master/priv/beam/allocator.zig
 
 const std = @import("std");
-const e = @import("../erl_nif.zig");
+const e = @import("erl_nif.zig");
 
 const Allocator = std.mem.Allocator;
 

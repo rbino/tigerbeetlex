@@ -1,4 +1,4 @@
-const e = @import("../erl_nif.zig");
+const e = @import("erl_nif.zig");
 const beam = @import("../beam.zig");
 const Nif = @import("nif.zig").Nif;
 

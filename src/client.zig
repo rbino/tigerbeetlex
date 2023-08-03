@@ -2,7 +2,7 @@ const std = @import("std");
 const assert = std.debug.assert;
 
 const beam = @import("beam.zig");
-const process = @import("process.zig");
+const process = beam.process;
 const resource = beam.resource;
 const Resource = resource.Resource;
 

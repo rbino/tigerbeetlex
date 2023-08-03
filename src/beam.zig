@@ -3,11 +3,12 @@
 // possibly to experiment ourselves with alternative APIs)
 
 const std = @import("std");
-const e = @import("erl_nif.zig");
+const e = @import("beam/erl_nif.zig");
 
 pub const allocator = @import("beam/allocator.zig");
 pub const nif = @import("beam/nif.zig");
 pub const resource = @import("beam/resource.zig");
+pub const process = @import("beam/process.zig");
 pub const scheduler = @import("beam/scheduler.zig");
 
 pub const Binary = @import("beam/Binary.zig");

@@ -1,4 +1,4 @@
-const e = @import("../erl_nif.zig");
+const e = @import("erl_nif.zig");
 const beam = @import("../beam.zig");
 
 pub const Nif = *const fn (beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term;

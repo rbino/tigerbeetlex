@@ -1,4 +1,4 @@
-const beam = @import("beam.zig");
+const beam = @import("../beam.zig");
 const e = @import("erl_nif.zig");
 
 pub const SelfError = error{NotProcessBound};

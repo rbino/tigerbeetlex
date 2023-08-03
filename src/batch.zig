@@ -16,21 +16,13 @@ pub fn Batch(comptime T: anytype) type {
     };
 }
 
-pub fn create(comptime T: anytype, env: beam.Env, capacity: u32) beam.Term {
-    const items = beam.general_purpose_allocator.alloc(T, capacity) catch |err|
-        switch (err) {
-        error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
-    };
-
+pub fn create(comptime T: anytype, env: beam.Env, capacity: u32) !beam.Term {
+    const items = try beam.general_purpose_allocator.alloc(T, capacity);
     const batch = Batch(T){
         .items = items,
         .len = 0,
     };
-
-    const batch_resource = BatchResource(T).init(batch) catch |err|
-        switch (err) {
-        error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
-    };
+    const batch_resource = try BatchResource(T).init(batch);
     const term_handle = batch_resource.term_handle(env);
     batch_resource.release();
 
@@ -38,10 +30,7 @@ pub fn create(comptime T: anytype, env: beam.Env, capacity: u32) beam.Term {
 }
 
 pub fn add_item(comptime T: anytype, env: beam.Env, batch_term: beam.Term) !beam.Term {
-    const batch_resource = BatchResource(T).from_term_handle(env, batch_term) catch |err|
-        switch (err) {
-        error.InvalidResourceTerm => return beam.make_error_atom(env, "invalid_batch"),
-    };
+    const batch_resource = try BatchResource(T).from_term_handle(env, batch_term);
     const batch = batch_resource.ptr();
 
     {
@@ -50,7 +39,7 @@ pub fn add_item(comptime T: anytype, env: beam.Env, batch_term: beam.Term) !beam
         }
         defer batch.mutex.unlock();
         if (batch.len + 1 > batch.items.len) {
-            return beam.make_error_atom(env, "batch_full");
+            return error.BatchFull;
         }
         batch.len += 1;
         batch.items[batch.len - 1] = std.mem.zeroInit(T, .{});

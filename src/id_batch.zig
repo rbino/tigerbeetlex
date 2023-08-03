@@ -16,7 +16,9 @@ pub fn create(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C
     const capacity: u32 = beam.get_u32(env, args[0]) catch
         return beam.raise_function_clause_error(env);
 
-    return batch.create(u128, env, capacity);
+    return batch.create(u128, env, capacity) catch |err| switch(err) {
+        error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
+    };
 }
 
 pub fn add_id(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {

@@ -16,9 +16,9 @@ pub fn function_entry(
 }
 
 pub fn entrypoint(
-    name: [*c]const u8,
+    comptime name: [*c]const u8,
     comptime exported_nifs: []e.ErlNifFunc,
-    load: NifLoadFn,
+    comptime load_fn: NifLoadFn,
 ) Entrypoint {
     return .{
         .major = 2,
@@ -26,7 +26,7 @@ pub fn entrypoint(
         .name = name,
         .num_of_funcs = exported_nifs.len,
         .funcs = exported_nifs.ptr,
-        .load = load,
+        .load = load_fn,
         .reload = null, // currently unsupported
         .upgrade = null, // currently unsupported
         .unload = null, // currently unsupported

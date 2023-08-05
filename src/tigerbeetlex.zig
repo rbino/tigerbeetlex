@@ -63,10 +63,10 @@ var exported_nifs = [_]nif.FunctionEntry{
 };
 
 fn nif_load(env: beam.Env, _: [*c]?*anyopaque, _: beam.Term) callconv(.C) c_int {
-    ClientResource.create_type(env);
-    AccountBatchResource.create_type(env);
-    IdBatchResource.create_type(env);
-    TransferBatchResource.create_type(env);
+    ClientResource.create_type(env, "TigerBeetlex.Client");
+    AccountBatchResource.create_type(env, "TigerBeetlex.AccountBatch");
+    IdBatchResource.create_type(env, "TigerBeetlex.IdBatch");
+    TransferBatchResource.create_type(env, "TigerBeetlex.TransferBatch");
     return 0;
 }
 

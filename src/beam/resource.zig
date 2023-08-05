@@ -18,11 +18,11 @@ pub fn Resource(comptime T: anytype, comptime deinit_fn: ?DeinitFn) type {
         const Type = struct {
             beam_type: beam.ResourceType,
 
-            pub fn open(env: beam.Env) Type {
+            pub fn open(env: beam.Env, name: [:0]const u8) Type {
                 const beam_type = e.enif_open_resource_type(
                     env,
                     null,
-                    "TigerBeetlex." ++ @typeName(T),
+                    name.ptr,
                     deinit_fn,
                     e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
                     null,
@@ -40,11 +40,11 @@ pub fn Resource(comptime T: anytype, comptime deinit_fn: ?DeinitFn) type {
 
         /// Initializes the type of the resource. This must be called exactly once
         /// in the load or upgrade callback of the NIF.
-        pub fn create_type(env: beam.Env) void {
+        pub fn create_type(env: beam.Env, name: [:0]const u8) void {
             // TODO: is this required or are we allowed to re-open a type?
             assert(resource_type == null);
 
-            resource_type = Type.open(env);
+            resource_type = Type.open(env, name);
         }
 
         /// Allocates the memory of the resource

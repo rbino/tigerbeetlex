@@ -32,6 +32,11 @@ pub fn raise(env: Env, reason: []const u8) Term {
     return e.enif_raise_exception(env, make_atom(env, reason));
 }
 
+/// Raises a `:badarg` exception
+pub fn raise_badarg(env: Env) Term {
+    return e.enif_make_badarg(env);
+}
+
 /// Raises a `:function_clause` exception
 pub fn raise_function_clause_error(env: Env) Term {
     return raise(env, "function_clause");

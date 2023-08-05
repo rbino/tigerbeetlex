@@ -8,22 +8,22 @@ pub const FunctionEntry = e.ErlNifFunc;
 pub const Entrypoint = e.ErlNifEntry;
 
 pub fn function_entry(
-    comptime name: [*c]const u8,
+    comptime name: [:0]const u8,
     comptime arity: c_uint,
     comptime fun: Nif,
 ) FunctionEntry {
-    return .{ .name = name, .arity = arity, .fptr = fun, .flags = 0 };
+    return .{ .name = name.ptr, .arity = arity, .fptr = fun, .flags = 0 };
 }
 
 pub fn entrypoint(
-    comptime name: [*c]const u8,
+    comptime name: [:0]const u8,
     comptime exported_nifs: []e.ErlNifFunc,
     comptime load_fn: NifLoadFn,
 ) Entrypoint {
     return .{
         .major = 2,
         .minor = 16,
-        .name = name,
+        .name = name.ptr,
         .num_of_funcs = exported_nifs.len,
         .funcs = exported_nifs.ptr,
         .load = load_fn,

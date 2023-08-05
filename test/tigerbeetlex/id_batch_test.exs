@@ -34,7 +34,7 @@ defmodule Tigerbeetlex.IDBatchTest do
     end
 
     test "raises if id is invalid", %{batch: batch} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         IDBatch.add_id(batch, 42)
       end
     end

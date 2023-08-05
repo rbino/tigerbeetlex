@@ -77,7 +77,7 @@ fn field_setter_fn(comptime field: std.meta.FieldEnum(Transfer)) fn (
 
             {
                 if (!transfer_batch.mutex.tryLock()) {
-                    return scheduler.reschedule(env, setter_name, add_transfer, argc, argv);
+                    return scheduler.reschedule(env, setter_name, setter_fn, argc, argv);
                 }
                 defer transfer_batch.mutex.unlock();
 

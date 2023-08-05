@@ -33,11 +33,11 @@ pub const vsr_options = .{
 pub const log_level: std.log.Level = .err;
 
 var exported_nifs = [_]nif.FunctionEntry{
-    nif.function_entry("client_init", 3, client.init),
-    nif.function_entry("create_accounts", 2, client.create_accounts),
-    nif.function_entry("create_transfers", 2, client.create_transfers),
-    nif.function_entry("lookup_accounts", 2, client.lookup_accounts),
-    nif.function_entry("lookup_transfers", 2, client.lookup_transfers),
+    nif.wrap("client_init", client.init),
+    nif.wrap("create_accounts", client.create_accounts),
+    nif.wrap("create_transfers", client.create_transfers),
+    nif.wrap("lookup_accounts", client.lookup_accounts),
+    nif.wrap("lookup_transfers", client.lookup_transfers),
     nif.wrap("create_account_batch", account_batch.create),
     nif.wrap("add_account", account_batch.add_account),
     nif.wrap("set_account_id", account_batch.set_account_id),

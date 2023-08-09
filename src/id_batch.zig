@@ -8,38 +8,18 @@ const scheduler = beam.scheduler;
 pub const IdBatch = batch.Batch(u128);
 pub const IdBatchResource = batch.BatchResource(u128);
 
-pub fn create(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
-    assert(argc == 1);
-
-    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
-
-    const capacity: u32 = beam.get_u32(env, args[0]) catch
-        return beam.raise_function_clause_error(env);
-
+pub fn create(env: beam.Env, capacity: u32) beam.Term {
     return batch.create(u128, env, capacity) catch |err| switch (err) {
         error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
     };
 }
 
-pub fn add_id(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
-    // We don't use beam.add_item since we increase len and directly add the id in a single call
-    assert(argc == 2);
-
-    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
-
-    const id = beam.get_u128(env, args[1]) catch
-        return beam.raise_function_clause_error(env);
-
-    const batch_term = args[0];
-    const id_batch_resource = IdBatchResource.from_term_handle(env, batch_term) catch |err|
-        switch (err) {
-        error.InvalidResourceTerm => return beam.make_error_atom(env, "invalid_batch"),
-    };
+pub fn add_id(env: beam.Env, id_batch_resource: IdBatchResource, id: u128) !beam.Term {
     const id_batch = id_batch_resource.ptr();
 
     {
         if (!id_batch.mutex.tryLock()) {
-            return scheduler.reschedule(env, "add_id", add_id, argc, argv);
+            return error.Yield;
         }
         defer id_batch.mutex.unlock();
 
@@ -53,33 +33,18 @@ pub fn add_id(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C
     }
 }
 
-pub fn set_id(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
-    assert(argc == 3);
-
-    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
-
-    const batch_term = args[0];
-    const id_batch_resource = IdBatchResource.from_term_handle(env, batch_term) catch |err|
-        switch (err) {
-        error.InvalidResourceTerm => return beam.make_error_atom(env, "invalid_batch"),
-    };
+pub fn set_id(env: beam.Env, id_batch_resource: IdBatchResource, idx: u32, id: u128) !beam.Term {
     const id_batch = id_batch_resource.ptr();
-
-    const idx: u32 = beam.get_u32(env, args[1]) catch
-        return beam.raise_function_clause_error(env);
 
     {
         if (!id_batch.mutex.tryLock()) {
-            return scheduler.reschedule(env, "set_id", set_id, argc, argv);
+            return error.Yield;
         }
         defer id_batch.mutex.unlock();
 
         if (idx >= id_batch.len) {
             return beam.make_error_atom(env, "out_of_bounds");
         }
-
-        const id = beam.get_u128(env, args[2]) catch
-            return beam.raise_function_clause_error(env);
 
         id_batch.items[idx] = id;
     }

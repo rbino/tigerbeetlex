@@ -43,49 +43,49 @@ defmodule Tigerbeetlex.TransferBatchTest do
     end
 
     test "raises if id is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         TransferBatch.add_transfer(batch, Keyword.put(opts, :id, 42))
       end
     end
 
     test "raises if debit_account_id is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         TransferBatch.add_transfer(batch, Keyword.put(opts, :debit_account_id, 42))
       end
     end
 
     test "raises if credit_account_id is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         TransferBatch.add_transfer(batch, Keyword.put(opts, :credit_account_id, 42))
       end
     end
 
     test "raises if user_data is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         TransferBatch.add_transfer(batch, Keyword.put(opts, :user_data, "foo"))
       end
     end
 
     test "raises if pending_id is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         TransferBatch.add_transfer(batch, Keyword.put(opts, :pending_id, "AAAAA"))
       end
     end
 
     test "raises if timeout is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         TransferBatch.add_transfer(batch, Keyword.put(opts, :timeout, -1000))
       end
     end
 
     test "raises if ledger is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         TransferBatch.add_transfer(batch, Keyword.put(opts, :ledger, -1))
       end
     end
 
     test "raises if code is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         TransferBatch.add_transfer(batch, Keyword.put(opts, :code, "foo"))
       end
     end
@@ -97,7 +97,7 @@ defmodule Tigerbeetlex.TransferBatchTest do
     end
 
     test "raises if amount is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         TransferBatch.add_transfer(batch, Keyword.put(opts, :amount, "tiger"))
       end
     end

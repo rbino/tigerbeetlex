@@ -40,13 +40,13 @@ defmodule Tigerbeetlex.AccountBatchTest do
     end
 
     test "raises if id is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         AccountBatch.add_account(batch, Keyword.put(opts, :id, 42))
       end
     end
 
     test "raises if user_data is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         AccountBatch.add_account(batch, Keyword.put(opts, :user_data, "foo"))
       end
     end
@@ -58,13 +58,13 @@ defmodule Tigerbeetlex.AccountBatchTest do
     end
 
     test "raises if ledger is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         AccountBatch.add_account(batch, Keyword.put(opts, :ledger, -1))
       end
     end
 
     test "raises if code is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         AccountBatch.add_account(batch, Keyword.put(opts, :code, "foo"))
       end
     end

@@ -130,3 +130,11 @@ pub fn raw_keep(raw_ptr: *anyopaque) void {
 pub fn raw_release(raw_ptr: *anyopaque) void {
     e.enif_release_resource(raw_ptr);
 }
+
+/// Returns true if the passed in type is a Resource
+pub fn is_resource(comptime T: type) bool {
+    // Walks like a resource, quacks like a resource
+    return (@typeInfo(T) == .Struct and
+        @hasField(T, "raw_ptr") and
+        @hasDecl(T, "from_term_handle"));
+}

@@ -24,20 +24,7 @@ const RequestContext = struct {
     payload_raw_obj: *anyopaque,
 };
 
-pub fn init(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
-    assert(argc == 3);
-
-    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
-
-    const cluster_id: u32 = beam.get_u32(env, args[0]) catch
-        return beam.raise_function_clause_error(env);
-
-    const addresses = beam.get_char_slice(env, args[1]) catch
-        return beam.raise_function_clause_error(env);
-
-    const concurrency_max: u32 = beam.get_u32(env, args[2]) catch
-        return beam.raise_function_clause_error(env);
-
+pub fn init(env: beam.Env, cluster_id: u32, addresses: []const u8, concurrency_max: u32) beam.Term {
     const client: tb_client.tb_client_t = tb_client.init(
         beam.general_purpose_allocator,
         cluster_id,
@@ -70,7 +57,7 @@ pub fn init(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) 
     return beam.make_ok_term(env, term_handle);
 }
 
-fn batch_item_type_for_operation(comptime operation: tb_client.tb_operation_t) type {
+fn OperationBatchItemType(comptime operation: tb_client.tb_operation_t) type {
     return switch (operation) {
         .create_accounts => Account,
         .create_transfers => Transfer,
@@ -79,26 +66,53 @@ fn batch_item_type_for_operation(comptime operation: tb_client.tb_operation_t) t
 }
 
 const SubmitError = error{
-    InvalidClientResourceTerm,
-    InvalidBatchResourceTerm,
     TooManyRequests,
     Shutdown,
     OutOfMemory,
 };
 
+// These are all comptime generated functions
+pub const create_accounts = get_submit_fn(.create_accounts);
+pub const create_transfers = get_submit_fn(.create_transfers);
+pub const lookup_accounts = get_submit_fn(.lookup_accounts);
+pub const lookup_transfers = get_submit_fn(.lookup_transfers);
+
+fn get_submit_fn(comptime operation: tb_client.tb_operation_t) (fn (
+    env: beam.Env,
+    client_resource: beam.Term,
+    payload_term: beam.Term,
+) beam.Term) {
+    const Item = OperationBatchItemType(operation);
+
+    return struct {
+        fn submit_fn(
+            env: beam.Env,
+            client_term: beam.Term,
+            payload_term: beam.Term,
+        ) beam.Term {
+            const client_resource = ClientResource.from_term_handle(env, client_term) catch
+                return beam.make_error_atom(env, "invalid_client_resource");
+
+            const payload_resource = BatchResource(Item).from_term_handle(env, payload_term) catch
+                return beam.make_error_atom(env, "invalid_batch_resource");
+
+            return submit(operation, env, client_resource, payload_resource) catch |err| switch (err) {
+                error.TooManyRequests => beam.make_error_atom(env, "too_many_requests"),
+                error.Shutdown => beam.make_error_atom(env, "shutdown"),
+                error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
+            };
+        }
+    }.submit_fn;
+}
+
 fn submit(
     comptime operation: tb_client.tb_operation_t,
     env: beam.Env,
-    client_term: beam.Term,
-    payload_term: beam.Term,
+    client_resource: ClientResource,
+    payload_resource: BatchResource(OperationBatchItemType(operation)),
 ) SubmitError!beam.Term {
-    const client_resource = ClientResource.from_term_handle(env, client_term) catch
-        return error.InvalidClientResourceTerm;
+    const Item = OperationBatchItemType(operation);
     const client = client_resource.value();
-
-    const T = batch_item_type_for_operation(operation);
-    const payload_resource = BatchResource(T).from_term_handle(env, payload_term) catch
-        return error.InvalidBatchResourceTerm;
     const payload = payload_resource.ptr_const();
 
     var out_packet: ?*tb_client.tb_packet_t = undefined;
@@ -131,59 +145,13 @@ fn submit(
 
     packet.operation = @enumToInt(operation);
     packet.data = payload.items.ptr;
-    packet.data_size = @sizeOf(T) * payload.len;
+    packet.data_size = @sizeOf(Item) * payload.len;
     packet.user_data = ctx;
     packet.status = .ok;
 
     tb_client.submit(client, packet);
 
     return beam.make_ok_term(env, ref);
-}
-
-pub fn create_accounts(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
-    assert(argc == 2);
-
-    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
-
-    return submit(.create_accounts, env, args[0], args[1]) catch |err|
-        handle_submit_error(env, err);
-}
-
-pub fn create_transfers(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
-    assert(argc == 2);
-
-    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
-
-    return submit(.create_transfers, env, args[0], args[1]) catch |err|
-        handle_submit_error(env, err);
-}
-
-pub fn lookup_accounts(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
-    assert(argc == 2);
-
-    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
-
-    return submit(.lookup_accounts, env, args[0], args[1]) catch |err|
-        handle_submit_error(env, err);
-}
-
-pub fn lookup_transfers(env: beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
-    assert(argc == 2);
-
-    const args = @ptrCast([*]const beam.Term, argv)[0..@intCast(usize, argc)];
-
-    return submit(.lookup_transfers, env, args[0], args[1]) catch |err|
-        handle_submit_error(env, err);
-}
-
-fn handle_submit_error(env: beam.Env, err: SubmitError) beam.Term {
-    return switch (err) {
-        error.InvalidClientResourceTerm => beam.make_error_atom(env, "invalid_client_resource"),
-        error.InvalidBatchResourceTerm => beam.make_error_atom(env, "invalid_batch_resource"),
-        error.TooManyRequests => beam.make_error_atom(env, "too_many_requests"),
-        error.Shutdown => beam.make_error_atom(env, "shutdown"),
-        error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
-    };
 }
 
 fn on_completion(

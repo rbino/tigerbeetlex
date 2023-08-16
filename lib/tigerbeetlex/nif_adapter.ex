@@ -29,6 +29,13 @@ defmodule TigerBeetlex.NifAdapter do
           {:ok, new_length :: pos_integer()} | {:error, Types.add_account_error()}
   def add_account(_account_batch), do: :erlang.nif_error(:nif_not_loaded)
 
+  @spec append_account(
+          account_batch :: Types.account_batch(),
+          account_binary :: Types.account_binary()
+        ) ::
+          :ok | {:error, Types.append_account_error()}
+  def append_account(_account_batch, _account_binary), do: :erlang.nif_error(:nif_not_loaded)
+
   @spec set_account_id(
           account_batch :: Types.account_batch(),
           index :: non_neg_integer(),
@@ -81,6 +88,13 @@ defmodule TigerBeetlex.NifAdapter do
   @spec add_transfer(transfer_batch :: Types.transfer_batch()) ::
           {:ok, new_length :: pos_integer()} | {:error, Types.add_transfer_error()}
   def add_transfer(_transfer_batch), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec append_transfer(
+          transfer_batch :: Types.transfer_batch(),
+          transfer_binary :: Types.transfer_binary()
+        ) ::
+          :ok | {:error, Types.append_transfer_error()}
+  def append_transfer(_transfer_batch, _transfer_binary), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec set_transfer_id(
           transfer_batch :: Types.transfer_batch(),

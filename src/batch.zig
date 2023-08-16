@@ -55,6 +55,37 @@ pub fn add_item(
     }
 }
 
+pub fn append(
+    comptime Item: anytype,
+    env: beam.Env,
+    batch_resource: BatchResource(Item),
+    item_bytes: []const u8,
+) !beam.Term {
+    const batch = batch_resource.ptr();
+
+    {
+        if (!batch.mutex.tryLock()) {
+            return error.MutexLocked;
+        }
+        defer batch.mutex.unlock();
+        if (batch.len + 1 > batch.items.len) {
+            return error.BatchFull;
+        }
+        batch.len += 1;
+
+        // We need to pass the item as bytes and copy it with std.mem.copy
+        // because we can't enforce a specifi alignment to the underlying
+        // ErlNifBinary, which becomes our slice of bytes
+
+        // Get a pointer to the memory backing the newly inserted item
+        const new_batch_item_bytes = std.mem.asBytes(&batch.items[batch.len - 1]);
+        // Fill it with the input item bytes
+        std.mem.copy(u8, new_batch_item_bytes, item_bytes);
+    }
+
+    return beam.make_ok(env);
+}
+
 pub fn get_item_field_setter_fn(comptime Item: type, comptime field: std.meta.FieldEnum(Item)) (fn (
     env: beam.Env,
     batch_resource: BatchResource(Item),

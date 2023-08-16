@@ -45,11 +45,19 @@ defmodule TigerBeetlex.Types do
           :invalid_batch
           | :batch_full
 
+  @type append_account_error ::
+          :invalid_batch
+          | :batch_full
+
   @type add_id_error ::
           :invalid_batch
           | :batch_full
 
   @type add_transfer_error ::
+          :invalid_batch
+          | :batch_full
+
+  @type append_transfer_error ::
           :invalid_batch
           | :batch_full
 

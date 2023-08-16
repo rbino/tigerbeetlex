@@ -16,6 +16,7 @@ defmodule TigerBeetlex.TransferBatch do
     field :ref, reference(), enforce: true
   end
 
+  alias TigerBeetlex.Transfer
   alias TigerBeetlex.Transfer.Flags
   alias TigerBeetlex.TransferBatch
   alias TigerBeetlex.NifAdapter
@@ -129,6 +130,39 @@ defmodule TigerBeetlex.TransferBatch do
   @spec add_transfer!(batch :: t(), opts :: keyword()) :: t()
   def add_transfer!(%TransferBatch{} = batch, opts) do
     case add_transfer(batch, opts) do
+      {:ok, batch} -> batch
+      {:error, reason} -> raise RuntimeError, inspect(reason)
+    end
+  end
+
+  @doc """
+  Appends a transfer to the batch.
+
+  The `%Transfer{}` struct must contain at least `:id`, see [TigerBeetle
+  documentation](https://docs.tigerbeetle.com/reference/transfers#modes) for the other required
+  fields depending on the mode of operation. The `:timestamp` field is ignored since it is
+  server-controlled.
+  """
+  @spec append(batch :: t(), transfer :: TigerBeetlex.Transfer.t()) ::
+          {:ok, t()} | {:error, Types.append_transfer_error()}
+  def append(%TransferBatch{} = batch, %Transfer{} = transfer) do
+    %TransferBatch{ref: ref} = batch
+
+    transfer_binary = Transfer.to_batch_item(transfer)
+
+    with :ok <- NifAdapter.append_transfer(ref, transfer_binary) do
+      {:ok, batch}
+    end
+  end
+
+  @doc """
+  Appends a transfer to the batch, raising in case of an error.
+
+  See `append/2` for the supported fields in the `%Transfer{}` struct.
+  """
+  @spec append!(batch :: t(), transfer :: TigerBeetlex.Transfer.t()) :: t()
+  def append!(%TransferBatch{} = batch, %Transfer{} = transfer) do
+    case append(batch, transfer) do
       {:ok, batch} -> batch
       {:error, reason} -> raise RuntimeError, inspect(reason)
     end

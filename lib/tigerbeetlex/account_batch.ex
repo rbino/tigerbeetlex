@@ -16,6 +16,7 @@ defmodule TigerBeetlex.AccountBatch do
     field :ref, reference(), enforce: true
   end
 
+  alias TigerBeetlex.Account
   alias TigerBeetlex.Account.Flags
   alias TigerBeetlex.AccountBatch
   alias TigerBeetlex.NifAdapter
@@ -108,6 +109,37 @@ defmodule TigerBeetlex.AccountBatch do
   @spec add_account!(batch :: t(), opts :: keyword()) :: t()
   def add_account!(%AccountBatch{} = batch, opts) do
     case add_account(batch, opts) do
+      {:ok, batch} -> batch
+      {:error, reason} -> raise RuntimeError, inspect(reason)
+    end
+  end
+
+  @doc """
+  Appends an account to the batch.
+
+  The `%Account{}` struct must contain at least `:id`, `:ledger` and `:code`, and may also contain
+  `:user_data` and `:flags`. All other fields are ignored since they are server-controlled fields.
+  """
+  @spec append(batch :: t(), account :: TigerBeetlex.Account.t()) ::
+          {:ok, t()} | {:error, Types.append_account_error()}
+  def append(%AccountBatch{} = batch, %Account{} = account) do
+    %AccountBatch{ref: ref} = batch
+
+    account_binary = Account.to_batch_item(account)
+
+    with :ok <- NifAdapter.append_account(ref, account_binary) do
+      {:ok, batch}
+    end
+  end
+
+  @doc """
+  Appends an account to the batch, raising in case of an error.
+
+  See `append/2` for the supported fields in the `%Account{}` struct.
+  """
+  @spec append!(batch :: t(), account :: TigerBeetlex.Account.t()) :: t()
+  def append!(%AccountBatch{} = batch, %Account{} = account) do
+    case append(batch, account) do
       {:ok, batch} -> batch
       {:error, reason} -> raise RuntimeError, inspect(reason)
     end

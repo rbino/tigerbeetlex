@@ -24,6 +24,24 @@ pub fn add_transfer(env: beam.Env, transfer_batch_resource: TransferBatchResourc
     };
 }
 
+pub fn append(
+    env: beam.Env,
+    transfer_batch_resource: TransferBatchResource,
+    transfer_bytes: []const u8,
+) !beam.Term {
+    if (transfer_bytes.len != @sizeOf(Transfer)) return beam.raise_badarg(env);
+
+    return batch.append(
+        Transfer,
+        env,
+        transfer_batch_resource,
+        transfer_bytes,
+    ) catch |err| switch (err) {
+        error.BatchFull => beam.make_error_atom(env, "batch_full"),
+        error.MutexLocked => return error.Yield,
+    };
+}
+
 // These are all comptime generated functions
 pub const set_transfer_id = batch.get_item_field_setter_fn(Transfer, .id);
 pub const set_transfer_debit_account_id = batch.get_item_field_setter_fn(Transfer, .debit_account_id);

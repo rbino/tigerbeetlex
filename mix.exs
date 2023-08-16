@@ -32,7 +32,8 @@ defmodule TigerBeetlex.MixProject do
       {:nimble_options, "~> 1.0"},
       {:build_dot_zig, "~> 0.2.0", runtime: false},
       {:elixir_uuid, "~> 1.2", only: :test},
-      {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false}
+      {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
+      {:benchee, "~> 1.0", runtime: false}
     ]
   end
 end

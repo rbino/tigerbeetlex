@@ -24,6 +24,24 @@ pub fn add_account(env: beam.Env, account_batch_resource: AccountBatchResource) 
     };
 }
 
+pub fn append(
+    env: beam.Env,
+    account_batch_resource: AccountBatchResource,
+    account_bytes: []const u8,
+) !beam.Term {
+    if (account_bytes.len != @sizeOf(Account)) return beam.raise_badarg(env);
+
+    return batch.append(
+        Account,
+        env,
+        account_batch_resource,
+        account_bytes,
+    ) catch |err| switch (err) {
+        error.BatchFull => beam.make_error_atom(env, "batch_full"),
+        error.MutexLocked => return error.Yield,
+    };
+}
+
 // These are all comptime generated functions
 pub const set_account_id = batch.get_item_field_setter_fn(Account, .id);
 pub const set_account_user_data = batch.get_item_field_setter_fn(Account, .user_data);

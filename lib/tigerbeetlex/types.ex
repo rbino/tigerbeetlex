@@ -9,7 +9,11 @@ defmodule TigerBeetlex.Types do
 
   @type account_batch :: reference()
 
+  @type account_binary :: <<_::1024>>
+
   @type transfer_batch :: reference()
+
+  @type transfer_binary :: <<_::1024>>
 
   @type id_batch :: reference()
 

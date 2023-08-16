@@ -14,7 +14,7 @@ pub fn create(env: beam.Env, capacity: u32) beam.Term {
     };
 }
 
-pub fn add_id(env: beam.Env, id_batch_resource: IdBatchResource, id: u128) !beam.Term {
+pub fn append(env: beam.Env, id_batch_resource: IdBatchResource, id: u128) !beam.Term {
     const id_batch = id_batch_resource.ptr();
 
     {
@@ -28,25 +28,6 @@ pub fn add_id(env: beam.Env, id_batch_resource: IdBatchResource, id: u128) !beam
         }
         id_batch.len += 1;
         id_batch.items[id_batch.len - 1] = id;
-
-        return beam.make_ok_term(env, beam.make_u32(env, id_batch.len));
-    }
-}
-
-pub fn set_id(env: beam.Env, id_batch_resource: IdBatchResource, idx: u32, id: u128) !beam.Term {
-    const id_batch = id_batch_resource.ptr();
-
-    {
-        if (!id_batch.mutex.tryLock()) {
-            return error.Yield;
-        }
-        defer id_batch.mutex.unlock();
-
-        if (idx >= id_batch.len) {
-            return beam.make_error_atom(env, "out_of_bounds");
-        }
-
-        id_batch.items[idx] = id;
     }
 
     return beam.make_ok(env);

@@ -41,29 +41,17 @@ defmodule TigerBeetlex.Types do
           | :out_of_memory
           | :too_many_requests
 
-  @type add_account_error ::
-          :invalid_batch
-          | :batch_full
-
   @type append_account_error ::
           :invalid_batch
           | :batch_full
 
-  @type add_id_error ::
-          :invalid_batch
-          | :batch_full
-
-  @type add_transfer_error ::
+  @type append_id_error ::
           :invalid_batch
           | :batch_full
 
   @type append_transfer_error ::
           :invalid_batch
           | :batch_full
-
-  @type set_function_error ::
-          :out_of_bounds
-          | :invalid_account_batch
 
   @type create_transfers_error ::
           :invalid_client

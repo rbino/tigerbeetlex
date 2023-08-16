@@ -47,22 +47,22 @@ defmodule TigerBeetlex.IDBatch do
   end
 
   @doc """
-  Adds an ID to the batch.
+  Appends an ID to the batch.
   """
-  @spec add_id(batch :: t(), id :: Types.uint128()) ::
-          {:ok, t()} | {:error, Types.add_id_error()}
-  def add_id(%IDBatch{} = batch, id) do
-    with {:ok, _new_length} <- NifAdapter.add_id(batch.ref, id) do
+  @spec append(batch :: t(), id :: Types.uint128()) ::
+          {:ok, t()} | {:error, Types.append_id_error()}
+  def append(%IDBatch{} = batch, id) do
+    with :ok <- NifAdapter.append_id(batch.ref, id) do
       {:ok, batch}
     end
   end
 
   @doc """
-  Adds an ID to the batch, raising in case of an error.
+  Appends an ID to the batch, raising in case of an error.
   """
-  @spec add_id!(batch :: t(), id :: Types.uint128()) :: t()
-  def add_id!(%IDBatch{} = batch, id) do
-    case add_id(batch, id) do
+  @spec append!(batch :: t(), id :: Types.uint128()) :: t()
+  def append!(%IDBatch{} = batch, id) do
+    case append(batch, id) do
       {:ok, batch} -> batch
       {:error, reason} -> raise RuntimeError, inspect(reason)
     end

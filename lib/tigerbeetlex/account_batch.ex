@@ -17,7 +17,6 @@ defmodule TigerBeetlex.AccountBatch do
   end
 
   alias TigerBeetlex.Account
-  alias TigerBeetlex.Account.Flags
   alias TigerBeetlex.AccountBatch
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.Types
@@ -43,72 +42,6 @@ defmodule TigerBeetlex.AccountBatch do
   @spec new!(capacity :: non_neg_integer()) :: t()
   def new!(capacity) when is_integer(capacity) and capacity > 0 do
     case new(capacity) do
-      {:ok, batch} -> batch
-      {:error, reason} -> raise RuntimeError, inspect(reason)
-    end
-  end
-
-  @add_account_opts_schema [
-    id: [
-      required: true,
-      type: :binary,
-      type_doc: "a 128-bit binary ID",
-      doc: "The ID of the account."
-    ],
-    ledger: [
-      required: true,
-      type: :pos_integer,
-      doc: "The ledger of the account."
-    ],
-    code: [
-      required: true,
-      type: :pos_integer,
-      doc: "The code of the account."
-    ],
-    user_data: [
-      type: :binary,
-      type_doc: "a 128-bit binary ID",
-      doc: "An ID used to reference external user data."
-    ],
-    flags: [
-      type: {:struct, Flags},
-      doc: "The flags for the account."
-    ]
-  ]
-
-  @doc """
-  Adds an account to the batch. The fields of the account are passed as a keyword list.
-
-  ## Fields
-
-  These are the supported fields that can be passed in `opts` for the account
-
-  #{NimbleOptions.docs(@add_account_opts_schema)}
-
-  See [TigerBeetle docs](https://docs.tigerbeetle.com/reference/accounts) for the meaning of the
-  fields.
-  """
-  @spec add_account(batch :: t(), opts :: keyword()) ::
-          {:ok, t()}
-          | {:error, Types.add_account_error() | Types.set_function_error()}
-  def add_account(%AccountBatch{} = batch, opts) do
-    %AccountBatch{ref: ref} = batch
-
-    with {:ok, new_length} <- NifAdapter.add_account(ref),
-         :ok <- set_fields(ref, new_length - 1, opts) do
-      {:ok, batch}
-    end
-  end
-
-  @doc """
-  Adds an account to the batch, raising in case of an error. The fields of the account are passed
-  as a keyword list.
-
-  See `add_account/2` for the supported options.
-  """
-  @spec add_account!(batch :: t(), opts :: keyword()) :: t()
-  def add_account!(%AccountBatch{} = batch, opts) do
-    case add_account(batch, opts) do
       {:ok, batch} -> batch
       {:error, reason} -> raise RuntimeError, inspect(reason)
     end
@@ -142,31 +75,6 @@ defmodule TigerBeetlex.AccountBatch do
     case append(batch, account) do
       {:ok, batch} -> batch
       {:error, reason} -> raise RuntimeError, inspect(reason)
-    end
-  end
-
-  defp set_fields(ref, idx, opts) do
-    Enum.reduce_while(opts, :ok, fn {field, value}, _acc ->
-      case set_field(ref, idx, field, value) do
-        :ok -> {:cont, :ok}
-        {:error, reason} -> {:halt, {:error, reason}}
-      end
-    end)
-  end
-
-  defp set_field(ref, idx, field, value) do
-    set_fun(field).(ref, idx, value)
-  end
-
-  defp set_fun(:id), do: &NifAdapter.set_account_id/3
-  defp set_fun(:user_data), do: &NifAdapter.set_account_user_data/3
-  defp set_fun(:ledger), do: &NifAdapter.set_account_ledger/3
-  defp set_fun(:code), do: &NifAdapter.set_account_code/3
-
-  defp set_fun(:flags) do
-    fn ref, idx, value ->
-      flags_u16 = Flags.to_u16!(value)
-      NifAdapter.set_account_flags(ref, idx, flags_u16)
     end
   end
 end

@@ -27,13 +27,7 @@ defmodule TigerBeetlex.Types do
           | :system_resources
           | :network_subsystem
 
-  @type create_account_batch_error :: :out_of_memory
-
-  @type create_id_batch_error ::
-          :out_of_memory
-
-  @type create_transfer_batch_error ::
-          :out_of_memory
+  @type create_batch_error :: :out_of_memory
 
   @type create_accounts_error ::
           :invalid_client
@@ -41,15 +35,7 @@ defmodule TigerBeetlex.Types do
           | :out_of_memory
           | :too_many_requests
 
-  @type append_account_error ::
-          :invalid_batch
-          | :batch_full
-
-  @type append_id_error ::
-          :invalid_batch
-          | :batch_full
-
-  @type append_transfer_error ::
+  @type append_error ::
           :invalid_batch
           | :batch_full
 

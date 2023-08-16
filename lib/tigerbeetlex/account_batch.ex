@@ -27,7 +27,7 @@ defmodule TigerBeetlex.AccountBatch do
   The capacity is the maximum number of accounts that can be added to the batch.
   """
   @spec new(capacity :: non_neg_integer()) ::
-          {:ok, t()} | {:error, Types.create_account_batch_error()}
+          {:ok, t()} | {:error, Types.create_batch_error()}
   def new(capacity) when is_integer(capacity) and capacity > 0 do
     with {:ok, ref} <- NifAdapter.create_account_batch(capacity) do
       {:ok, %AccountBatch{ref: ref}}
@@ -54,7 +54,7 @@ defmodule TigerBeetlex.AccountBatch do
   `:user_data` and `:flags`. All other fields are ignored since they are server-controlled fields.
   """
   @spec append(batch :: t(), account :: TigerBeetlex.Account.t()) ::
-          {:ok, t()} | {:error, Types.append_account_error()}
+          {:ok, t()} | {:error, Types.append_error()}
   def append(%AccountBatch{} = batch, %Account{} = account) do
     %AccountBatch{ref: ref} = batch
 

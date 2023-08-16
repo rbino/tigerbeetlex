@@ -88,28 +88,28 @@ defmodule TigerBeetlex.Response do
   defp unfold_function(@operation_create_accounts) do
     fn
       <<>> -> nil
-      <<error::binary-size(8), rest::binary>> -> {CreateAccountError.from_binary!(error), rest}
+      <<error::binary-size(8), rest::binary>> -> {CreateAccountError.from_binary(error), rest}
     end
   end
 
   defp unfold_function(@operation_create_transfers) do
     fn
       <<>> -> nil
-      <<error::binary-size(8), rest::binary>> -> {CreateTransferError.from_binary!(error), rest}
+      <<error::binary-size(8), rest::binary>> -> {CreateTransferError.from_binary(error), rest}
     end
   end
 
   defp unfold_function(@operation_lookup_accounts) do
     fn
       <<>> -> nil
-      <<account::binary-size(128), rest::binary>> -> {Account.from_binary!(account), rest}
+      <<account::binary-size(128), rest::binary>> -> {Account.from_binary(account), rest}
     end
   end
 
   defp unfold_function(@operation_lookup_transfers) do
     fn
       <<>> -> nil
-      <<transfer::binary-size(128), rest::binary>> -> {Transfer.from_binary!(transfer), rest}
+      <<transfer::binary-size(128), rest::binary>> -> {Transfer.from_binary(transfer), rest}
     end
   end
 end

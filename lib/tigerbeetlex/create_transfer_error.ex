@@ -142,8 +142,8 @@ defmodule TigerBeetlex.CreateTransferError do
   Converts the binary representation of the result (8 bytes) in a
   `%TigerBeetlex.CreateTransferError{}` struct
   """
-  @spec from_binary!(bin :: <<_::64>>) :: t()
-  def from_binary!(<<_::binary-size(8)>> = bin) do
+  @spec from_binary(bin :: <<_::64>>) :: t()
+  def from_binary(<<_::binary-size(8)>> = bin) do
     <<index::unsigned-little-32, result::unsigned-little-32>> = bin
 
     %CreateTransferError{

@@ -33,8 +33,8 @@ defmodule TigerBeetlex.Transfer do
   Converts the binary representation of an account (128 bytes) in a
   `%TigerBeetlex.Transfer{}` struct
   """
-  @spec from_binary!(bin :: TigerBeetlex.Types.transfer_binary()) :: t()
-  def from_binary!(<<_::binary-size(128)>> = bin) do
+  @spec from_binary(bin :: TigerBeetlex.Types.transfer_binary()) :: t()
+  def from_binary(<<_::binary-size(128)>> = bin) do
     <<id::binary-size(16), debit_account_id::binary-size(16), credit_account_id::binary-size(16),
       user_data::binary-size(16), _reserved::binary-size(16), pending_id::binary-size(16),
       timeout::unsigned-little-64, ledger::unsigned-little-32, code::unsigned-little-16,

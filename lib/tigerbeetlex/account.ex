@@ -32,8 +32,8 @@ defmodule TigerBeetlex.Account do
   Converts the binary representation of an account (128 bytes) in a
   `%TigerBeetlex.Account{}` struct
   """
-  @spec from_binary!(bin :: TigerBeetlex.Types.account_binary()) :: t()
-  def from_binary!(<<_::binary-size(128)>> = bin) do
+  @spec from_binary(bin :: TigerBeetlex.Types.account_binary()) :: t()
+  def from_binary(<<_::binary-size(128)>> = bin) do
     <<id::binary-size(16), user_data::binary-size(16), _reserved::binary-size(48),
       ledger::unsigned-little-32, code::unsigned-little-16, flags::unsigned-little-16,
       debits_pending::unsigned-little-64, debits_posted::unsigned-little-64,

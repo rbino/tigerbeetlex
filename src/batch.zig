@@ -1,5 +1,5 @@
 const std = @import("std");
-const Mutex = std.Thread.Mutex;
+const RwLock = std.Thread.RwLock;
 
 const beam = @import("beam.zig");
 const Resource = beam.resource.Resource;
@@ -10,7 +10,7 @@ const Transfer = tb.Transfer;
 
 pub fn Batch(comptime Item: anytype) type {
     return struct {
-        mutex: Mutex = .{},
+        lock: RwLock = .{},
         items: []Item,
         len: u32,
     };
@@ -42,10 +42,10 @@ pub fn append(
     const batch = batch_resource.ptr();
 
     {
-        if (!batch.mutex.tryLock()) {
-            return error.MutexLocked;
+        if (!batch.lock.tryLock()) {
+            return error.LockFailed;
         }
-        defer batch.mutex.unlock();
+        defer batch.lock.unlock();
         if (batch.len + 1 > batch.items.len) {
             return error.BatchFull;
         }

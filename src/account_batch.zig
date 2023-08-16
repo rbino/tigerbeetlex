@@ -31,6 +31,6 @@ pub fn append(
         account_bytes,
     ) catch |err| switch (err) {
         error.BatchFull => beam.make_error_atom(env, "batch_full"),
-        error.MutexLocked => return error.Yield,
+        error.LockFailed => return error.Yield,
     };
 }

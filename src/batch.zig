@@ -33,10 +33,11 @@ pub fn create(comptime Item: anytype, env: beam.Env, capacity: u32) !beam.Term {
     return beam.make_ok_term(env, term_handle);
 }
 
-pub fn add_item(
+pub fn append(
     comptime Item: anytype,
     env: beam.Env,
     batch_resource: BatchResource(Item),
+    item_bytes: []const u8,
 ) !beam.Term {
     const batch = batch_resource.ptr();
 
@@ -49,56 +50,15 @@ pub fn add_item(
             return error.BatchFull;
         }
         batch.len += 1;
-        batch.items[batch.len - 1] = std.mem.zeroInit(Item, .{});
 
-        return beam.make_ok_term(env, beam.make_u32(env, batch.len));
-    }
-}
+        // We need to pass the item as bytes and copy it with std.mem.copy
+        // because we can't enforce a specifi alignment to the underlying
+        // ErlNifBinary, which becomes our slice of bytes
 
-pub fn get_item_field_setter_fn(comptime Item: type, comptime field: std.meta.FieldEnum(Item)) (fn (
-    env: beam.Env,
-    batch_resource: BatchResource(Item),
-    idx: u32,
-    value: std.meta.fieldInfo(Item, field).field_type,
-) error{Yield}!beam.Term) {
-    const FieldType = std.meta.fieldInfo(Item, field).field_type;
-
-    return struct {
-        fn setter_fn(
-            env: beam.Env,
-            batch_resource: BatchResource(Item),
-            idx: u32,
-            value: FieldType,
-        ) !beam.Term {
-            return set_item_field(Item, field, env, batch_resource, idx, value);
-        }
-    }.setter_fn;
-}
-
-pub fn set_item_field(
-    comptime Item: type,
-    comptime field: std.meta.FieldEnum(Item),
-    env: beam.Env,
-    batch_resource: BatchResource(Item),
-    idx: u32,
-    value: std.meta.fieldInfo(Item, field).field_type,
-) error{Yield}!beam.Term {
-    const field_name = @tagName(field);
-    const batch = batch_resource.ptr();
-
-    {
-        if (!batch.mutex.tryLock()) {
-            return error.Yield;
-        }
-        defer batch.mutex.unlock();
-
-        if (idx >= batch.len) {
-            return beam.make_error_atom(env, "out_of_bounds");
-        }
-
-        const item: *Item = &batch.items[idx];
-
-        @field(item, field_name) = value;
+        // Get a pointer to the memory backing the newly inserted item
+        const new_batch_item_bytes = std.mem.asBytes(&batch.items[batch.len - 1]);
+        // Fill it with the input item bytes
+        std.mem.copy(u8, new_batch_item_bytes, item_bytes);
     }
 
     return beam.make_ok(env);

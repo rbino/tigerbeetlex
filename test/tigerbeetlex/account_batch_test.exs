@@ -1,6 +1,7 @@
 defmodule Tigerbeetlex.AccountBatchTest do
   use ExUnit.Case
 
+  alias TigerBeetlex.Account
   alias TigerBeetlex.AccountBatch
 
   describe "AccountBatch.new/1" do
@@ -15,82 +16,54 @@ defmodule Tigerbeetlex.AccountBatchTest do
     end
   end
 
-  describe "AccountBatch.add_account/2" do
+  describe "AccountBatch.append/2" do
     setup do
-      valid_account_opts = [
+      valid_account = %Account{
         id: <<1::128>>,
         code: 1,
         ledger: 1
-      ]
+      }
 
-      assert {:ok, batch} = AccountBatch.new(32)
-
-      {:ok, valid_opts: valid_account_opts, batch: batch}
+      {:ok, valid_account: valid_account}
     end
 
-    test "succeeds with valid_opts", %{batch: batch, valid_opts: opts} do
-      assert {:ok, %AccountBatch{}} = AccountBatch.add_account(batch, opts)
+    test "succeeds with valid account", %{valid_account: account} do
+      batch = AccountBatch.new!(32)
+
+      assert {:ok, %AccountBatch{}} = AccountBatch.append(batch, account)
     end
 
-    test "fails when exceeding capacity", %{valid_opts: opts} do
+    test "fails when exceeding capacity", %{valid_account: account} do
       assert {:ok, batch} = AccountBatch.new(1)
 
-      assert {:ok, batch} = AccountBatch.add_account(batch, opts)
-      assert {:error, :batch_full} = AccountBatch.add_account(batch, opts)
-    end
-
-    test "raises if id is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise ArgumentError, fn ->
-        AccountBatch.add_account(batch, Keyword.put(opts, :id, 42))
-      end
-    end
-
-    test "raises if user_data is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise ArgumentError, fn ->
-        AccountBatch.add_account(batch, Keyword.put(opts, :user_data, "foo"))
-      end
-    end
-
-    test "raises if flags is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise FunctionClauseError, fn ->
-        AccountBatch.add_account(batch, Keyword.put(opts, :flags, "bar"))
-      end
-    end
-
-    test "raises if ledger is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise ArgumentError, fn ->
-        AccountBatch.add_account(batch, Keyword.put(opts, :ledger, -1))
-      end
-    end
-
-    test "raises if code is invalid", %{batch: batch, valid_opts: opts} do
-      assert_raise ArgumentError, fn ->
-        AccountBatch.add_account(batch, Keyword.put(opts, :code, "foo"))
-      end
+      assert {:ok, batch} = AccountBatch.append(batch, account)
+      assert {:error, :batch_full} = AccountBatch.append(batch, account)
     end
   end
 
-  describe "AccountBatch.add_account!/2" do
+  describe "AccountBatch.append!/2" do
     setup do
-      valid_account_opts = [
+      valid_account = %Account{
         id: <<1::128>>,
         code: 1,
         ledger: 1
-      ]
+      }
 
-      {:ok, valid_opts: valid_account_opts, batch: AccountBatch.new!(32)}
+      {:ok, valid_account: valid_account}
     end
 
-    test "succeeds with valid_opts", %{batch: batch, valid_opts: opts} do
-      assert %AccountBatch{} = AccountBatch.add_account!(batch, opts)
+    test "succeeds with valid account", %{valid_account: account} do
+      batch = AccountBatch.new!(32)
+
+      assert %AccountBatch{} = AccountBatch.append!(batch, account)
     end
 
-    test "fails when exceeding capacity", %{valid_opts: opts} do
+    test "fails when exceeding capacity", %{valid_account: account} do
       batch =
         AccountBatch.new!(1)
-        |> AccountBatch.add_account!(opts)
+        |> AccountBatch.append!(account)
 
-      assert_raise RuntimeError, fn -> AccountBatch.add_account!(batch, opts) end
+      assert_raise RuntimeError, fn -> AccountBatch.append!(batch, account) end
     end
   end
 end

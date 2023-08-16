@@ -137,10 +137,9 @@ defmodule TigerBeetlex.Connection do
   ## Examples
 
       # Successful request
-      {:ok, batch} = TigerBeetlex.AccountBatch.new(10)
-
-      {:ok, batch} =
-        TigerBeetlex.AccountBatch.add_account(batch, id: <<42::128>>, ledger: 3, code: 4)
+      batch =
+        TigerBeetlex.AccountBatch.new!(10)
+        |> TigerBeetlex.AccountBatch.append!(%Account{id: <<42::128>>, ledger: 3, code: 4})
 
       {:ok, stream} = TigerBeetlex.Connection.create_accounts(:tb, batch)
 
@@ -148,10 +147,9 @@ defmodule TigerBeetlex.Connection do
       #=> []
 
       # Creation error
-      {:ok, batch} = TigerBeetlex.AccountBatch.new(10)
-
-      {:ok, batch} =
-        TigerBeetlex.AccountBatch.add_account(batch, id: <<0::128>>, ledger: 3, code: 4)
+      batch =
+        TigerBeetlex.AccountBatch.new!(10)
+        |> TigerBeetlex.AccountBatch.append!(%Account{id: <<0::128>>, ledger: 3, code: 4})
 
       {:ok, stream} = TigerBeetlex.Connection.create_accounts(:tb, batch)
 
@@ -185,16 +183,17 @@ defmodule TigerBeetlex.Connection do
   ## Examples
 
       # Successful request
-      {:ok, batch} = TigerBeetlex.TransferBatch.new(10)
-
-      {:ok, batch} =
-        TigerBeetlex.TransferBatch.add_transfer(batch,
-          id: <<42::128>>,
-          debit_account_id: <<42::128>>,
-          credit_account_id: <<43::128>>,
-          ledger: 3,
-          code: 4
-          amount: 100
+      batch =
+        TigerBeetlex.TransferBatch.new!(10)
+        |> TigerBeetlex.TransferBatch.append!(
+          %Transfer{
+            id: <<42::128>>,
+            debit_account_id: <<42::128>>,
+            credit_account_id: <<43::128>>,
+            ledger: 3,
+            code: 4
+            amount: 100
+          }
         )
 
       {:ok, stream} = TigerBeetlex.Connection.create_transfers(:tb, batch)
@@ -203,16 +202,17 @@ defmodule TigerBeetlex.Connection do
       #=> []
 
       # Creation error
-      {:ok, batch} = TigerBeetlex.TransferBatch.new(10)
-
-      {:ok, batch} =
-        TigerBeetlex.TransferBatch.add_transfer(batch,
-          id: <<42::128>>,
-          debit_account_id: <<42::128>>,
-          credit_account_id: <<43::128>>,
-          ledger: 3,
-          code: 4
-          amount: 100
+      batch =
+        TigerBeetlex.TransferBatch.new!(10)
+        |> TigerBeetlex.TransferBatch.append!(
+          %Transfer{
+            id: <<0::128>>,
+            debit_account_id: <<42::128>>,
+            credit_account_id: <<43::128>>,
+            ledger: 3,
+            code: 4
+            amount: 100
+          }
         )
 
       {:ok, stream} = TigerBeetlex.Connection.create_transfers(:tb, batch)
@@ -245,9 +245,9 @@ defmodule TigerBeetlex.Connection do
 
   ## Examples
 
-      {:ok, batch} = TigerBeetlex.IDBatch.new(10)
-
-      {:ok, batch} = TigerBeetlex.IDBatch.add_id(batch, <<42::128>>)
+      batch =
+        TigerBeetlex.IDBatch.new!(10)
+        |> TigerBeetlex.IDBatch.append!(<<42::128>>)
 
       {:ok, stream} = TigerBeetlex.Connection.lookup_accounts(:tb, batch)
 
@@ -279,9 +279,9 @@ defmodule TigerBeetlex.Connection do
 
   ## Examples
 
-      {:ok, batch} = TigerBeetlex.IDBatch.new(10)
-
-      {:ok, batch} = TigerBeetlex.IDBatch.add_id(batch, <<42::128>>)
+      batch =
+        TigerBeetlex.IDBatch.new!(10)
+        |> TigerBeetlex.IDBatch.append!(<<42::128>>)
 
       {:ok, stream} = TigerBeetlex.Connection.lookup_transfers(:tb, batch)
 

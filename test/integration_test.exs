@@ -39,13 +39,14 @@ defmodule TigerBeetlex.IntegrationTest do
     test "successful account creation", %{conn: conn, batch: batch} do
       id = random_id()
 
-      {:ok, batch} =
-        AccountBatch.add_account(batch,
-          id: id,
-          ledger: 1,
-          code: 1,
-          flags: %Account.Flags{credits_must_not_exceed_debits: true}
-        )
+      account = %Account{
+        id: id,
+        ledger: 1,
+        code: 1,
+        flags: %Account.Flags{credits_must_not_exceed_debits: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, account)
 
       assert {:ok, stream} = Connection.create_accounts(conn, batch)
       assert [] == Enum.to_list(stream)
@@ -61,23 +62,25 @@ defmodule TigerBeetlex.IntegrationTest do
     test "successful linked account creation", %{conn: conn, batch: batch} do
       id_1 = random_id()
 
-      {:ok, batch} =
-        AccountBatch.add_account(batch,
-          id: id_1,
-          ledger: 1,
-          code: 1,
-          flags: %Account.Flags{linked: true}
-        )
+      account_1 = %Account{
+        id: id_1,
+        ledger: 1,
+        code: 1,
+        flags: %Account.Flags{linked: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, account_1)
 
       id_2 = random_id()
 
-      {:ok, batch} =
-        AccountBatch.add_account(batch,
-          id: id_2,
-          ledger: 2,
-          code: 2,
-          user_data: <<42::128>>
-        )
+      account_2 = %Account{
+        id: id_2,
+        ledger: 2,
+        code: 2,
+        user_data: <<42::128>>
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, account_2)
 
       assert {:ok, stream} = Connection.create_accounts(conn, batch)
       assert [] == Enum.to_list(stream)
@@ -97,13 +100,14 @@ defmodule TigerBeetlex.IntegrationTest do
     end
 
     test "failed account creation", %{conn: conn, batch: batch} do
-      {:ok, batch} =
-        AccountBatch.add_account(batch,
-          id: <<0::128>>,
-          ledger: 1,
-          code: 1,
-          flags: %Account.Flags{credits_must_not_exceed_debits: true}
-        )
+      account = %Account{
+        id: <<0::128>>,
+        ledger: 1,
+        code: 1,
+        flags: %Account.Flags{credits_must_not_exceed_debits: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, account)
 
       assert {:ok, stream} = Connection.create_accounts(conn, batch)
 
@@ -115,23 +119,25 @@ defmodule TigerBeetlex.IntegrationTest do
     test "failed linked account creation", %{conn: conn, batch: batch} do
       id_1 = random_id()
 
-      {:ok, batch} =
-        AccountBatch.add_account(batch,
-          id: id_1,
-          ledger: 1,
-          code: 1,
-          flags: %Account.Flags{linked: true}
-        )
+      account_1 = %Account{
+        id: id_1,
+        ledger: 1,
+        code: 1,
+        flags: %Account.Flags{linked: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, account_1)
 
       id_2 = random_id()
 
-      {:ok, batch} =
-        AccountBatch.add_account(batch,
-          id: id_2,
-          ledger: 0,
-          code: 2,
-          user_data: <<42::128>>
-        )
+      account_2 = %Account{
+        id: id_2,
+        ledger: 0,
+        code: 2,
+        user_data: <<42::128>>
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, account_2)
 
       assert {:ok, stream} = Connection.create_accounts(conn, batch)
 
@@ -147,26 +153,28 @@ defmodule TigerBeetlex.IntegrationTest do
     test "mixed successful and failed account creations", %{conn: conn, batch: batch} do
       id_1 = random_id()
 
-      {:ok, batch} =
-        AccountBatch.add_account(batch,
-          id: id_1,
-          ledger: 42,
-          code: 42,
-          flags: %Account.Flags{debits_must_not_exceed_credits: true}
-        )
+      account_1 = %Account{
+        id: id_1,
+        ledger: 42,
+        code: 42,
+        flags: %Account.Flags{debits_must_not_exceed_credits: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, account_1)
 
       id_2 = random_id()
 
-      {:ok, batch} =
-        AccountBatch.add_account(batch,
-          id: id_2,
-          ledger: 2,
-          code: 2,
-          flags: %Account.Flags{
-            credits_must_not_exceed_debits: true,
-            debits_must_not_exceed_credits: true
-          }
-        )
+      account_2 = %Account{
+        id: id_2,
+        ledger: 2,
+        code: 2,
+        flags: %Account.Flags{
+          credits_must_not_exceed_debits: true,
+          debits_must_not_exceed_credits: true
+        }
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, account_2)
 
       assert {:ok, stream} = Connection.create_accounts(conn, batch)
 
@@ -210,16 +218,17 @@ defmodule TigerBeetlex.IntegrationTest do
 
       id = random_id()
 
-      {:ok, batch} =
-        TransferBatch.add_transfer(batch,
-          id: id,
-          credit_account_id: credit_account_id,
-          debit_account_id: debit_account_id,
-          ledger: 1,
-          code: 1,
-          user_data: <<42::128>>,
-          amount: 100
-        )
+      transfer = %Transfer{
+        id: id,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        user_data: <<42::128>>,
+        amount: 100
+      }
+
+      {:ok, batch} = TransferBatch.append(batch, transfer)
 
       assert {:ok, stream} = Connection.create_transfers(conn, batch)
       assert [] == Enum.to_list(stream)
@@ -259,28 +268,30 @@ defmodule TigerBeetlex.IntegrationTest do
 
       id_1 = random_id()
 
-      {:ok, batch} =
-        TransferBatch.add_transfer(batch,
-          id: id_1,
-          credit_account_id: credit_account_id,
-          debit_account_id: debit_account_id,
-          ledger: 1,
-          code: 1,
-          amount: 100,
-          flags: %Transfer.Flags{linked: true}
-        )
+      transfer_1 = %Transfer{
+        id: id_1,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        amount: 100,
+        flags: %Transfer.Flags{linked: true}
+      }
+
+      {:ok, batch} = TransferBatch.append(batch, transfer_1)
 
       id_2 = random_id()
 
-      {:ok, batch} =
-        TransferBatch.add_transfer(batch,
-          id: id_2,
-          credit_account_id: credit_account_id,
-          debit_account_id: debit_account_id,
-          ledger: 1,
-          code: 1,
-          amount: 50
-        )
+      transfer_2 = %Transfer{
+        id: id_2,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        amount: 50
+      }
+
+      {:ok, batch} = TransferBatch.append(batch, transfer_2)
 
       assert {:ok, stream} = Connection.create_transfers(conn, batch)
       assert [] == Enum.to_list(stream)
@@ -328,16 +339,17 @@ defmodule TigerBeetlex.IntegrationTest do
 
       pending_id = random_id()
 
-      {:ok, batch} =
-        TransferBatch.add_transfer(batch,
-          id: pending_id,
-          credit_account_id: credit_account_id,
-          debit_account_id: debit_account_id,
-          ledger: 1,
-          code: 1,
-          amount: 100,
-          flags: %Transfer.Flags{pending: true}
-        )
+      pending_transfer = %Transfer{
+        id: pending_id,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        amount: 100,
+        flags: %Transfer.Flags{pending: true}
+      }
+
+      {:ok, batch} = TransferBatch.append(batch, pending_transfer)
 
       assert {:ok, stream} = Connection.create_transfers(conn, batch)
       assert [] == Enum.to_list(stream)
@@ -372,12 +384,13 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = TransferBatch.new(1)
 
-      {:ok, batch} =
-        TransferBatch.add_transfer(batch,
-          id: post_pending_id,
-          pending_id: pending_id,
-          flags: %Transfer.Flags{post_pending_transfer: true}
-        )
+      post_pending_transfer = %Transfer{
+        id: post_pending_id,
+        pending_id: pending_id,
+        flags: %Transfer.Flags{post_pending_transfer: true}
+      }
+
+      {:ok, batch} = TransferBatch.append(batch, post_pending_transfer)
 
       assert {:ok, stream} = Connection.create_transfers(conn, batch)
       assert [] == Enum.to_list(stream)
@@ -420,16 +433,17 @@ defmodule TigerBeetlex.IntegrationTest do
 
       pending_id = random_id()
 
-      {:ok, batch} =
-        TransferBatch.add_transfer(batch,
-          id: pending_id,
-          credit_account_id: credit_account_id,
-          debit_account_id: debit_account_id,
-          ledger: 1,
-          code: 1,
-          amount: 100,
-          flags: %Transfer.Flags{pending: true}
-        )
+      pending_transfer = %Transfer{
+        id: pending_id,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        amount: 100,
+        flags: %Transfer.Flags{pending: true}
+      }
+
+      {:ok, batch} = TransferBatch.append(batch, pending_transfer)
 
       assert {:ok, stream} = Connection.create_transfers(conn, batch)
       assert [] == Enum.to_list(stream)
@@ -460,22 +474,23 @@ defmodule TigerBeetlex.IntegrationTest do
                debits_posted: 0
              } = get_account!(conn, debit_account_id)
 
-      post_pending_id = random_id()
+      void_pending_id = random_id()
 
       {:ok, batch} = TransferBatch.new(1)
 
-      {:ok, batch} =
-        TransferBatch.add_transfer(batch,
-          id: post_pending_id,
-          pending_id: pending_id,
-          flags: %Transfer.Flags{void_pending_transfer: true}
-        )
+      void_pending_transfer = %Transfer{
+        id: void_pending_id,
+        pending_id: pending_id,
+        flags: %Transfer.Flags{void_pending_transfer: true}
+      }
+
+      {:ok, batch} = TransferBatch.append(batch, void_pending_transfer)
 
       assert {:ok, stream} = Connection.create_transfers(conn, batch)
       assert [] == Enum.to_list(stream)
 
       assert %Transfer{
-               id: ^post_pending_id,
+               id: ^void_pending_id,
                credit_account_id: ^credit_account_id,
                debit_account_id: ^debit_account_id,
                ledger: 1,
@@ -483,7 +498,7 @@ defmodule TigerBeetlex.IntegrationTest do
                amount: 100,
                pending_id: ^pending_id,
                flags: %Transfer.Flags{void_pending_transfer: true}
-             } = get_transfer!(conn, post_pending_id)
+             } = get_transfer!(conn, void_pending_id)
 
       assert %Account{
                id: ^credit_account_id,
@@ -511,15 +526,16 @@ defmodule TigerBeetlex.IntegrationTest do
 
       id = random_id()
 
-      {:ok, batch} =
-        TransferBatch.add_transfer(batch,
-          id: id,
-          credit_account_id: credit_account_id,
-          debit_account_id: credit_account_id,
-          ledger: 1,
-          code: 1,
-          amount: 100
-        )
+      transfer = %Transfer{
+        id: id,
+        credit_account_id: credit_account_id,
+        debit_account_id: credit_account_id,
+        ledger: 1,
+        code: 1,
+        amount: 100
+      }
+
+      {:ok, batch} = TransferBatch.append(batch, transfer)
 
       assert {:ok, stream} = Connection.create_transfers(conn, batch)
 
@@ -540,28 +556,30 @@ defmodule TigerBeetlex.IntegrationTest do
 
       id_1 = random_id()
 
-      {:ok, batch} =
-        TransferBatch.add_transfer(batch,
-          id: id_1,
-          credit_account_id: credit_account_id,
-          debit_account_id: debit_account_id,
-          ledger: 1,
-          code: 1,
-          amount: 100,
-          flags: %Transfer.Flags{linked: true}
-        )
+      transfer_1 = %Transfer{
+        id: id_1,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        amount: 100,
+        flags: %Transfer.Flags{linked: true}
+      }
+
+      {:ok, batch} = TransferBatch.append(batch, transfer_1)
 
       id_2 = random_id()
 
-      {:ok, batch} =
-        TransferBatch.add_transfer(batch,
-          id: id_2,
-          credit_account_id: credit_account_id,
-          debit_account_id: debit_account_id,
-          ledger: 42,
-          code: 1,
-          amount: 50
-        )
+      transfer_2 = %Transfer{
+        id: id_2,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 42,
+        code: 1,
+        amount: 50
+      }
+
+      {:ok, batch} = TransferBatch.append(batch, transfer_2)
 
       assert {:ok, stream} = Connection.create_transfers(conn, batch)
 
@@ -587,27 +605,29 @@ defmodule TigerBeetlex.IntegrationTest do
 
       id_1 = random_id()
 
-      {:ok, batch} =
-        TransferBatch.add_transfer(batch,
-          id: id_1,
-          credit_account_id: credit_account_id,
-          debit_account_id: debit_account_id,
-          ledger: 1,
-          code: 1,
-          amount: 42
-        )
+      transfer_1 = %Transfer{
+        id: id_1,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        amount: 42
+      }
+
+      {:ok, batch} = TransferBatch.append(batch, transfer_1)
 
       id_2 = random_id()
 
-      {:ok, batch} =
-        TransferBatch.add_transfer(batch,
-          id: id_2,
-          credit_account_id: credit_account_id,
-          debit_account_id: debit_account_id,
-          ledger: 1,
-          code: 0,
-          amount: 50
-        )
+      transfer_2 = %Transfer{
+        id: id_2,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 0,
+        amount: 50
+      }
+
+      {:ok, batch} = TransferBatch.append(batch, transfer_2)
 
       assert {:ok, stream} = Connection.create_transfers(conn, batch)
 
@@ -660,7 +680,7 @@ defmodule TigerBeetlex.IntegrationTest do
         conn: conn
       } = ctx
 
-      {:ok, batch} = IDBatch.add_id(batch, account_id)
+      {:ok, batch} = IDBatch.append(batch, account_id)
 
       assert {:ok, stream} = Connection.lookup_accounts(conn, batch)
       assert [%Account{id: ^account_id}] = Enum.to_list(stream)
@@ -675,8 +695,8 @@ defmodule TigerBeetlex.IntegrationTest do
 
       account_id_2 = create_account!(conn)
 
-      {:ok, batch} = IDBatch.add_id(batch, account_id_1)
-      {:ok, batch} = IDBatch.add_id(batch, account_id_2)
+      {:ok, batch} = IDBatch.append(batch, account_id_1)
+      {:ok, batch} = IDBatch.append(batch, account_id_2)
 
       assert {:ok, stream} = Connection.lookup_accounts(conn, batch)
       assert [%Account{id: ^account_id_1}, %Account{id: ^account_id_2}] = Enum.to_list(stream)
@@ -688,7 +708,7 @@ defmodule TigerBeetlex.IntegrationTest do
         conn: conn
       } = ctx
 
-      {:ok, batch} = IDBatch.add_id(batch, <<42::128>>)
+      {:ok, batch} = IDBatch.append(batch, <<42::128>>)
 
       assert {:ok, stream} = Connection.lookup_accounts(conn, batch)
       assert [] == Enum.to_list(stream)
@@ -701,8 +721,8 @@ defmodule TigerBeetlex.IntegrationTest do
         conn: conn
       } = ctx
 
-      {:ok, batch} = IDBatch.add_id(batch, <<42::128>>)
-      {:ok, batch} = IDBatch.add_id(batch, account_id)
+      {:ok, batch} = IDBatch.append(batch, <<42::128>>)
+      {:ok, batch} = IDBatch.append(batch, account_id)
 
       assert {:ok, stream} = Connection.lookup_accounts(conn, batch)
       assert [%Account{id: ^account_id}] = Enum.to_list(stream)
@@ -724,7 +744,7 @@ defmodule TigerBeetlex.IntegrationTest do
         conn: conn
       } = ctx
 
-      {:ok, batch} = IDBatch.add_id(batch, transfer_id)
+      {:ok, batch} = IDBatch.append(batch, transfer_id)
 
       assert {:ok, stream} = Connection.lookup_transfers(conn, batch)
       assert [%Transfer{id: ^transfer_id}] = Enum.to_list(stream)
@@ -739,8 +759,8 @@ defmodule TigerBeetlex.IntegrationTest do
 
       transfer_id_2 = create_transfer!(conn)
 
-      {:ok, batch} = IDBatch.add_id(batch, transfer_id_1)
-      {:ok, batch} = IDBatch.add_id(batch, transfer_id_2)
+      {:ok, batch} = IDBatch.append(batch, transfer_id_1)
+      {:ok, batch} = IDBatch.append(batch, transfer_id_2)
 
       assert {:ok, stream} = Connection.lookup_transfers(conn, batch)
       assert [%Transfer{id: ^transfer_id_1}, %Transfer{id: ^transfer_id_2}] = Enum.to_list(stream)
@@ -752,7 +772,7 @@ defmodule TigerBeetlex.IntegrationTest do
         conn: conn
       } = ctx
 
-      {:ok, batch} = IDBatch.add_id(batch, <<42::128>>)
+      {:ok, batch} = IDBatch.append(batch, <<42::128>>)
 
       assert {:ok, stream} = Connection.lookup_transfers(conn, batch)
       assert [] == Enum.to_list(stream)
@@ -765,8 +785,8 @@ defmodule TigerBeetlex.IntegrationTest do
         conn: conn
       } = ctx
 
-      {:ok, batch} = IDBatch.add_id(batch, <<42::128>>)
-      {:ok, batch} = IDBatch.add_id(batch, transfer_id)
+      {:ok, batch} = IDBatch.append(batch, <<42::128>>)
+      {:ok, batch} = IDBatch.append(batch, transfer_id)
 
       assert {:ok, stream} = Connection.lookup_transfers(conn, batch)
       assert [%Transfer{id: ^transfer_id}] = Enum.to_list(stream)
@@ -782,12 +802,13 @@ defmodule TigerBeetlex.IntegrationTest do
 
     {:ok, batch} = AccountBatch.new(1)
 
-    {:ok, batch} =
-      AccountBatch.add_account(batch,
-        id: id,
-        ledger: 1,
-        code: 1
-      )
+    account = %Account{
+      id: id,
+      ledger: 1,
+      code: 1
+    }
+
+    {:ok, batch} = AccountBatch.append(batch, account)
 
     {:ok, stream} = Connection.create_accounts(conn, batch)
     assert [] = Enum.to_list(stream)
@@ -803,15 +824,16 @@ defmodule TigerBeetlex.IntegrationTest do
 
     {:ok, batch} = TransferBatch.new(1)
 
-    {:ok, batch} =
-      TransferBatch.add_transfer(batch,
-        id: id,
-        credit_account_id: credit_account_id,
-        debit_account_id: debit_account_id,
-        ledger: 1,
-        code: 1,
-        amount: 100
-      )
+    transfer = %Transfer{
+      id: id,
+      credit_account_id: credit_account_id,
+      debit_account_id: debit_account_id,
+      ledger: 1,
+      code: 1,
+      amount: 100
+    }
+
+    {:ok, batch} = TransferBatch.append(batch, transfer)
 
     {:ok, stream} = Connection.create_transfers(conn, batch)
     assert [] = Enum.to_list(stream)
@@ -821,7 +843,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
   defp get_account!(conn, id) do
     {:ok, batch} = IDBatch.new(1)
-    {:ok, batch} = IDBatch.add_id(batch, id)
+    {:ok, batch} = IDBatch.append(batch, id)
 
     {:ok, stream} = Connection.lookup_accounts(conn, batch)
     assert [%Account{} = account] = Enum.to_list(stream)
@@ -831,7 +853,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
   defp get_transfer!(conn, id) do
     {:ok, batch} = IDBatch.new(1)
-    {:ok, batch} = IDBatch.add_id(batch, id)
+    {:ok, batch} = IDBatch.append(batch, id)
 
     {:ok, stream} = Connection.lookup_transfers(conn, batch)
     assert [%Transfer{} = transfer] = Enum.to_list(stream)
@@ -841,7 +863,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
   defp assert_account_not_existing(conn, id) do
     {:ok, batch} = IDBatch.new(1)
-    {:ok, batch} = IDBatch.add_id(batch, id)
+    {:ok, batch} = IDBatch.append(batch, id)
 
     {:ok, stream} = Connection.lookup_accounts(conn, batch)
     assert [] = Enum.to_list(stream)
@@ -849,7 +871,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
   defp assert_transfer_not_existing(conn, id) do
     {:ok, batch} = IDBatch.new(1)
-    {:ok, batch} = IDBatch.add_id(batch, id)
+    {:ok, batch} = IDBatch.append(batch, id)
 
     {:ok, stream} = Connection.lookup_accounts(conn, batch)
     assert [] = Enum.to_list(stream)

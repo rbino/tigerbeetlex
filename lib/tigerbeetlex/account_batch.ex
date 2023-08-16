@@ -16,7 +16,7 @@ defmodule TigerBeetlex.AccountBatch do
     field :ref, reference(), enforce: true
   end
 
-  alias TigerBeetlex.Account.Flags
+  alias TigerBeetlex.Account
   alias TigerBeetlex.AccountBatch
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.Types
@@ -47,94 +47,34 @@ defmodule TigerBeetlex.AccountBatch do
     end
   end
 
-  @add_account_opts_schema [
-    id: [
-      required: true,
-      type: :binary,
-      type_doc: "a 128-bit binary ID",
-      doc: "The ID of the account."
-    ],
-    ledger: [
-      required: true,
-      type: :pos_integer,
-      doc: "The ledger of the account."
-    ],
-    code: [
-      required: true,
-      type: :pos_integer,
-      doc: "The code of the account."
-    ],
-    user_data: [
-      type: :binary,
-      type_doc: "a 128-bit binary ID",
-      doc: "An ID used to reference external user data."
-    ],
-    flags: [
-      type: {:struct, Flags},
-      doc: "The flags for the account."
-    ]
-  ]
-
   @doc """
-  Adds an account to the batch. The fields of the account are passed as a keyword list.
+  Appends an account to the batch.
 
-  ## Fields
-
-  These are the supported fields that can be passed in `opts` for the account
-
-  #{NimbleOptions.docs(@add_account_opts_schema)}
-
-  See [TigerBeetle docs](https://docs.tigerbeetle.com/reference/accounts) for the meaning of the
-  fields.
+  The `%Account{}` struct must contain at least `:id`, `:ledger` and `:code`, and may also contain
+  `:user_data` and `:flags`. All other fields are ignored since they are server-controlled fields.
   """
-  @spec add_account(batch :: t(), opts :: keyword()) ::
-          {:ok, t()}
-          | {:error, Types.add_account_error() | Types.set_function_error()}
-  def add_account(%AccountBatch{} = batch, opts) do
+  @spec append(batch :: t(), account :: TigerBeetlex.Account.t()) ::
+          {:ok, t()} | {:error, Types.append_account_error()}
+  def append(%AccountBatch{} = batch, %Account{} = account) do
     %AccountBatch{ref: ref} = batch
 
-    with {:ok, new_length} <- NifAdapter.add_account(ref),
-         :ok <- set_fields(ref, new_length - 1, opts) do
+    account_binary = Account.to_batch_item(account)
+
+    with :ok <- NifAdapter.append_account(ref, account_binary) do
       {:ok, batch}
     end
   end
 
   @doc """
-  Adds an account to the batch, raising in case of an error. The fields of the account are passed
-  as a keyword list.
+  Appends an account to the batch, raising in case of an error.
 
-  See `add_account/2` for the supported options.
+  See `append/2` for the supported fields in the `%Account{}` struct.
   """
-  @spec add_account!(batch :: t(), opts :: keyword()) :: t()
-  def add_account!(%AccountBatch{} = batch, opts) do
-    case add_account(batch, opts) do
+  @spec append!(batch :: t(), account :: TigerBeetlex.Account.t()) :: t()
+  def append!(%AccountBatch{} = batch, %Account{} = account) do
+    case append(batch, account) do
       {:ok, batch} -> batch
       {:error, reason} -> raise RuntimeError, inspect(reason)
-    end
-  end
-
-  defp set_fields(ref, idx, opts) do
-    Enum.reduce_while(opts, :ok, fn {field, value}, _acc ->
-      case set_field(ref, idx, field, value) do
-        :ok -> {:cont, :ok}
-        {:error, reason} -> {:halt, {:error, reason}}
-      end
-    end)
-  end
-
-  defp set_field(ref, idx, field, value) do
-    set_fun(field).(ref, idx, value)
-  end
-
-  defp set_fun(:id), do: &NifAdapter.set_account_id/3
-  defp set_fun(:user_data), do: &NifAdapter.set_account_user_data/3
-  defp set_fun(:ledger), do: &NifAdapter.set_account_ledger/3
-  defp set_fun(:code), do: &NifAdapter.set_account_code/3
-
-  defp set_fun(:flags) do
-    fn ref, idx, value ->
-      flags_u16 = Flags.to_u16!(value)
-      NifAdapter.set_account_flags(ref, idx, flags_u16)
     end
   end
 end

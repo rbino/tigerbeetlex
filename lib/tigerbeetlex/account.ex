@@ -53,4 +53,39 @@ defmodule TigerBeetlex.Account do
       timestamp: timestamp
     }
   end
+
+  @doc """
+  Converts a `%TigerBeetlex.Account{}` to its binary representation (128 bytes
+  binary) in a `%TigerBeetlex.AccountBatch{}`. Note that this skips (i.e.
+  serializes with zeroes) all server controlled fields:
+  - `:debits_pending`
+  - `:debits_posted`
+  - `:debits_pending`
+  - `:debits_posted`
+  - `:timestamp`
+  """
+  @spec to_batch_item(account :: t()) :: TigerBeetlex.Types.account_binary()
+  def to_batch_item(%Account{} = account) do
+    %Account{
+      id: id,
+      user_data: user_data,
+      ledger: ledger,
+      code: code,
+      flags: flags
+    } = account
+
+    reserved = <<0::unit(8)-size(48)>>
+    server_controlled = <<0::unit(8)-size(40)>>
+
+    flags_u16 =
+      (flags || %Flags{})
+      |> Flags.to_u16!()
+
+    <<id::binary-size(16), u128_default(user_data)::binary-size(16), reserved::binary-size(48),
+      ledger::unsigned-little-32, code::unsigned-little-16, flags_u16::unsigned-little-16,
+      server_controlled::binary-size(40)>>
+  end
+
+  defp u128_default(nil), do: <<0::unit(8)-size(16)>>
+  defp u128_default(value), do: value
 end

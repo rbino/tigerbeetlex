@@ -24,6 +24,7 @@ defmodule Tigerbeetlex.IDBatchTest do
 
     test "succeeds with valid id", %{batch: batch} do
       assert {:ok, %IDBatch{}} = IDBatch.append(batch, <<1::128>>)
+      assert {:ok, <<1::128>>} = IDBatch.fetch(batch, 0)
     end
 
     test "fails when exceeding capacity" do
@@ -47,6 +48,7 @@ defmodule Tigerbeetlex.IDBatchTest do
 
     test "succeeds with valid id", %{batch: batch} do
       assert %IDBatch{} = IDBatch.append!(batch, <<1::128>>)
+      assert {:ok, <<1::128>>} = IDBatch.fetch(batch, 0)
     end
 
     test "fails when exceeding capacity" do
@@ -55,6 +57,22 @@ defmodule Tigerbeetlex.IDBatchTest do
         |> IDBatch.append!(<<1::128>>)
 
       assert_raise RuntimeError, fn -> IDBatch.append!(batch, <<2::128>>) end
+    end
+  end
+
+  describe "IDBatch.fetch/1" do
+    setup do
+      {:ok, batch: IDBatch.new!(32)}
+    end
+
+    test "returns item if it exists", %{batch: batch} do
+      IDBatch.append!(batch, <<1234::128>>)
+
+      assert {:ok, <<1234::128>>} == IDBatch.fetch(batch, 0)
+    end
+
+    test "returns {:error, :out_of_bounds} if index is out of bounds", %{batch: batch} do
+      assert {:error, :out_of_bounds} == IDBatch.fetch(batch, 10)
     end
   end
 end

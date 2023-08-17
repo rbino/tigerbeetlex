@@ -31,6 +31,7 @@ defmodule Tigerbeetlex.AccountBatchTest do
       batch = AccountBatch.new!(32)
 
       assert {:ok, %AccountBatch{}} = AccountBatch.append(batch, account)
+      assert {:ok, account} == AccountBatch.fetch(batch, 0)
     end
 
     test "fails when exceeding capacity", %{valid_account: account} do
@@ -56,6 +57,7 @@ defmodule Tigerbeetlex.AccountBatchTest do
       batch = AccountBatch.new!(32)
 
       assert %AccountBatch{} = AccountBatch.append!(batch, account)
+      assert {:ok, account} == AccountBatch.fetch(batch, 0)
     end
 
     test "fails when exceeding capacity", %{valid_account: account} do
@@ -64,6 +66,28 @@ defmodule Tigerbeetlex.AccountBatchTest do
         |> AccountBatch.append!(account)
 
       assert_raise RuntimeError, fn -> AccountBatch.append!(batch, account) end
+    end
+  end
+
+  describe "AccountBatch.fetch/1" do
+    setup do
+      {:ok, batch: AccountBatch.new!(32)}
+    end
+
+    test "returns item if it exists", %{batch: batch} do
+      account = %Account{
+        id: <<1_001::128>>,
+        code: 42,
+        ledger: 45
+      }
+
+      AccountBatch.append!(batch, account)
+
+      assert {:ok, account} == AccountBatch.fetch(batch, 0)
+    end
+
+    test "returns {:error, :out_of_bounds} if index is out of bounds", %{batch: batch} do
+      assert {:error, :out_of_bounds} == AccountBatch.fetch(batch, 10)
     end
   end
 end

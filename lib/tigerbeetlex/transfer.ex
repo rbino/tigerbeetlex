@@ -21,12 +21,12 @@ defmodule TigerBeetlex.Transfer do
     field :credit_account_id, TigerBeetlex.Types.uint128()
     field :user_data, TigerBeetlex.Types.uint128()
     field :pending_id, TigerBeetlex.Types.uint128()
-    field :timeout, non_neg_integer()
-    field :ledger, non_neg_integer()
-    field :code, non_neg_integer()
-    field :flags, TigerBeetlex.Transfer.Flags.t()
-    field :amount, non_neg_integer()
-    field :timestamp, non_neg_integer()
+    field :timeout, non_neg_integer(), default: 0
+    field :ledger, non_neg_integer(), default: 0
+    field :code, non_neg_integer(), default: 0
+    field :flags, TigerBeetlex.Transfer.Flags.t(), default: %Flags{}
+    field :amount, non_neg_integer(), default: 0
+    field :timestamp, non_neg_integer(), default: 0
   end
 
   @doc """
@@ -42,10 +42,10 @@ defmodule TigerBeetlex.Transfer do
 
     %Transfer{
       id: id,
-      debit_account_id: debit_account_id,
-      credit_account_id: credit_account_id,
-      user_data: user_data,
-      pending_id: pending_id,
+      debit_account_id: nilify_u128_default(debit_account_id),
+      credit_account_id: nilify_u128_default(credit_account_id),
+      user_data: nilify_u128_default(user_data),
+      pending_id: nilify_u128_default(pending_id),
       timeout: timeout,
       ledger: ledger,
       code: code,
@@ -54,6 +54,9 @@ defmodule TigerBeetlex.Transfer do
       timestamp: timestamp
     }
   end
+
+  defp nilify_u128_default(<<0::unit(8)-size(16)>>), do: nil
+  defp nilify_u128_default(value), do: value
 
   @doc """
   Converts a `%TigerBeetlex.Transfer{}` to its binary representation (128 bytes

@@ -31,6 +31,22 @@ pub fn append(
         transfer_bytes,
     ) catch |err| switch (err) {
         error.BatchFull => beam.make_error_atom(env, "batch_full"),
-        error.MutexLocked => return error.Yield,
+        error.LockFailed => return error.Yield,
+    };
+}
+
+pub fn fetch(
+    env: beam.Env,
+    transfer_batch_resource: TransferBatchResource,
+    idx: u32,
+) !beam.Term {
+    return batch.fetch(
+        Transfer,
+        env,
+        transfer_batch_resource,
+        idx,
+    ) catch |err| switch (err) {
+        error.OutOfBounds => beam.make_error_atom(env, "out_of_bounds"),
+        error.LockFailed => return error.Yield,
     };
 }

@@ -18,10 +18,10 @@ pub fn append(env: beam.Env, id_batch_resource: IdBatchResource, id: u128) !beam
     const id_batch = id_batch_resource.ptr();
 
     {
-        if (!id_batch.mutex.tryLock()) {
+        if (!id_batch.lock.tryLock()) {
             return error.Yield;
         }
-        defer id_batch.mutex.unlock();
+        defer id_batch.lock.unlock();
 
         if (id_batch.len + 1 > id_batch.items.len) {
             return beam.make_error_atom(env, "batch_full");
@@ -31,4 +31,20 @@ pub fn append(env: beam.Env, id_batch_resource: IdBatchResource, id: u128) !beam
     }
 
     return beam.make_ok(env);
+}
+
+pub fn fetch(
+    env: beam.Env,
+    id_batch_resource: IdBatchResource,
+    idx: u32,
+) !beam.Term {
+    return batch.fetch(
+        u128,
+        env,
+        id_batch_resource,
+        idx,
+    ) catch |err| switch (err) {
+        error.OutOfBounds => beam.make_error_atom(env, "out_of_bounds"),
+        error.LockFailed => return error.Yield,
+    };
 }

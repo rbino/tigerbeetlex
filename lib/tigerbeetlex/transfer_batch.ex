@@ -27,7 +27,7 @@ defmodule TigerBeetlex.TransferBatch do
   The capacity is the maximum number of transfers that can be added to the batch.
   """
   @spec new(capacity :: non_neg_integer()) ::
-          {:ok, t()} | {:error, Types.create_transfer_batch_error()}
+          {:ok, t()} | {:error, Types.create_batch_error()}
   def new(capacity) when is_integer(capacity) and capacity > 0 do
     with {:ok, ref} <- NifAdapter.create_transfer_batch(capacity) do
       {:ok, %TransferBatch{ref: ref}}
@@ -56,7 +56,7 @@ defmodule TigerBeetlex.TransferBatch do
   server-controlled.
   """
   @spec append(batch :: t(), transfer :: TigerBeetlex.Transfer.t()) ::
-          {:ok, t()} | {:error, Types.append_transfer_error()}
+          {:ok, t()} | {:error, Types.append_error()}
   def append(%TransferBatch{} = batch, %Transfer{} = transfer) do
     %TransferBatch{ref: ref} = batch
 
@@ -77,6 +77,17 @@ defmodule TigerBeetlex.TransferBatch do
     case append(batch, transfer) do
       {:ok, batch} -> batch
       {:error, reason} -> raise RuntimeError, inspect(reason)
+    end
+  end
+
+  @doc """
+  Fetches a `%Transfer{}` from the batch, given its index.
+  """
+  @spec fetch(batch :: t(), idx :: non_neg_integer()) ::
+          {:ok, TigerBeetlex.Transfer.t()} | {:error, Types.fetch_error()}
+  def fetch(batch, idx) when is_number(idx) and idx >= 0 do
+    with {:ok, transfer_binary} <- NifAdapter.fetch_transfer(batch.ref, idx) do
+      {:ok, Transfer.from_binary(transfer_binary)}
     end
   end
 end

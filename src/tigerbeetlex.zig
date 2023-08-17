@@ -40,10 +40,13 @@ var exported_nifs = [_]nif.FunctionEntry{
     nif.wrap("lookup_transfers", client.lookup_transfers),
     nif.wrap("create_account_batch", account_batch.create),
     nif.wrap("append_account", account_batch.append),
+    nif.wrap("fetch_account", account_batch.fetch),
     nif.wrap("create_transfer_batch", transfer_batch.create),
     nif.wrap("append_transfer", transfer_batch.append),
+    nif.wrap("fetch_transfer", transfer_batch.fetch),
     nif.wrap("create_id_batch", id_batch.create),
     nif.wrap("append_id", id_batch.append),
+    nif.wrap("fetch_id", id_batch.fetch),
 };
 
 fn nif_load(env: beam.Env, _: [*c]?*anyopaque, _: beam.Term) callconv(.C) c_int {

@@ -26,7 +26,7 @@ defmodule TigerBeetlex.IDBatch do
   The capacity is the maximum number of IDs that can be added to the batch.
   """
   @spec new(capacity :: non_neg_integer()) ::
-          {:ok, t()} | {:error, Types.create_id_batch_error()}
+          {:ok, t()} | {:error, Types.create_batch_error()}
   def new(capacity) when is_integer(capacity) and capacity > 0 do
     with {:ok, ref} <- NifAdapter.create_id_batch(capacity) do
       {:ok, %IDBatch{ref: ref}}
@@ -50,7 +50,7 @@ defmodule TigerBeetlex.IDBatch do
   Appends an ID to the batch.
   """
   @spec append(batch :: t(), id :: Types.uint128()) ::
-          {:ok, t()} | {:error, Types.append_id_error()}
+          {:ok, t()} | {:error, Types.append_error()}
   def append(%IDBatch{} = batch, id) do
     with :ok <- NifAdapter.append_id(batch.ref, id) do
       {:ok, batch}
@@ -66,5 +66,14 @@ defmodule TigerBeetlex.IDBatch do
       {:ok, batch} -> batch
       {:error, reason} -> raise RuntimeError, inspect(reason)
     end
+  end
+
+  @doc """
+  Fetches an ID from the batch, given its index.
+  """
+  @spec fetch(batch :: t(), idx :: non_neg_integer()) ::
+          {:ok, Types.uint128()} | {:error, Types.fetch_error()}
+  def fetch(batch, idx) when is_number(idx) and idx >= 0 do
+    NifAdapter.fetch_id(batch.ref, idx)
   end
 end

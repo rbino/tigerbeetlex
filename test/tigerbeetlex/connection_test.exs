@@ -1,4 +1,4 @@
-defmodule Tigerbeetlex.ConnectionTest do
+defmodule TigerBeetlex.ConnectionTest do
   use ExUnit.Case
 
   alias TigerBeetlex.Connection

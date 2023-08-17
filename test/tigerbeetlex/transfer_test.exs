@@ -1,4 +1,4 @@
-defmodule Tigerbeetlex.TransferTest do
+defmodule TigerBeetlex.TransferTest do
   use ExUnit.Case
 
   alias TigerBeetlex.Transfer

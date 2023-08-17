@@ -1,4 +1,4 @@
-defmodule Tigerbeetlex.AccountBatchTest do
+defmodule TigerBeetlex.AccountBatchTest do
   use ExUnit.Case
 
   alias TigerBeetlex.Account

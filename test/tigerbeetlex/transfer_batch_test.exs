@@ -1,4 +1,4 @@
-defmodule Tigerbeetlex.TransferBatchTest do
+defmodule TigerBeetlex.TransferBatchTest do
   use ExUnit.Case
 
   alias TigerBeetlex.BatchFullError

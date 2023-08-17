@@ -87,6 +87,38 @@ pub fn fetch(
     }
 }
 
+pub fn replace(
+    comptime Item: anytype,
+    env: beam.Env,
+    batch_resource: BatchResource(Item),
+    idx: u32,
+    replacement_item_bytes: []const u8,
+) !beam.Term {
+    const batch = batch_resource.ptr();
+
+    {
+        if (!batch.lock.tryLock()) {
+            return error.LockFailed;
+        }
+        defer batch.lock.unlock();
+
+        if (idx >= batch.len) {
+            return error.OutOfBounds;
+        }
+
+        // We need to pass the item as bytes and copy it with std.mem.copy
+        // because we can't enforce a specific alignment to the underlying
+        // ErlNifBinary, which becomes our slice of bytes
+
+        // Get a pointer to the memory backing the newly inserted item
+        const batch_item_bytes = std.mem.asBytes(&batch.items[idx]);
+        // Fill it with the input item bytes
+        std.mem.copy(u8, batch_item_bytes, replacement_item_bytes);
+    }
+
+    return beam.make_ok(env);
+}
+
 fn batch_resource_deinit_fn(
     comptime Item: anytype,
 ) fn (env: beam.Env, ptr: ?*anyopaque) callconv(.C) void {

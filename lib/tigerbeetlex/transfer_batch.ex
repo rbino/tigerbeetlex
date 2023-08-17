@@ -107,4 +107,32 @@ defmodule TigerBeetlex.TransferBatch do
       {:error, :out_of_bounds} -> raise OutOfBoundsError
     end
   end
+
+  @doc """
+  Replaces the `%Transfer{}` at index `idx` in the batch.
+  """
+  @spec replace(batch :: t(), idx :: non_neg_integer(), transfer :: TigerBeetlex.Transfer.t()) ::
+          {:ok, t()} | {:error, Types.replace_error()}
+  def replace(%TransferBatch{} = batch, idx, %Transfer{} = transfer)
+      when is_number(idx) and idx >= 0 do
+    transfer_binary = Transfer.to_batch_item(transfer)
+
+    with :ok <- NifAdapter.replace_transfer(batch.ref, idx, transfer_binary) do
+      {:ok, batch}
+    end
+  end
+
+  @doc """
+  Replaces the ID at index `idx` in the batch. Raises in case of an error.
+  """
+  @spec replace!(batch :: t(), idx :: non_neg_integer(), transfer :: TigerBeetlex.Transfer.t()) ::
+          t()
+  def replace!(%TransferBatch{} = batch, idx, %Transfer{} = transfer)
+      when is_number(idx) and idx >= 0 do
+    case replace(batch, idx, transfer) do
+      {:ok, batch} -> batch
+      {:error, :invalid_batch} -> raise InvalidBatchError
+      {:error, :out_of_bounds} -> raise OutOfBoundsError
+    end
+  end
 end

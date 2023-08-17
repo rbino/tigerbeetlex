@@ -114,4 +114,48 @@ defmodule TigerBeetlex.AccountBatchTest do
       assert_raise OutOfBoundsError, fn -> AccountBatch.fetch!(batch, 10) end
     end
   end
+
+  describe "AccountBatch.replace/1" do
+    setup do
+      {:ok, batch: AccountBatch.new!(32)}
+    end
+
+    test "replaces item if it exists", %{batch: batch} do
+      account = %Account{id: <<1_001::128>>, code: 42, ledger: 45}
+
+      AccountBatch.append!(batch, account)
+      assert account == AccountBatch.fetch!(batch, 0)
+
+      new_account = %Account{id: <<2_001::128>>, code: 11, ledger: 12}
+      assert {:ok, batch} = AccountBatch.replace(batch, 0, new_account)
+      assert new_account == AccountBatch.fetch!(batch, 0)
+    end
+
+    test "returns {:error, :out_of_bounds} if index is out of bounds", %{batch: batch} do
+      new_account = %Account{id: <<2_001::128>>, code: 11, ledger: 12}
+      assert {:error, :out_of_bounds} == AccountBatch.replace(batch, 10, new_account)
+    end
+  end
+
+  describe "AccountBatch.replace!/1" do
+    setup do
+      {:ok, batch: AccountBatch.new!(32)}
+    end
+
+    test "replaces item if it exists", %{batch: batch} do
+      account = %Account{id: <<1_001::128>>, code: 42, ledger: 45}
+
+      AccountBatch.append!(batch, account)
+      assert account == AccountBatch.fetch!(batch, 0)
+
+      new_account = %Account{id: <<2_001::128>>, code: 11, ledger: 12}
+      assert batch = AccountBatch.replace!(batch, 0, new_account)
+      assert new_account == AccountBatch.fetch!(batch, 0)
+    end
+
+    test "raises if index is out of bounds", %{batch: batch} do
+      new_account = %Account{id: <<2_001::128>>, code: 11, ledger: 12}
+      assert_raise OutOfBoundsError, fn -> AccountBatch.replace!(batch, 10, new_account) end
+    end
+  end
 end

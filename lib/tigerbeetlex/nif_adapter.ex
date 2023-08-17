@@ -36,6 +36,14 @@ defmodule TigerBeetlex.NifAdapter do
           {:ok, account_binary :: Types.account_binary()} | {:error, Types.fetch_error()}
   def fetch_account(_account_batch, _index), do: :erlang.nif_error(:nif_not_loaded)
 
+  @spec replace_account(
+          account_batch :: Types.account_batch(),
+          idx :: non_neg_integer(),
+          account_binary :: Types.account_binary()
+        ) :: :ok | {:error, Types.replace_error()}
+  def replace_account(_account_batch, _index, _account_binary),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   @spec create_accounts(client :: Types.client(), account_batch :: Types.account_batch()) ::
           {:ok, reference()} | {:error, Types.create_accounts_error()}
   def create_accounts(_client, _account_batch), do: :erlang.nif_error(:nif_not_loaded)
@@ -55,6 +63,14 @@ defmodule TigerBeetlex.NifAdapter do
           {:ok, transfer_binary :: Types.transfer_binary()} | {:error, Types.fetch_error()}
   def fetch_transfer(_transfer_batch, _index), do: :erlang.nif_error(:nif_not_loaded)
 
+  @spec replace_transfer(
+          transfer_batch :: Types.transfer_batch(),
+          idx :: non_neg_integer(),
+          transfer_binary :: Types.transfer_binary()
+        ) :: :ok | {:error, Types.replace_error()}
+  def replace_transfer(_transfer_batch, _index, _transfer_binary),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   @spec create_transfers(client :: Types.client(), transfer_batch :: Types.transfer_batch()) ::
           {:ok, reference()} | {:error, Types.create_transfers_error()}
   def create_transfers(_client, _transfer_batch), do: :erlang.nif_error(:nif_not_loaded)
@@ -70,6 +86,13 @@ defmodule TigerBeetlex.NifAdapter do
   @spec fetch_id(id_batch :: Types.id_batch(), idx :: non_neg_integer()) ::
           {:ok, id_binary :: Types.uint128()} | {:error, Types.fetch_error()}
   def fetch_id(_id_batch, _index), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec replace_id(
+          id_batch :: Types.id_batch(),
+          idx :: non_neg_integer(),
+          id_binary :: Types.uint128()
+        ) :: :ok | {:error, Types.replace_error()}
+  def replace_id(_id_batch, _index, _id_binary), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec lookup_accounts(client :: Types.client(), id_batch :: Types.id_batch()) ::
           {:ok, reference()} | {:error, Types.lookup_accounts_error()}

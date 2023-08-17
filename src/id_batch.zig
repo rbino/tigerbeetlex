@@ -48,3 +48,27 @@ pub fn fetch(
         error.LockFailed => return error.Yield,
     };
 }
+
+pub fn replace(
+    env: beam.Env,
+    id_batch_resource: IdBatchResource,
+    idx: u32,
+    id: u128,
+) !beam.Term {
+    const id_batch = id_batch_resource.ptr();
+
+    {
+        if (!id_batch.lock.tryLock()) {
+            return error.Yield;
+        }
+        defer id_batch.lock.unlock();
+
+        if (idx >= id_batch.len) {
+            return beam.make_error_atom(env, "out_of_bounds");
+        }
+
+        id_batch.items[idx] = id;
+    }
+
+    return beam.make_ok(env);
+}

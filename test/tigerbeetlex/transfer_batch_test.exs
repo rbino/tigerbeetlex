@@ -125,4 +125,62 @@ defmodule TigerBeetlex.TransferBatchTest do
       assert_raise OutOfBoundsError, fn -> TransferBatch.fetch!(batch, 10) end
     end
   end
+
+  describe "TransferBatch.replace/1" do
+    setup do
+      {:ok, batch: TransferBatch.new!(32)}
+    end
+
+    test "replaces item if it exists", %{batch: batch} do
+      transfer = %Transfer{
+        id: <<1_999::128>>,
+        debit_account_id: <<2_001::128>>,
+        credit_account_id: <<2_002::128>>,
+        code: 555,
+        ledger: 666,
+        amount: 20_782
+      }
+
+      TransferBatch.append!(batch, transfer)
+      assert transfer == TransferBatch.fetch!(batch, 0)
+
+      new_transfer = %{transfer | amount: 9_999}
+      assert {:ok, batch} = TransferBatch.replace(batch, 0, new_transfer)
+      assert new_transfer == TransferBatch.fetch!(batch, 0)
+    end
+
+    test "returns {:error, :out_of_bounds} if index is out of bounds", %{batch: batch} do
+      new_transfer = %Transfer{id: <<2_001::128>>, pending_id: <<1::128>>}
+      assert {:error, :out_of_bounds} == TransferBatch.replace(batch, 10, new_transfer)
+    end
+  end
+
+  describe "TransferBatch.replace!/1" do
+    setup do
+      {:ok, batch: TransferBatch.new!(32)}
+    end
+
+    test "replaces item if it exists", %{batch: batch} do
+      transfer = %Transfer{
+        id: <<1_999::128>>,
+        debit_account_id: <<2_001::128>>,
+        credit_account_id: <<2_002::128>>,
+        code: 555,
+        ledger: 666,
+        amount: 20_782
+      }
+
+      TransferBatch.append!(batch, transfer)
+      assert transfer == TransferBatch.fetch!(batch, 0)
+
+      new_transfer = %{transfer | amount: 9_999}
+      assert batch = TransferBatch.replace!(batch, 0, new_transfer)
+      assert new_transfer == TransferBatch.fetch!(batch, 0)
+    end
+
+    test "raises if index is out of bounds", %{batch: batch} do
+      new_transfer = %Transfer{id: <<2_001::128>>, pending_id: <<1::128>>}
+      assert_raise OutOfBoundsError, fn -> TransferBatch.replace!(batch, 10, new_transfer) end
+    end
+  end
 end

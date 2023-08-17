@@ -105,4 +105,32 @@ defmodule TigerBeetlex.AccountBatch do
       {:error, :out_of_bounds} -> raise OutOfBoundsError
     end
   end
+
+  @doc """
+  Replaces the `%Account{}` at index `idx` in the batch.
+  """
+  @spec replace(batch :: t(), idx :: non_neg_integer(), account :: TigerBeetlex.Account.t()) ::
+          {:ok, t()} | {:error, Types.replace_error()}
+  def replace(%AccountBatch{} = batch, idx, %Account{} = account)
+      when is_number(idx) and idx >= 0 do
+    account_binary = Account.to_batch_item(account)
+
+    with :ok <- NifAdapter.replace_account(batch.ref, idx, account_binary) do
+      {:ok, batch}
+    end
+  end
+
+  @doc """
+  Replaces the ID at index `idx` in the batch. Raises in case of an error.
+  """
+  @spec replace!(batch :: t(), idx :: non_neg_integer(), account :: TigerBeetlex.Account.t()) ::
+          t()
+  def replace!(%AccountBatch{} = batch, idx, %Account{} = account)
+      when is_number(idx) and idx >= 0 do
+    case replace(batch, idx, account) do
+      {:ok, batch} -> batch
+      {:error, :invalid_batch} -> raise InvalidBatchError
+      {:error, :out_of_bounds} -> raise OutOfBoundsError
+    end
+  end
 end

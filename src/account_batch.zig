@@ -50,3 +50,21 @@ pub fn fetch(
         error.LockFailed => return error.Yield,
     };
 }
+
+pub fn replace(
+    env: beam.Env,
+    account_batch_resource: AccountBatchResource,
+    idx: u32,
+    account_bytes: []const u8,
+) !beam.Term {
+    return batch.replace(
+        Account,
+        env,
+        account_batch_resource,
+        idx,
+        account_bytes,
+    ) catch |err| switch (err) {
+        error.OutOfBounds => beam.make_error_atom(env, "out_of_bounds"),
+        error.LockFailed => return error.Yield,
+    };
+}

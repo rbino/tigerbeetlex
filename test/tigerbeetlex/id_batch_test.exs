@@ -93,4 +93,40 @@ defmodule TigerBeetlex.IDBatchTest do
       assert_raise OutOfBoundsError, fn -> IDBatch.fetch!(batch, 10) end
     end
   end
+
+  describe "IDBatch.replace/1" do
+    setup do
+      {:ok, batch: IDBatch.new!(32)}
+    end
+
+    test "replaces item if it exists", %{batch: batch} do
+      IDBatch.append!(batch, <<1234::128>>)
+      assert <<1234::128>> == IDBatch.fetch!(batch, 0)
+
+      assert {:ok, batch} = IDBatch.replace(batch, 0, <<5678::128>>)
+      assert <<5678::128>> == IDBatch.fetch!(batch, 0)
+    end
+
+    test "returns {:error, :out_of_bounds} if index is out of bounds", %{batch: batch} do
+      assert {:error, :out_of_bounds} == IDBatch.replace(batch, 10, <<5678::128>>)
+    end
+  end
+
+  describe "IDBatch.replace!/1" do
+    setup do
+      {:ok, batch: IDBatch.new!(32)}
+    end
+
+    test "returns item if it exists", %{batch: batch} do
+      IDBatch.append!(batch, <<1234::128>>)
+      assert <<1234::128>> == IDBatch.fetch!(batch, 0)
+
+      assert batch = IDBatch.replace!(batch, 0, <<5678::128>>)
+      assert <<5678::128>> == IDBatch.fetch!(batch, 0)
+    end
+
+    test "raises if index is out of bounds", %{batch: batch} do
+      assert_raise OutOfBoundsError, fn -> IDBatch.replace!(batch, 10, <<5678::128>>) end
+    end
+  end
 end

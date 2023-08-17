@@ -3,7 +3,20 @@ defmodule Tigerbeetlex.AccountTest do
 
   alias TigerBeetlex.Account
 
-  test "from_binary and to_batch_item round trip" do
+  test "from_binary and to_batch_item round trip with minimal fields" do
+    account = %Account{
+      id: <<1234::128>>,
+      ledger: 42,
+      code: 99
+    }
+
+    assert account ==
+             account
+             |> Account.to_batch_item()
+             |> Account.from_binary()
+  end
+
+  test "from_binary and to_batch_item round trip with full fields" do
     account = %Account{
       id: <<1234::128>>,
       user_data: <<5678::128>>,
@@ -12,13 +25,7 @@ defmodule Tigerbeetlex.AccountTest do
       flags: %Account.Flags{credits_must_not_exceed_debits: true}
     }
 
-    assert %Account{
-             id: <<1234::128>>,
-             user_data: <<5678::128>>,
-             ledger: 42,
-             code: 99,
-             flags: %Account.Flags{credits_must_not_exceed_debits: true}
-           } =
+    assert account ==
              account
              |> Account.to_batch_item()
              |> Account.from_binary()

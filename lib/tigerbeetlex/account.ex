@@ -20,12 +20,12 @@ defmodule TigerBeetlex.Account do
     field :user_data, TigerBeetlex.Types.uint128()
     field :ledger, non_neg_integer(), enforce: true
     field :code, non_neg_integer(), enforce: true
-    field :flags, TigerBeetlex.Account.Flags.t()
-    field :debits_pending, non_neg_integer()
-    field :debits_posted, non_neg_integer()
-    field :credits_pending, non_neg_integer()
-    field :credits_posted, non_neg_integer()
-    field :timestamp, non_neg_integer()
+    field :flags, TigerBeetlex.Account.Flags.t(), default: %Flags{}
+    field :debits_pending, non_neg_integer(), default: 0
+    field :debits_posted, non_neg_integer(), default: 0
+    field :credits_pending, non_neg_integer(), default: 0
+    field :credits_posted, non_neg_integer(), default: 0
+    field :timestamp, non_neg_integer(), default: 0
   end
 
   @doc """
@@ -42,7 +42,7 @@ defmodule TigerBeetlex.Account do
 
     %Account{
       id: id,
-      user_data: user_data,
+      user_data: nilify_u128_default(user_data),
       ledger: ledger,
       code: code,
       flags: Flags.from_u16!(flags),
@@ -53,6 +53,9 @@ defmodule TigerBeetlex.Account do
       timestamp: timestamp
     }
   end
+
+  defp nilify_u128_default(<<0::unit(8)-size(16)>>), do: nil
+  defp nilify_u128_default(value), do: value
 
   @doc """
   Converts a `%TigerBeetlex.Account{}` to its binary representation (128 bytes

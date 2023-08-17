@@ -12,15 +12,16 @@ defmodule TigerBeetlex.Account do
 
   alias TigerBeetlex.Account
   alias TigerBeetlex.Account.Flags
+  alias TigerBeetlex.Types
 
   typedstruct do
     @typedoc "A struct representing a TigerBeetle account"
 
-    field :id, TigerBeetlex.Types.uint128(), enforce: true
-    field :user_data, TigerBeetlex.Types.uint128()
+    field :id, Types.uint128(), enforce: true
+    field :user_data, Types.uint128()
     field :ledger, non_neg_integer(), enforce: true
     field :code, non_neg_integer(), enforce: true
-    field :flags, TigerBeetlex.Account.Flags.t(), default: %Flags{}
+    field :flags, Flags.t(), default: %Flags{}
     field :debits_pending, non_neg_integer(), default: 0
     field :debits_posted, non_neg_integer(), default: 0
     field :credits_pending, non_neg_integer(), default: 0
@@ -32,7 +33,7 @@ defmodule TigerBeetlex.Account do
   Converts the binary representation of an account (128 bytes) in a
   `%TigerBeetlex.Account{}` struct
   """
-  @spec from_binary(bin :: TigerBeetlex.Types.account_binary()) :: t()
+  @spec from_binary(bin :: Types.account_binary()) :: t()
   def from_binary(<<_::binary-size(128)>> = bin) do
     <<id::binary-size(16), user_data::binary-size(16), _reserved::binary-size(48),
       ledger::unsigned-little-32, code::unsigned-little-16, flags::unsigned-little-16,
@@ -67,7 +68,7 @@ defmodule TigerBeetlex.Account do
   - `:debits_posted`
   - `:timestamp`
   """
-  @spec to_batch_item(account :: t()) :: TigerBeetlex.Types.account_binary()
+  @spec to_batch_item(account :: t()) :: Types.account_binary()
   def to_batch_item(%Account{} = account) do
     %Account{
       id: id,

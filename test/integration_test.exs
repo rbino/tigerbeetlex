@@ -6,12 +6,12 @@ defmodule TigerBeetlex.IntegrationTest do
   alias TigerBeetlex.{
     Account,
     AccountBatch,
+    Connection,
     CreateAccountError,
     CreateTransferError,
-    Connection,
     IDBatch,
-    TransferBatch,
-    Transfer
+    Transfer,
+    TransferBatch
   }
 
   setup do

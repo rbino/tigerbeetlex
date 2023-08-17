@@ -16,13 +16,13 @@ defmodule TigerBeetlex.TransferBatch do
     field :ref, reference(), enforce: true
   end
 
-  alias TigerBeetlex.Transfer
-  alias TigerBeetlex.TransferBatch
   alias TigerBeetlex.BatchFullError
   alias TigerBeetlex.InvalidBatchError
+  alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.OutOfBoundsError
   alias TigerBeetlex.OutOfMemoryError
-  alias TigerBeetlex.NifAdapter
+  alias TigerBeetlex.Transfer
+  alias TigerBeetlex.TransferBatch
   alias TigerBeetlex.Types
 
   @doc """

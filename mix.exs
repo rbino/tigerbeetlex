@@ -33,7 +33,8 @@ defmodule TigerBeetlex.MixProject do
       {:build_dot_zig, "~> 0.2.0", runtime: false},
       {:elixir_uuid, "~> 1.2", only: :test},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
-      {:benchee, "~> 1.0", runtime: false}
+      {:benchee, "~> 1.0", runtime: false},
+      {:credo, "~> 1.0", only: [:dev, :test], runtime: false}
     ]
   end
 end

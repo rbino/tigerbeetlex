@@ -20,9 +20,9 @@ defmodule TigerBeetlex.AccountBatch do
   alias TigerBeetlex.AccountBatch
   alias TigerBeetlex.BatchFullError
   alias TigerBeetlex.InvalidBatchError
+  alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.OutOfBoundsError
   alias TigerBeetlex.OutOfMemoryError
-  alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.Types
 
   @doc """

@@ -12,19 +12,20 @@ defmodule TigerBeetlex.Transfer do
 
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.Transfer.Flags
+  alias TigerBeetlex.Types
 
   typedstruct do
     @typedoc "A struct representing a TigerBeetle account"
 
-    field :id, TigerBeetlex.Types.uint128(), enforce: true
-    field :debit_account_id, TigerBeetlex.Types.uint128()
-    field :credit_account_id, TigerBeetlex.Types.uint128()
-    field :user_data, TigerBeetlex.Types.uint128()
-    field :pending_id, TigerBeetlex.Types.uint128()
+    field :id, Types.uint128(), enforce: true
+    field :debit_account_id, Types.uint128()
+    field :credit_account_id, Types.uint128()
+    field :user_data, Types.uint128()
+    field :pending_id, Types.uint128()
     field :timeout, non_neg_integer(), default: 0
     field :ledger, non_neg_integer(), default: 0
     field :code, non_neg_integer(), default: 0
-    field :flags, TigerBeetlex.Transfer.Flags.t(), default: %Flags{}
+    field :flags, Flags.t(), default: %Flags{}
     field :amount, non_neg_integer(), default: 0
     field :timestamp, non_neg_integer(), default: 0
   end
@@ -33,7 +34,7 @@ defmodule TigerBeetlex.Transfer do
   Converts the binary representation of an account (128 bytes) in a
   `%TigerBeetlex.Transfer{}` struct
   """
-  @spec from_binary(bin :: TigerBeetlex.Types.transfer_binary()) :: t()
+  @spec from_binary(bin :: Types.transfer_binary()) :: t()
   def from_binary(<<_::binary-size(128)>> = bin) do
     <<id::binary-size(16), debit_account_id::binary-size(16), credit_account_id::binary-size(16),
       user_data::binary-size(16), _reserved::binary-size(16), pending_id::binary-size(16),
@@ -64,7 +65,7 @@ defmodule TigerBeetlex.Transfer do
   serializes with zeroes) all server controlled fields:
   - `:timestamp`
   """
-  @spec to_batch_item(transfer :: t()) :: TigerBeetlex.Types.transfer_binary()
+  @spec to_batch_item(transfer :: t()) :: Types.transfer_binary()
   def to_batch_item(%Transfer{} = transfer) do
     %Transfer{
       id: id,

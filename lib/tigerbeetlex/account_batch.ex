@@ -77,4 +77,15 @@ defmodule TigerBeetlex.AccountBatch do
       {:error, reason} -> raise RuntimeError, inspect(reason)
     end
   end
+
+  @doc """
+  Fetches an `%Account{}` from the batch, given its index.
+  """
+  @spec fetch(batch :: t(), idx :: non_neg_integer()) ::
+          {:ok, TigerBeetlex.Account.t()} | {:error, Types.fetch_error()}
+  def fetch(batch, idx) when is_number(idx) and idx >= 0 do
+    with {:ok, account_binary} <- NifAdapter.fetch_account(batch.ref, idx) do
+      {:ok, Account.from_binary(account_binary)}
+    end
+  end
 end

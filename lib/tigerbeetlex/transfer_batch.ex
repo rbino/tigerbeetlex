@@ -79,4 +79,15 @@ defmodule TigerBeetlex.TransferBatch do
       {:error, reason} -> raise RuntimeError, inspect(reason)
     end
   end
+
+  @doc """
+  Fetches a `%Transfer{}` from the batch, given its index.
+  """
+  @spec fetch(batch :: t(), idx :: non_neg_integer()) ::
+          {:ok, TigerBeetlex.Transfer.t()} | {:error, Types.fetch_error()}
+  def fetch(batch, idx) when is_number(idx) and idx >= 0 do
+    with {:ok, transfer_binary} <- NifAdapter.fetch_transfer(batch.ref, idx) do
+      {:ok, Transfer.from_binary(transfer_binary)}
+    end
+  end
 end

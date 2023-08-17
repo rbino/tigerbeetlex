@@ -39,6 +39,10 @@ defmodule TigerBeetlex.Types do
           :invalid_batch
           | :batch_full
 
+  @type fetch_error ::
+          :invalid_batch
+          | :out_of_bounds
+
   @type create_transfers_error ::
           :invalid_client
           | :invalid_batch

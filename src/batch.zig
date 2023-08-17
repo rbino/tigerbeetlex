@@ -64,6 +64,29 @@ pub fn append(
     return beam.make_ok(env);
 }
 
+pub fn fetch(
+    comptime Item: anytype,
+    env: beam.Env,
+    batch_resource: BatchResource(Item),
+    idx: u32,
+) !beam.Term {
+    const batch = batch_resource.ptr();
+
+    {
+        if (!batch.lock.tryLockShared()) {
+            return error.LockFailed;
+        }
+        defer batch.lock.unlockShared();
+        if (idx >= batch.len) {
+            return error.OutOfBounds;
+        }
+        const batch_item_bytes = std.mem.asBytes(&batch.items[idx]);
+        const batch_item_binary = beam.make_slice(env, batch_item_bytes);
+
+        return beam.make_ok_term(env, batch_item_binary);
+    }
+}
+
 fn batch_resource_deinit_fn(
     comptime Item: anytype,
 ) fn (env: beam.Env, ptr: ?*anyopaque) callconv(.C) void {

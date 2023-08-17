@@ -34,3 +34,19 @@ pub fn append(
         error.LockFailed => return error.Yield,
     };
 }
+
+pub fn fetch(
+    env: beam.Env,
+    account_batch_resource: AccountBatchResource,
+    idx: u32,
+) !beam.Term {
+    return batch.fetch(
+        Account,
+        env,
+        account_batch_resource,
+        idx,
+    ) catch |err| switch (err) {
+        error.OutOfBounds => beam.make_error_atom(env, "out_of_bounds"),
+        error.LockFailed => return error.Yield,
+    };
+}

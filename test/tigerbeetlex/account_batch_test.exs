@@ -3,6 +3,7 @@ defmodule Tigerbeetlex.AccountBatchTest do
 
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountBatch
+  alias TigerBeetlex.BatchFullError
 
   describe "AccountBatch.new/1" do
     test "raises if argument is not an integer" do
@@ -65,7 +66,7 @@ defmodule Tigerbeetlex.AccountBatchTest do
         AccountBatch.new!(1)
         |> AccountBatch.append!(account)
 
-      assert_raise RuntimeError, fn -> AccountBatch.append!(batch, account) end
+      assert_raise BatchFullError, fn -> AccountBatch.append!(batch, account) end
     end
   end
 

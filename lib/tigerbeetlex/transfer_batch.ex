@@ -18,6 +18,9 @@ defmodule TigerBeetlex.TransferBatch do
 
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.TransferBatch
+  alias TigerBeetlex.BatchFullError
+  alias TigerBeetlex.InvalidBatchError
+  alias TigerBeetlex.OutOfMemoryError
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.Types
 
@@ -43,7 +46,7 @@ defmodule TigerBeetlex.TransferBatch do
   def new!(capacity) when is_integer(capacity) and capacity > 0 do
     case new(capacity) do
       {:ok, batch} -> batch
-      {:error, reason} -> raise RuntimeError, inspect(reason)
+      {:error, :out_of_memory} -> raise OutOfMemoryError
     end
   end
 
@@ -76,7 +79,8 @@ defmodule TigerBeetlex.TransferBatch do
   def append!(%TransferBatch{} = batch, %Transfer{} = transfer) do
     case append(batch, transfer) do
       {:ok, batch} -> batch
-      {:error, reason} -> raise RuntimeError, inspect(reason)
+      {:error, :invalid_batch} -> raise InvalidBatchError
+      {:error, :batch_full} -> raise BatchFullError
     end
   end
 

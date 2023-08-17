@@ -1,6 +1,7 @@
 defmodule Tigerbeetlex.TransferBatchTest do
   use ExUnit.Case
 
+  alias TigerBeetlex.BatchFullError
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.TransferBatch
 
@@ -70,7 +71,7 @@ defmodule Tigerbeetlex.TransferBatchTest do
         TransferBatch.new!(1)
         |> TransferBatch.append!(transfer)
 
-      assert_raise RuntimeError, fn -> TransferBatch.append!(batch, transfer) end
+      assert_raise BatchFullError, fn -> TransferBatch.append!(batch, transfer) end
     end
   end
 

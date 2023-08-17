@@ -18,6 +18,9 @@ defmodule TigerBeetlex.AccountBatch do
 
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountBatch
+  alias TigerBeetlex.BatchFullError
+  alias TigerBeetlex.InvalidBatchError
+  alias TigerBeetlex.OutOfMemoryError
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.Types
 
@@ -43,7 +46,7 @@ defmodule TigerBeetlex.AccountBatch do
   def new!(capacity) when is_integer(capacity) and capacity > 0 do
     case new(capacity) do
       {:ok, batch} -> batch
-      {:error, reason} -> raise RuntimeError, inspect(reason)
+      {:error, :out_of_memory} -> raise OutOfMemoryError
     end
   end
 
@@ -74,7 +77,8 @@ defmodule TigerBeetlex.AccountBatch do
   def append!(%AccountBatch{} = batch, %Account{} = account) do
     case append(batch, account) do
       {:ok, batch} -> batch
-      {:error, reason} -> raise RuntimeError, inspect(reason)
+      {:error, :invalid_batch} -> raise InvalidBatchError
+      {:error, :batch_full} -> raise BatchFullError
     end
   end
 

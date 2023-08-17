@@ -16,7 +16,10 @@ defmodule TigerBeetlex.IDBatch do
     field :ref, reference(), enforce: true
   end
 
+  alias TigerBeetlex.BatchFullError
   alias TigerBeetlex.IDBatch
+  alias TigerBeetlex.InvalidBatchError
+  alias TigerBeetlex.OutOfMemoryError
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.Types
 
@@ -42,7 +45,7 @@ defmodule TigerBeetlex.IDBatch do
   def new!(capacity) when is_integer(capacity) and capacity > 0 do
     case new(capacity) do
       {:ok, batch} -> batch
-      {:error, reason} -> raise RuntimeError, inspect(reason)
+      {:error, :out_of_memory} -> raise OutOfMemoryError
     end
   end
 
@@ -64,7 +67,8 @@ defmodule TigerBeetlex.IDBatch do
   def append!(%IDBatch{} = batch, id) do
     case append(batch, id) do
       {:ok, batch} -> batch
-      {:error, reason} -> raise RuntimeError, inspect(reason)
+      {:error, :invalid_batch} -> raise InvalidBatchError
+      {:error, :batch_full} -> raise BatchFullError
     end
   end
 

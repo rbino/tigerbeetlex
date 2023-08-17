@@ -1,6 +1,7 @@
 defmodule Tigerbeetlex.IDBatchTest do
   use ExUnit.Case
 
+  alias TigerBeetlex.BatchFullError
   alias TigerBeetlex.IDBatch
 
   describe "IDBatch.new/1" do
@@ -56,7 +57,7 @@ defmodule Tigerbeetlex.IDBatchTest do
         IDBatch.new!(1)
         |> IDBatch.append!(<<1::128>>)
 
-      assert_raise RuntimeError, fn -> IDBatch.append!(batch, <<2::128>>) end
+      assert_raise BatchFullError, fn -> IDBatch.append!(batch, <<2::128>>) end
     end
   end
 

@@ -2,6 +2,7 @@ defmodule Tigerbeetlex.TransferBatchTest do
   use ExUnit.Case
 
   alias TigerBeetlex.BatchFullError
+  alias TigerBeetlex.OutOfBoundsError
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.TransferBatch
 
@@ -97,6 +98,31 @@ defmodule Tigerbeetlex.TransferBatchTest do
 
     test "returns {:error, :out_of_bounds} if index is out of bounds", %{batch: batch} do
       assert {:error, :out_of_bounds} == TransferBatch.fetch(batch, 10)
+    end
+  end
+
+  describe "TransferBatch.fetch!/1" do
+    setup do
+      {:ok, batch: TransferBatch.new!(32)}
+    end
+
+    test "returns item if it exists", %{batch: batch} do
+      transfer = %Transfer{
+        id: <<1_999::128>>,
+        debit_account_id: <<2_001::128>>,
+        credit_account_id: <<2_002::128>>,
+        code: 555,
+        ledger: 666,
+        amount: 20_782
+      }
+
+      TransferBatch.append!(batch, transfer)
+
+      assert transfer == TransferBatch.fetch!(batch, 0)
+    end
+
+    test "raises if index is out of bounds", %{batch: batch} do
+      assert_raise OutOfBoundsError, fn -> TransferBatch.fetch!(batch, 10) end
     end
   end
 end

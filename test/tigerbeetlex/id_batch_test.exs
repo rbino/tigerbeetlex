@@ -3,6 +3,7 @@ defmodule Tigerbeetlex.IDBatchTest do
 
   alias TigerBeetlex.BatchFullError
   alias TigerBeetlex.IDBatch
+  alias TigerBeetlex.OutOfBoundsError
 
   describe "IDBatch.new/1" do
     test "raises if argument is not an integer" do
@@ -74,6 +75,22 @@ defmodule Tigerbeetlex.IDBatchTest do
 
     test "returns {:error, :out_of_bounds} if index is out of bounds", %{batch: batch} do
       assert {:error, :out_of_bounds} == IDBatch.fetch(batch, 10)
+    end
+  end
+
+  describe "IDBatch.fetch!/1" do
+    setup do
+      {:ok, batch: IDBatch.new!(32)}
+    end
+
+    test "returns item if it exists", %{batch: batch} do
+      IDBatch.append!(batch, <<1234::128>>)
+
+      assert <<1234::128>> == IDBatch.fetch!(batch, 0)
+    end
+
+    test "raises if index is out of bounds", %{batch: batch} do
+      assert_raise OutOfBoundsError, fn -> IDBatch.fetch!(batch, 10) end
     end
   end
 end

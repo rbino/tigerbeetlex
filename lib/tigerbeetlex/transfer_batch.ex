@@ -20,6 +20,7 @@ defmodule TigerBeetlex.TransferBatch do
   alias TigerBeetlex.TransferBatch
   alias TigerBeetlex.BatchFullError
   alias TigerBeetlex.InvalidBatchError
+  alias TigerBeetlex.OutOfBoundsError
   alias TigerBeetlex.OutOfMemoryError
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.Types
@@ -92,6 +93,18 @@ defmodule TigerBeetlex.TransferBatch do
   def fetch(batch, idx) when is_number(idx) and idx >= 0 do
     with {:ok, transfer_binary} <- NifAdapter.fetch_transfer(batch.ref, idx) do
       {:ok, Transfer.from_binary(transfer_binary)}
+    end
+  end
+
+  @doc """
+  Fetches a `%Transfer{}` from the batch, given its index. Raises in case of an error.
+  """
+  @spec fetch!(batch :: t(), idx :: non_neg_integer()) :: TigerBeetlex.Transfer.t()
+  def fetch!(batch, idx) when is_number(idx) and idx >= 0 do
+    case fetch(batch, idx) do
+      {:ok, transfer} -> transfer
+      {:error, :invalid_batch} -> raise InvalidBatchError
+      {:error, :out_of_bounds} -> raise OutOfBoundsError
     end
   end
 end

@@ -19,6 +19,7 @@ defmodule TigerBeetlex.IDBatch do
   alias TigerBeetlex.BatchFullError
   alias TigerBeetlex.IDBatch
   alias TigerBeetlex.InvalidBatchError
+  alias TigerBeetlex.OutOfBoundsError
   alias TigerBeetlex.OutOfMemoryError
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.Types
@@ -79,5 +80,17 @@ defmodule TigerBeetlex.IDBatch do
           {:ok, Types.uint128()} | {:error, Types.fetch_error()}
   def fetch(batch, idx) when is_number(idx) and idx >= 0 do
     NifAdapter.fetch_id(batch.ref, idx)
+  end
+
+  @doc """
+  Fetches an ID from the batch, given its index. Raises in case of an error.
+  """
+  @spec fetch!(batch :: t(), idx :: non_neg_integer()) :: Types.uint128()
+  def fetch!(batch, idx) when is_number(idx) and idx >= 0 do
+    case fetch(batch, idx) do
+      {:ok, id} -> id
+      {:error, :invalid_batch} -> raise InvalidBatchError
+      {:error, :out_of_bounds} -> raise OutOfBoundsError
+    end
   end
 end

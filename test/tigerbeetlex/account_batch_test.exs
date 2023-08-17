@@ -4,6 +4,7 @@ defmodule Tigerbeetlex.AccountBatchTest do
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountBatch
   alias TigerBeetlex.BatchFullError
+  alias TigerBeetlex.OutOfBoundsError
 
   describe "AccountBatch.new/1" do
     test "raises if argument is not an integer" do
@@ -89,6 +90,28 @@ defmodule Tigerbeetlex.AccountBatchTest do
 
     test "returns {:error, :out_of_bounds} if index is out of bounds", %{batch: batch} do
       assert {:error, :out_of_bounds} == AccountBatch.fetch(batch, 10)
+    end
+  end
+
+  describe "AccountBatch.fetch!/1" do
+    setup do
+      {:ok, batch: AccountBatch.new!(32)}
+    end
+
+    test "returns item if it exists", %{batch: batch} do
+      account = %Account{
+        id: <<1_001::128>>,
+        code: 42,
+        ledger: 45
+      }
+
+      AccountBatch.append!(batch, account)
+
+      assert account == AccountBatch.fetch!(batch, 0)
+    end
+
+    test "raises if index is out of bounds", %{batch: batch} do
+      assert_raise OutOfBoundsError, fn -> AccountBatch.fetch!(batch, 10) end
     end
   end
 end

@@ -20,6 +20,7 @@ defmodule TigerBeetlex.AccountBatch do
   alias TigerBeetlex.AccountBatch
   alias TigerBeetlex.BatchFullError
   alias TigerBeetlex.InvalidBatchError
+  alias TigerBeetlex.OutOfBoundsError
   alias TigerBeetlex.OutOfMemoryError
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.Types
@@ -90,6 +91,18 @@ defmodule TigerBeetlex.AccountBatch do
   def fetch(batch, idx) when is_number(idx) and idx >= 0 do
     with {:ok, account_binary} <- NifAdapter.fetch_account(batch.ref, idx) do
       {:ok, Account.from_binary(account_binary)}
+    end
+  end
+
+  @doc """
+  Fetches an `%Account{}` from the batch, given its index. Raises in case of an error.
+  """
+  @spec fetch!(batch :: t(), idx :: non_neg_integer()) :: TigerBeetlex.Account.t()
+  def fetch!(batch, idx) when is_number(idx) and idx >= 0 do
+    case fetch(batch, idx) do
+      {:ok, account} -> account
+      {:error, :invalid_batch} -> raise InvalidBatchError
+      {:error, :out_of_bounds} -> raise OutOfBoundsError
     end
   end
 end

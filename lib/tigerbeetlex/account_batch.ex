@@ -88,7 +88,7 @@ defmodule TigerBeetlex.AccountBatch do
   """
   @spec fetch(batch :: t(), idx :: non_neg_integer()) ::
           {:ok, TigerBeetlex.Account.t()} | {:error, Types.fetch_error()}
-  def fetch(batch, idx) when is_number(idx) and idx >= 0 do
+  def fetch(%AccountBatch{} = batch, idx) when is_number(idx) and idx >= 0 do
     with {:ok, account_binary} <- NifAdapter.fetch_account(batch.ref, idx) do
       {:ok, Account.from_binary(account_binary)}
     end
@@ -98,7 +98,7 @@ defmodule TigerBeetlex.AccountBatch do
   Fetches an `%Account{}` from the batch, given its index. Raises in case of an error.
   """
   @spec fetch!(batch :: t(), idx :: non_neg_integer()) :: TigerBeetlex.Account.t()
-  def fetch!(batch, idx) when is_number(idx) and idx >= 0 do
+  def fetch!(%AccountBatch{} = batch, idx) when is_number(idx) and idx >= 0 do
     case fetch(batch, idx) do
       {:ok, account} -> account
       {:error, :invalid_batch} -> raise InvalidBatchError

@@ -90,7 +90,7 @@ defmodule TigerBeetlex.TransferBatch do
   """
   @spec fetch(batch :: t(), idx :: non_neg_integer()) ::
           {:ok, TigerBeetlex.Transfer.t()} | {:error, Types.fetch_error()}
-  def fetch(batch, idx) when is_number(idx) and idx >= 0 do
+  def fetch(%TransferBatch{} = batch, idx) when is_number(idx) and idx >= 0 do
     with {:ok, transfer_binary} <- NifAdapter.fetch_transfer(batch.ref, idx) do
       {:ok, Transfer.from_binary(transfer_binary)}
     end
@@ -100,7 +100,7 @@ defmodule TigerBeetlex.TransferBatch do
   Fetches a `%Transfer{}` from the batch, given its index. Raises in case of an error.
   """
   @spec fetch!(batch :: t(), idx :: non_neg_integer()) :: TigerBeetlex.Transfer.t()
-  def fetch!(batch, idx) when is_number(idx) and idx >= 0 do
+  def fetch!(%TransferBatch{} = batch, idx) when is_number(idx) and idx >= 0 do
     case fetch(batch, idx) do
       {:ok, transfer} -> transfer
       {:error, :invalid_batch} -> raise InvalidBatchError

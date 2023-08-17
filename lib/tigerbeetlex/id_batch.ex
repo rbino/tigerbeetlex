@@ -78,7 +78,7 @@ defmodule TigerBeetlex.IDBatch do
   """
   @spec fetch(batch :: t(), idx :: non_neg_integer()) ::
           {:ok, Types.uint128()} | {:error, Types.fetch_error()}
-  def fetch(batch, idx) when is_number(idx) and idx >= 0 do
+  def fetch(%IDBatch{} = batch, idx) when is_number(idx) and idx >= 0 do
     NifAdapter.fetch_id(batch.ref, idx)
   end
 
@@ -86,7 +86,7 @@ defmodule TigerBeetlex.IDBatch do
   Fetches an ID from the batch, given its index. Raises in case of an error.
   """
   @spec fetch!(batch :: t(), idx :: non_neg_integer()) :: Types.uint128()
-  def fetch!(batch, idx) when is_number(idx) and idx >= 0 do
+  def fetch!(%IDBatch{} = batch, idx) when is_number(idx) and idx >= 0 do
     case fetch(batch, idx) do
       {:ok, id} -> id
       {:error, :invalid_batch} -> raise InvalidBatchError

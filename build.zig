@@ -1,12 +1,19 @@
 const std = @import("std");
 
-pub fn build(b: *std.build.Builder) void {
-    // Standard release options allow the person running `zig build` to select
-    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
-    const mode = b.standardReleaseOptions();
-
-    // Allow passing an explicit target
+// Although this function looks imperative, note that its job is to
+// declaratively construct a build graph that will be executed by an external
+// runner.
+pub fn build(b: *std.Build) void {
+    // Standard target options allows the person running `zig build` to choose
+    // what target to build for. Here we do not override the defaults, which
+    // means any target is allowed, and the default is native. Other options
+    // for restricting supported target set are available.
     const target = b.standardTargetOptions(.{});
+
+    // Standard optimization options allow the person running `zig build` to select
+    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
+    // set a preferred release mode, allowing the user to decide how to optimize.
+    const optimize = b.standardOptimizeOption(.{});
 
     // Get ERTS_INCLUDE_DIR from env, which should be passed by :build_dot_zig
     const erts_include_dir = std.process.getEnvVarOwned(b.allocator, "ERTS_INCLUDE_DIR") catch blk: {
@@ -21,26 +28,24 @@ pub fn build(b: *std.build.Builder) void {
             "-noshell",
         };
 
-        break :blk b.exec(&argv) catch @panic("Cannot find ERTS include dir");
+        break :blk b.exec(&argv);
     };
-    defer b.allocator.free(erts_include_dir);
 
-    const lib = b.addSharedLibrary("tigerbeetlex", "src/tigerbeetlex.zig", .unversioned);
-    lib.addSystemIncludePath(erts_include_dir);
-    lib.addPackagePath("tigerbeetle", "src/tigerbeetle/src/tigerbeetle.zig");
+    const lib = b.addSharedLibrary(.{
+        .name = "tigerbeetlex",
+        // In this case the main source file is merely a path, however, in more
+        // complicated build scripts, this could be a generated file.
+        .root_source_file = .{ .path = "src/tigerbeetlex.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    lib.addSystemIncludePath(.{ .path = erts_include_dir });
     lib.linkLibC();
-    lib.setBuildMode(mode);
-    lib.setTarget(target);
+    // This is needed to avoid errors on MacOS when loading the NIF
     lib.linker_allow_shlib_undefined = true;
 
-    // Do this so `lib` doesn't get prepended to the lib name, see https://github.com/ziglang/zig/issues/2231
-    const install = b.addInstallLibFile(lib.getOutputLibSource(), "tigerbeetlex.so");
-    install.step.dependOn(&lib.step);
-    b.getInstallStep().dependOn(&install.step);
-
-    const tests = b.addTest("src/tigerbeetlex.zig");
-    tests.setBuildMode(mode);
-
-    const test_step = b.step("test", "Run library tests");
-    test_step.dependOn(&tests.step);
+    // This declares intent for the library to be installed into the standard
+    // location when the user invokes the "install" step (the default step when
+    // running `zig build`).
+    b.installArtifact(lib);
 }

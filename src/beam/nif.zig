@@ -53,8 +53,8 @@ fn MakeWrappedNif(comptime nif_name: [:0]const u8, comptime fun: anytype) type {
         else => @compileError("Only functions can be wrapped"),
     };
 
-    const params = function_info.args;
-    const with_env = params.len > 1 and params[0].arg_type == beam.Env;
+    const params = function_info.params;
+    const with_env = params.len > 1 and params[0].type == beam.Env;
     const ReturnType = function_info.return_type.?;
 
     return struct {
@@ -68,13 +68,13 @@ fn MakeWrappedNif(comptime nif_name: [:0]const u8, comptime fun: anytype) type {
         ) callconv(.C) beam.Term {
             if (argc != arity) @panic(nif_name ++ " called with the wrong number of arguments");
 
-            const argv = @ptrCast([*]const beam.Term, argv_ptr)[0..@intCast(usize, argc)];
+            const argv = @as([*]const beam.Term, @ptrCast(argv_ptr))[0..@intCast(argc)];
             // If the first argument is env, we must adjust the offset between the input argv and
             // the actual args of the function
             const argv_offset = if (with_env) 1 else 0;
 
             var args: std.meta.ArgsTuple(Function) = undefined;
-            inline for (args) |*arg, i| {
+            inline for (&args, 0..) |*arg, i| {
                 if (with_env and i == 0) {
                     // Put the env as first argument if the function accepts it
                     arg.* = env;
@@ -90,10 +90,10 @@ fn MakeWrappedNif(comptime nif_name: [:0]const u8, comptime fun: anytype) type {
             // TODO: this currently assumes that if it's not an error union it's beam.Term, make
             // this a little better
             return switch (@typeInfo(ReturnType)) {
-                .ErrorUnion => @call(.{}, fun, args) catch |err| switch (err) {
+                .ErrorUnion => @call(.auto, fun, args) catch |err| switch (err) {
                     error.Yield => scheduler.reschedule(env, nif_name.ptr, wrapper, argc, argv_ptr),
                 },
-                else => @call(.{}, fun, args),
+                else => @call(.auto, fun, args),
             };
         }
     };

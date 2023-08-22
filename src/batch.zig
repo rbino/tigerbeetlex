@@ -4,7 +4,7 @@ const RwLock = std.Thread.RwLock;
 const beam = @import("beam.zig");
 const Resource = beam.resource.Resource;
 
-const tb = @import("tigerbeetle");
+const tb = @import("tigerbeetle/src/tigerbeetle.zig");
 const Account = tb.Account;
 const Transfer = tb.Transfer;
 
@@ -125,7 +125,7 @@ fn batch_resource_deinit_fn(
     return struct {
         fn deinit_fn(_: beam.Env, ptr: ?*anyopaque) callconv(.C) void {
             if (ptr) |p| {
-                const batch: *Item = @ptrCast(*Item, @alignCast(@alignOf(*Item), p));
+                const batch: *Item = @ptrCast(@alignCast(p));
                 beam.general_purpose_allocator.free(batch.items);
             } else unreachable;
         }

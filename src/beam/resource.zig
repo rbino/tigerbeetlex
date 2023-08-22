@@ -107,12 +107,12 @@ pub fn Resource(comptime T: anytype, comptime deinit_fn: ?DeinitFn) type {
 
         /// Returns a const pointer to the resource value
         pub fn ptr_const(self: Self) *const T {
-            return @ptrCast(*const T, @alignCast(@alignOf(*const T), self.raw_ptr));
+            return @ptrCast(@alignCast(self.raw_ptr));
         }
 
         /// Returns a pointer to the resource value
         pub fn ptr(self: Self) *T {
-            return @ptrCast(*T, @alignCast(@alignOf(*T), self.raw_ptr));
+            return @ptrCast(@alignCast(self.raw_ptr));
         }
 
         fn res_type() beam.ResourceType {

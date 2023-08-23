@@ -17,7 +17,6 @@ const AccountBatchResource = account_batch.AccountBatchResource;
 const IdBatchResource = id_batch.IdBatchResource;
 const TransferBatchResource = transfer_batch.TransferBatchResource;
 
-const vsr = @import("tigerbeetle/src/vsr.zig");
 pub const vsr_options = .{
     .config_base = .default,
     .config_log_level = std.log.Level.info,
@@ -30,7 +29,9 @@ pub const vsr_options = .{
 // Lower the log level since currently Zig output screws up
 // Elixir output, especially in interactive shells
 // TODO: investigate why.
-pub const log_level: std.log.Level = .err;
+pub const std_options = struct {
+    pub const log_level = .err;
+};
 
 var exported_nifs = [_]nif.FunctionEntry{
     nif.wrap("client_init", client.init),

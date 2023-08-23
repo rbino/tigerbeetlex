@@ -5,7 +5,7 @@ const batch = @import("batch.zig");
 const beam = @import("beam.zig");
 const scheduler = beam.scheduler;
 
-const tb = @import("tigerbeetle");
+const tb = @import("tigerbeetle/src/tigerbeetle.zig");
 const Transfer = tb.Transfer;
 const TransferFlags = tb.TransferFlags;
 pub const TransferBatch = batch.Batch(Transfer);

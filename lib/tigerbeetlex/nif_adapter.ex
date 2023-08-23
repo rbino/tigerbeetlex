@@ -4,7 +4,7 @@ defmodule TigerBeetlex.NifAdapter do
   alias TigerBeetlex.Types
 
   @on_load :load_nif
-  @nif_path "priv/#{Mix.target()}/lib/tigerbeetlex"
+  @nif_path "priv/#{Mix.target()}/lib/libtigerbeetlex"
 
   defp load_nif do
     path = Application.app_dir(:tigerbeetlex, @nif_path)

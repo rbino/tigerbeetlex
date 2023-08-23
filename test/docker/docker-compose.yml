@@ -2,7 +2,7 @@ version: '3'
 
 services:
   tigerbeetle:
-    image: ghcr.io/tigerbeetle/tigerbeetle:0.13.57
+    image: ghcr.io/tigerbeetle/tigerbeetle:0.13.99
     volumes:
       - tb-data:/data
     entrypoint: /bin/sh

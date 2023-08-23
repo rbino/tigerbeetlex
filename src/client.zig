@@ -6,7 +6,7 @@ const process = beam.process;
 const resource = beam.resource;
 const Resource = resource.Resource;
 
-const tb = @import("tigerbeetle");
+const tb = @import("tigerbeetle/src/tigerbeetle.zig");
 const tb_client = @import("tigerbeetle/src/clients/c/tb_client.zig");
 const Account = tb.Account;
 const Transfer = tb.Transfer;
@@ -30,7 +30,7 @@ pub fn init(env: beam.Env, cluster_id: u32, addresses: []const u8, concurrency_m
         cluster_id,
         addresses,
         concurrency_max,
-        @ptrToInt(beam.alloc_env()),
+        @intFromPtr(beam.alloc_env()),
         on_completion,
     ) catch |err| switch (err) {
         error.Unexpected => return beam.make_error_atom(env, "unexpected"),
@@ -143,7 +143,7 @@ fn submit(
     // We save the raw pointer in the context so we can release it later
     ctx.payload_raw_obj = payload_resource.raw_ptr;
 
-    packet.operation = @enumToInt(operation);
+    packet.operation = @intFromEnum(operation);
     packet.data = payload.items.ptr;
     packet.data_size = @sizeOf(Item) * payload.len;
     packet.user_data = ctx;
@@ -161,13 +161,13 @@ fn on_completion(
     result_ptr: ?[*]const u8,
     result_len: u32,
 ) callconv(.C) void {
-    var ctx = @ptrCast(*RequestContext, @alignCast(@alignOf(*RequestContext), packet.user_data.?));
+    var ctx: *RequestContext = @ptrCast(@alignCast(packet.user_data.?));
     defer beam.general_purpose_allocator.destroy(ctx);
 
     // We don't need the payload anymore, let the garbage collector take care of it
     resource.raw_release(ctx.payload_raw_obj);
 
-    const env = @intToPtr(beam.Env, context);
+    const env: beam.Env = @ptrFromInt(context);
     defer beam.clear_env(env);
 
     var ref_binary = ctx.request_ref_binary;
@@ -176,7 +176,7 @@ fn on_completion(
 
     const caller_pid = ctx.caller_pid;
 
-    const status = beam.make_u8(env, @enumToInt(packet.status));
+    const status = beam.make_u8(env, @intFromEnum(packet.status));
     const operation = beam.make_u8(env, packet.operation);
     const result = if (result_ptr) |p|
         beam.make_slice(env, p[0..result_len])
@@ -196,7 +196,7 @@ fn on_completion(
 
 fn client_resource_deinit_fn(_: beam.Env, ptr: ?*anyopaque) callconv(.C) void {
     if (ptr) |p| {
-        const cl: *Client = @ptrCast(*Client, @alignCast(@alignOf(*Client), p));
+        const cl: *Client = @ptrCast(@alignCast(p));
         // TODO: this can now potentially block for a long time since it waits
         // for all the requests to be drained, investigate what it is blocking
         // and if this needs to be done in a separate thread

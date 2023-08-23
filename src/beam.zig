@@ -90,7 +90,7 @@ pub fn make_error_atom(env: Env, atom_str: []const u8) Term {
 /// Creates a binary term from a Zig slice
 pub fn make_slice(env: Env, val: []const u8) Term {
     var result: Term = undefined;
-    var bin: [*]u8 = @ptrCast([*]u8, e.enif_make_new_binary(env, val.len, &result));
+    var bin: [*]u8 = @ptrCast(e.enif_make_new_binary(env, val.len, &result));
     std.mem.copy(u8, bin[0..val.len], val);
 
     return result;
@@ -113,7 +113,7 @@ pub fn make_tuple(env: Env, tuple: anytype) Term {
         @compileError("invalid argument to make_tuple: not a tuple");
 
     var tuple_list: [tuple.len]Term = undefined;
-    inline for (tuple_list) |*tuple_item, index| {
+    inline for (&tuple_list, 0..) |*tuple_item, index| {
         const tuple_term = tuple[index];
         tuple_item.* = tuple_term;
     }
@@ -150,7 +150,7 @@ pub fn get_u64(env: Env, src_term: Term) GetError!u64 {
         return GetError.ArgumentError;
     }
 
-    return @intCast(u64, result);
+    return @intCast(result);
 }
 
 /// Extract a u32 from a term
@@ -160,7 +160,7 @@ pub fn get_u32(env: Env, src_term: Term) GetError!u32 {
         return GetError.ArgumentError;
     }
 
-    return @intCast(u32, result);
+    return @intCast(result);
 }
 
 /// Extract a u16 from a term, checking it does not go outside the boundaries
@@ -174,7 +174,7 @@ pub fn get_u16(env: Env, src_term: Term) GetError!u16 {
         return GetError.ArgumentError;
     }
 
-    return @intCast(u16, result);
+    return @intCast(result);
 }
 
 pub const TermToBinaryError = error{OutOfMemory};

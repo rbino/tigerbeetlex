@@ -126,18 +126,12 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-
-      - name: Start Docker and wait for it to be up
-        working-directory: ./test/docker
+      - name: Install and start TigerBeetle
+        working-directory: ./src/tigerbeetle
         run: |
-          docker-compose up --detach
-          ./health-check-services.sh
+          ./bootstrap.sh
+          ./tigerbeetle format --cluster=0 --replica=0 --replica-count=1 0_0.tigerbeetle
+          ./tigerbeetle start --addresses=3000 0_0.tigerbeetle &
 
       - name: Install OTP and Elixir
         uses: erlef/setup-beam@v1
@@ -162,7 +156,3 @@ jobs:
 
       - name: Run tests
         run: mix test
-
-      - name: Dump Docker logs on failure
-        uses: jwalton/gh-docker-logs@v1
-        if: failure()

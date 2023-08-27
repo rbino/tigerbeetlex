@@ -79,61 +79,21 @@ jobs:
       - name: Run Dialyzer
         run: mix dialyzer --format github
 
-  macos-test:
-    runs-on: macos-13
-    name: Test on MacOS
-    steps:
-      - name: Clone the repository
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Install and start TigerBeetle
-        working-directory: ./src/tigerbeetle
-        run: |
-          ./bootstrap.sh
-          ./tigerbeetle format --cluster=0 --replica=0 --replica-count=1 0_0.tigerbeetle
-          ./tigerbeetle start --addresses=3000 0_0.tigerbeetle &
-
-      - name: Install Elixir
-        run: |
-          brew install elixir
-
-      - name: Setup mix
-        run: |
-          mix local.hex --force
-          mix local.rebar --force
-
-      - name: Cache dependencies
-        id: cache-deps
-        uses: actions/cache@v2
-        with:
-          path: |
-            deps
-            _build
-          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
-
-      - name: Install and compile dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: |
-          mix deps.get --only test
-          mix deps.compile
-
-      - name: Run tests
-        run: mix test
-
   test:
-    name: Test (Elixir ${{ matrix.elixir }}, OTP ${{ matrix.otp }}
-    runs-on: ubuntu-20.04
+    name: Test on ${{ matrix.os }} (Elixir ${{ matrix.elixir }}, OTP ${{ matrix.otp }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # TODO: add OTP 26 + Elixir 1.15, right now there seem to be some problems with setup-beam,
-          # see https://github.com/erlef/setup-beam/issues/220
-          - otp: "25.3"
+          - os: ubuntu-20.04
+            otp: "25.3"
             elixir: "1.14"
-          - otp: "26.0.2"
+          - os: ubuntu-22.04
+            otp: "26.0.2"
+            elixir: "1.15.2"
+          - os: macos-13
+            otp: "26.0.2"
             elixir: "1.15.2"
 
     steps:
@@ -150,10 +110,16 @@ jobs:
           ./tigerbeetle start --addresses=3000 0_0.tigerbeetle &
 
       - name: Install OTP and Elixir
+        if: runner.os == 'Linux'
         uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ matrix.otp }}
           elixir-version: ${{ matrix.elixir }}
+
+      - name: Install OTP and Elixir
+        if: runner.os == 'macOS'
+        run: |
+          brew install elixir
 
       - name: Cache dependencies
         id: cache-deps
@@ -162,7 +128,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          key: ${{ matrix.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
 
       - name: Install and compile dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'

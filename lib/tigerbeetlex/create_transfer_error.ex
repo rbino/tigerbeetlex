@@ -20,7 +20,6 @@ defmodule TigerBeetlex.CreateTransferError do
           | :linked_event_chain_open
           | :timestamp_must_be_zero
           | :reserved_flag
-          | :reserved_field
           | :id_must_not_be_zero
           | :id_must_not_be_int_max
           | :flags_are_mutually_exclusive
@@ -34,9 +33,9 @@ defmodule TigerBeetlex.CreateTransferError do
           | :pending_id_must_not_be_int_max
           | :pending_id_must_be_different
           | :timeout_reserved_for_pending_transfer
+          | :amount_must_not_be_zero
           | :ledger_must_not_be_zero
           | :code_must_not_be_zero
-          | :amount_must_not_be_zero
           | :debit_account_not_found
           | :credit_account_not_found
           | :accounts_must_have_the_same_ledger
@@ -56,7 +55,9 @@ defmodule TigerBeetlex.CreateTransferError do
           | :exists_with_different_debit_account_id
           | :exists_with_different_credit_account_id
           | :exists_with_different_pending_id
-          | :exists_with_different_user_data
+          | :exists_with_different_user_data_128
+          | :exists_with_different_user_data_64
+          | :exists_with_different_user_data_32
           | :exists_with_different_timeout
           | :exists_with_different_code
           | :exists_with_different_amount
@@ -77,7 +78,6 @@ defmodule TigerBeetlex.CreateTransferError do
                         :linked_event_chain_open,
                         :timestamp_must_be_zero,
                         :reserved_flag,
-                        :reserved_field,
                         :id_must_not_be_zero,
                         :id_must_not_be_int_max,
                         :flags_are_mutually_exclusive,
@@ -91,9 +91,9 @@ defmodule TigerBeetlex.CreateTransferError do
                         :pending_id_must_not_be_int_max,
                         :pending_id_must_be_different,
                         :timeout_reserved_for_pending_transfer,
+                        :amount_must_not_be_zero,
                         :ledger_must_not_be_zero,
                         :code_must_not_be_zero,
-                        :amount_must_not_be_zero,
                         :debit_account_not_found,
                         :credit_account_not_found,
                         :accounts_must_have_the_same_ledger,
@@ -112,11 +112,13 @@ defmodule TigerBeetlex.CreateTransferError do
                         :exists_with_different_flags,
                         :exists_with_different_debit_account_id,
                         :exists_with_different_credit_account_id,
+                        :exists_with_different_amount,
                         :exists_with_different_pending_id,
-                        :exists_with_different_user_data,
+                        :exists_with_different_user_data_128,
+                        :exists_with_different_user_data_64,
+                        :exists_with_different_user_data_32,
                         :exists_with_different_timeout,
                         :exists_with_different_code,
-                        :exists_with_different_amount,
                         :exists,
                         :overflows_debits_pending,
                         :overflows_credits_pending,

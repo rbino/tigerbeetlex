@@ -19,19 +19,21 @@ defmodule TigerBeetlex.CreateAccountError do
           :linked_event_failed
           | :linked_event_chain_open
           | :timestamp_must_be_zero
-          | :reserved_flag
           | :reserved_field
+          | :reserved_flag
           | :id_must_not_be_zero
           | :id_must_not_be_int_max
           | :flags_are_mutually_exclusive
-          | :ledger_must_not_be_zero
-          | :code_must_not_be_zero
           | :debits_pending_must_be_zero
           | :debits_posted_must_be_zero
           | :credits_pending_must_be_zero
           | :credits_posted_must_be_zero
+          | :ledger_must_not_be_zero
+          | :code_must_not_be_zero
           | :exists_with_different_flags
-          | :exists_with_different_user_data
+          | :exists_with_different_user_data_128
+          | :exists_with_different_user_data_64
+          | :exists_with_different_user_data_32
           | :exists_with_different_ledger
           | :exists_with_different_code
           | :exists
@@ -41,19 +43,21 @@ defmodule TigerBeetlex.CreateAccountError do
                         :linked_event_failed,
                         :linked_event_chain_open,
                         :timestamp_must_be_zero,
-                        :reserved_flag,
                         :reserved_field,
+                        :reserved_flag,
                         :id_must_not_be_zero,
                         :id_must_not_be_int_max,
                         :flags_are_mutually_exclusive,
-                        :ledger_must_not_be_zero,
-                        :code_must_not_be_zero,
                         :debits_pending_must_be_zero,
                         :debits_posted_must_be_zero,
                         :credits_pending_must_be_zero,
                         :credits_posted_must_be_zero,
+                        :ledger_must_not_be_zero,
+                        :code_must_not_be_zero,
                         :exists_with_different_flags,
-                        :exists_with_different_user_data,
+                        :exists_with_different_user_data_128,
+                        :exists_with_different_user_data_64,
+                        :exists_with_different_user_data_32,
                         :exists_with_different_ledger,
                         :exists_with_different_code,
                         :exists

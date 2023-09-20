@@ -19,7 +19,9 @@ defmodule TigerBeetlex.AccountTest do
   test "from_binary and to_batch_item round trip with full fields" do
     account = %Account{
       id: <<1234::128>>,
-      user_data: <<5678::128>>,
+      user_data_128: <<5678::128>>,
+      user_data_64: <<1234::64>>,
+      user_data_32: <<42::32>>,
       ledger: 42,
       code: 99,
       flags: %Account.Flags{credits_must_not_exceed_debits: true}

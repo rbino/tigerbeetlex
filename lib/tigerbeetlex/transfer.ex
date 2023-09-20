@@ -17,16 +17,18 @@ defmodule TigerBeetlex.Transfer do
   typedstruct do
     @typedoc "A struct representing a TigerBeetle account"
 
-    field :id, Types.uint128(), enforce: true
-    field :debit_account_id, Types.uint128()
-    field :credit_account_id, Types.uint128()
-    field :user_data, Types.uint128()
-    field :pending_id, Types.uint128()
+    field :id, Types.id_128(), enforce: true
+    field :debit_account_id, Types.id_128()
+    field :credit_account_id, Types.id_128()
+    field :amount, non_neg_integer(), default: 0
+    field :pending_id, Types.id_128()
+    field :user_data_128, Types.user_data_128()
+    field :user_data_64, Types.user_data_64()
+    field :user_data_32, Types.user_data_32()
     field :timeout, non_neg_integer(), default: 0
     field :ledger, non_neg_integer(), default: 0
     field :code, non_neg_integer(), default: 0
     field :flags, Flags.t(), default: %Flags{}
-    field :amount, non_neg_integer(), default: 0
     field :timestamp, non_neg_integer(), default: 0
   end
 
@@ -37,27 +39,39 @@ defmodule TigerBeetlex.Transfer do
   @spec from_binary(bin :: Types.transfer_binary()) :: t()
   def from_binary(<<_::binary-size(128)>> = bin) do
     <<id::binary-size(16), debit_account_id::binary-size(16), credit_account_id::binary-size(16),
-      user_data::binary-size(16), _reserved::binary-size(16), pending_id::binary-size(16),
-      timeout::unsigned-little-64, ledger::unsigned-little-32, code::unsigned-little-16,
-      flags::unsigned-little-16, amount::unsigned-little-64, timestamp::unsigned-little-64>> = bin
+      amount::unsigned-little-128, pending_id::binary-size(16), user_data_128::binary-size(16),
+      user_data_64::binary-size(8), user_data_32::binary-size(4), timeout::unsigned-little-32,
+      ledger::unsigned-little-32, code::unsigned-little-16, flags::unsigned-little-16,
+      timestamp::unsigned-little-64>> = bin
 
     %Transfer{
       id: id,
-      debit_account_id: nilify_u128_default(debit_account_id),
-      credit_account_id: nilify_u128_default(credit_account_id),
-      user_data: nilify_u128_default(user_data),
-      pending_id: nilify_u128_default(pending_id),
+      debit_account_id: nilify_id_128_default(debit_account_id),
+      credit_account_id: nilify_id_128_default(credit_account_id),
+      amount: amount,
+      pending_id: nilify_id_128_default(pending_id),
+      user_data_128: nilify_user_data_128_default(user_data_128),
+      user_data_64: nilify_user_data_64_default(user_data_64),
+      user_data_32: nilify_user_data_32_default(user_data_32),
       timeout: timeout,
       ledger: ledger,
       code: code,
       flags: Flags.from_u16!(flags),
-      amount: amount,
       timestamp: timestamp
     }
   end
 
-  defp nilify_u128_default(<<0::unit(8)-size(16)>>), do: nil
-  defp nilify_u128_default(value), do: value
+  defp nilify_id_128_default(<<0::unit(8)-size(16)>>), do: nil
+  defp nilify_id_128_default(value), do: value
+
+  defp nilify_user_data_128_default(<<0::unit(8)-size(16)>>), do: nil
+  defp nilify_user_data_128_default(value), do: value
+
+  defp nilify_user_data_64_default(<<0::unit(8)-size(8)>>), do: nil
+  defp nilify_user_data_64_default(value), do: value
+
+  defp nilify_user_data_32_default(<<0::unit(8)-size(4)>>), do: nil
+  defp nilify_user_data_32_default(value), do: value
 
   @doc """
   Converts a `%TigerBeetlex.Transfer{}` to its binary representation (128 bytes
@@ -71,33 +85,46 @@ defmodule TigerBeetlex.Transfer do
       id: id,
       debit_account_id: debit_account_id,
       credit_account_id: credit_account_id,
-      user_data: user_data,
+      amount: amount,
       pending_id: pending_id,
+      user_data_128: user_data_128,
+      user_data_64: user_data_64,
+      user_data_32: user_data_32,
       timeout: timeout,
       ledger: ledger,
       code: code,
-      flags: flags,
-      amount: amount
+      flags: flags
     } = transfer
 
-    reserved = <<0::unit(8)-size(16)>>
     timestamp = 0
 
     flags_u16 =
       (flags || %Flags{})
       |> Flags.to_u16!()
 
-    <<id::binary-size(16), u128_default(debit_account_id)::binary-size(16),
-      u128_default(credit_account_id)::binary-size(16), u128_default(user_data)::binary-size(16),
-      reserved::binary-size(16), u128_default(pending_id)::binary-size(16),
-      zero_default(timeout)::unsigned-little-64, zero_default(ledger)::unsigned-little-32,
+    <<id::binary-size(16), id_128_default(debit_account_id)::binary-size(16),
+      id_128_default(credit_account_id)::binary-size(16),
+      zero_default(amount)::unsigned-little-128, id_128_default(pending_id)::binary-size(16),
+      user_data_128_default(user_data_128)::binary-size(16),
+      user_data_64_default(user_data_64)::binary-size(8),
+      user_data_32_default(user_data_32)::binary-size(4),
+      zero_default(timeout)::unsigned-little-32, zero_default(ledger)::unsigned-little-32,
       zero_default(code)::unsigned-little-16, flags_u16::unsigned-little-16,
-      zero_default(amount)::unsigned-little-64, timestamp::unsigned-little-64>>
+      timestamp::unsigned-little-64>>
   end
 
   defp zero_default(nil), do: 0
   defp zero_default(value), do: value
 
-  defp u128_default(nil), do: <<0::unit(8)-size(16)>>
-  defp u128_default(value), do: value
+  defp id_128_default(nil), do: <<0::unit(8)-size(16)>>
+  defp id_128_default(value), do: value
+
+  defp user_data_128_default(nil), do: <<0::unit(8)-size(16)>>
+  defp user_data_128_default(value), do: value
+
+  defp user_data_64_default(nil), do: <<0::unit(8)-size(8)>>
+  defp user_data_64_default(value), do: value
+
+  defp user_data_32_default(nil), do: <<0::unit(8)-size(4)>>
+  defp user_data_32_default(value), do: value
 end

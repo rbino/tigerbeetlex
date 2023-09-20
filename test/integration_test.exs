@@ -77,7 +77,7 @@ defmodule TigerBeetlex.IntegrationTest do
         id: id_2,
         ledger: 2,
         code: 2,
-        user_data: <<42::128>>
+        user_data_128: <<42::128>>
       }
 
       {:ok, batch} = AccountBatch.append(batch, account_2)
@@ -95,7 +95,7 @@ defmodule TigerBeetlex.IntegrationTest do
                id: ^id_2,
                ledger: 2,
                code: 2,
-               user_data: <<42::128>>
+               user_data_128: <<42::128>>
              } = get_account!(conn, id_2)
     end
 
@@ -134,7 +134,7 @@ defmodule TigerBeetlex.IntegrationTest do
         id: id_2,
         ledger: 0,
         code: 2,
-        user_data: <<42::128>>
+        user_data_128: <<42::128>>
       }
 
       {:ok, batch} = AccountBatch.append(batch, account_2)
@@ -224,7 +224,7 @@ defmodule TigerBeetlex.IntegrationTest do
         debit_account_id: debit_account_id,
         ledger: 1,
         code: 1,
-        user_data: <<42::128>>,
+        user_data_128: <<42::128>>,
         amount: 100
       }
 
@@ -239,7 +239,7 @@ defmodule TigerBeetlex.IntegrationTest do
                debit_account_id: ^debit_account_id,
                ledger: 1,
                code: 1,
-               user_data: <<42::128>>,
+               user_data_128: <<42::128>>,
                amount: 100
              } = get_transfer!(conn, id)
 

@@ -120,6 +120,7 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew install elixir
+          mix local.hex --force
 
       - name: Cache dependencies
         id: cache-deps

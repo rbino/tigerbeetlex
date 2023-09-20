@@ -14,56 +14,12 @@ defmodule TigerBeetlex.CreateAccountError do
   use TypedStruct
 
   alias TigerBeetlex.CreateAccountError
+  alias TigerBeetlex.OperationResult
 
-  @type reason ::
-          :linked_event_failed
-          | :linked_event_chain_open
-          | :timestamp_must_be_zero
-          | :reserved_field
-          | :reserved_flag
-          | :id_must_not_be_zero
-          | :id_must_not_be_int_max
-          | :flags_are_mutually_exclusive
-          | :debits_pending_must_be_zero
-          | :debits_posted_must_be_zero
-          | :credits_pending_must_be_zero
-          | :credits_posted_must_be_zero
-          | :ledger_must_not_be_zero
-          | :code_must_not_be_zero
-          | :exists_with_different_flags
-          | :exists_with_different_user_data_128
-          | :exists_with_different_user_data_64
-          | :exists_with_different_user_data_32
-          | :exists_with_different_ledger
-          | :exists_with_different_code
-          | :exists
+  @result_to_atom_map OperationResult.extract_result_map("TB_CREATE_ACCOUNT")
+  @type reason :: unquote(OperationResult.result_map_to_typespec(@result_to_atom_map))
 
   # Taken from tb_client.h
-  @result_to_atom_map [
-                        :linked_event_failed,
-                        :linked_event_chain_open,
-                        :timestamp_must_be_zero,
-                        :reserved_field,
-                        :reserved_flag,
-                        :id_must_not_be_zero,
-                        :id_must_not_be_int_max,
-                        :flags_are_mutually_exclusive,
-                        :debits_pending_must_be_zero,
-                        :debits_posted_must_be_zero,
-                        :credits_pending_must_be_zero,
-                        :credits_posted_must_be_zero,
-                        :ledger_must_not_be_zero,
-                        :code_must_not_be_zero,
-                        :exists_with_different_flags,
-                        :exists_with_different_user_data_128,
-                        :exists_with_different_user_data_64,
-                        :exists_with_different_user_data_32,
-                        :exists_with_different_ledger,
-                        :exists_with_different_code,
-                        :exists
-                      ]
-                      |> Enum.with_index(1)
-                      |> Enum.into(%{}, fn {reason, idx} -> {idx, reason} end)
 
   typedstruct do
     @typedoc "A struct representing an error occured during a create_accounts operation"

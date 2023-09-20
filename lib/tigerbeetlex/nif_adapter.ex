@@ -79,18 +79,18 @@ defmodule TigerBeetlex.NifAdapter do
           {:ok, Types.id_batch()} | {:error, Types.create_batch_error()}
   def create_id_batch(_capacity), do: :erlang.nif_error(:nif_not_loaded)
 
-  @spec append_id(id_batch :: Types.id_batch(), id :: Types.uint128()) ::
+  @spec append_id(id_batch :: Types.id_batch(), id :: Types.id_128()) ::
           :ok | {:error, Types.append_error()}
   def append_id(_id_batch, _id), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec fetch_id(id_batch :: Types.id_batch(), idx :: non_neg_integer()) ::
-          {:ok, id_binary :: Types.uint128()} | {:error, Types.fetch_error()}
+          {:ok, id_binary :: Types.id_128()} | {:error, Types.fetch_error()}
   def fetch_id(_id_batch, _index), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec replace_id(
           id_batch :: Types.id_batch(),
           idx :: non_neg_integer(),
-          id_binary :: Types.uint128()
+          id_binary :: Types.id_128()
         ) :: :ok | {:error, Types.replace_error()}
   def replace_id(_id_batch, _index, _id_binary), do: :erlang.nif_error(:nif_not_loaded)
 

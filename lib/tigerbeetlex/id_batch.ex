@@ -53,7 +53,7 @@ defmodule TigerBeetlex.IDBatch do
   @doc """
   Appends an ID to the batch.
   """
-  @spec append(batch :: t(), id :: Types.uint128()) ::
+  @spec append(batch :: t(), id :: Types.id_128()) ::
           {:ok, t()} | {:error, Types.append_error()}
   def append(%IDBatch{} = batch, id) do
     with :ok <- NifAdapter.append_id(batch.ref, id) do
@@ -64,7 +64,7 @@ defmodule TigerBeetlex.IDBatch do
   @doc """
   Appends an ID to the batch, raising in case of an error.
   """
-  @spec append!(batch :: t(), id :: Types.uint128()) :: t()
+  @spec append!(batch :: t(), id :: Types.id_128()) :: t()
   def append!(%IDBatch{} = batch, id) do
     case append(batch, id) do
       {:ok, batch} -> batch
@@ -77,7 +77,7 @@ defmodule TigerBeetlex.IDBatch do
   Fetches an ID from the batch, given its index.
   """
   @spec fetch(batch :: t(), idx :: non_neg_integer()) ::
-          {:ok, Types.uint128()} | {:error, Types.fetch_error()}
+          {:ok, Types.id_128()} | {:error, Types.fetch_error()}
   def fetch(%IDBatch{} = batch, idx) when is_number(idx) and idx >= 0 do
     NifAdapter.fetch_id(batch.ref, idx)
   end
@@ -85,7 +85,7 @@ defmodule TigerBeetlex.IDBatch do
   @doc """
   Fetches an ID from the batch, given its index. Raises in case of an error.
   """
-  @spec fetch!(batch :: t(), idx :: non_neg_integer()) :: Types.uint128()
+  @spec fetch!(batch :: t(), idx :: non_neg_integer()) :: Types.id_128()
   def fetch!(%IDBatch{} = batch, idx) when is_number(idx) and idx >= 0 do
     case fetch(batch, idx) do
       {:ok, id} -> id
@@ -97,7 +97,7 @@ defmodule TigerBeetlex.IDBatch do
   @doc """
   Replaces the ID at index `idx` in the batch.
   """
-  @spec replace(batch :: t(), idx :: non_neg_integer(), id :: Types.uint128()) ::
+  @spec replace(batch :: t(), idx :: non_neg_integer(), id :: Types.id_128()) ::
           {:ok, t()} | {:error, Types.replace_error()}
   def replace(%IDBatch{} = batch, idx, <<_::128>> = id) when is_number(idx) and idx >= 0 do
     with :ok <- NifAdapter.replace_id(batch.ref, idx, id) do
@@ -108,7 +108,7 @@ defmodule TigerBeetlex.IDBatch do
   @doc """
   Replaces the ID at index `idx` in the batch. Raises in case of an error.
   """
-  @spec replace!(batch :: t(), idx :: non_neg_integer(), id :: Types.uint128()) :: t()
+  @spec replace!(batch :: t(), idx :: non_neg_integer(), id :: Types.id_128()) :: t()
   def replace!(%IDBatch{} = batch, idx, <<_::128>> = id) when is_number(idx) and idx >= 0 do
     case replace(batch, idx, id) do
       {:ok, batch} -> batch

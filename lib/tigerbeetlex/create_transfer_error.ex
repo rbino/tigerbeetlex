@@ -16,7 +16,7 @@ defmodule TigerBeetlex.CreateTransferError do
   alias TigerBeetlex.CreateTransferError
   alias TigerBeetlex.OperationResult
 
-  @result_to_atom_map OperationResult.extract_result_map("TB_CREATE_TRANSFER")
+  @result_to_atom_map OperationResult.extract_result_map(:CreateTransferResult)
   @type reason :: unquote(OperationResult.result_map_to_typespec(@result_to_atom_map))
 
   typedstruct do

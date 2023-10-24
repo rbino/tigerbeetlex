@@ -30,6 +30,7 @@ defmodule TigerBeetlex.MixProject do
     [
       {:typed_struct, "~> 0.3.0"},
       {:nimble_options, "~> 1.0"},
+      {:zig_parser, "~> 0.2.0", runtime: false},
       {:build_dot_zig, "~> 0.3.1", runtime: false},
       {:elixir_uuid, "~> 1.2", only: :test},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},

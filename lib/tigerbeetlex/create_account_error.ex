@@ -16,7 +16,7 @@ defmodule TigerBeetlex.CreateAccountError do
   alias TigerBeetlex.CreateAccountError
   alias TigerBeetlex.OperationResult
 
-  @result_to_atom_map OperationResult.extract_result_map("TB_CREATE_ACCOUNT")
+  @result_to_atom_map OperationResult.extract_result_map(:CreateAccountResult)
   @type reason :: unquote(OperationResult.result_map_to_typespec(@result_to_atom_map))
 
   # Taken from tb_client.h

@@ -794,7 +794,7 @@ defmodule TigerBeetlex.IntegrationTest do
   end
 
   defp random_id do
-    UUID.uuid4(:raw)
+    Uniq.UUID.uuid7(:raw)
   end
 
   defp create_account!(conn) do

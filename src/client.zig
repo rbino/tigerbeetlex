@@ -24,7 +24,7 @@ const RequestContext = struct {
     payload_raw_obj: *anyopaque,
 };
 
-pub fn init(env: beam.Env, cluster_id: u32, addresses: []const u8, concurrency_max: u32) beam.Term {
+pub fn init(env: beam.Env, cluster_id: u128, addresses: []const u8, concurrency_max: u32) beam.Term {
     const client: tb_client.tb_client_t = tb_client.init(
         beam.general_purpose_allocator,
         cluster_id,

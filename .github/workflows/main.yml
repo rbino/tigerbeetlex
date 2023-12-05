@@ -92,7 +92,7 @@ jobs:
           - os: ubuntu-22.04
             otp: "26.0.2"
             elixir: "1.15.2"
-          - os: macos-13
+          - os: macos-latest
             otp: "26.0.2"
             elixir: "1.15.2"
 

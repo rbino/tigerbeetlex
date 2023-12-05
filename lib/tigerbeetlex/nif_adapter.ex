@@ -12,7 +12,7 @@ defmodule TigerBeetlex.NifAdapter do
   end
 
   @spec client_init(
-          cluster_id :: non_neg_integer(),
+          cluster_id :: Types.id_128(),
           addresses :: binary(),
           concurrency_max :: pos_integer()
         ) ::

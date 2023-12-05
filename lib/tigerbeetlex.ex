@@ -27,7 +27,7 @@ defmodule TigerBeetlex do
 
   ## Arguments
 
-  - `cluster_id` (`non_neg_integer/0`): - The TigerBeetle cluster id.
+  - `cluster_id` (128-bit binary ID): - The TigerBeetle cluster id.
   - `addresses` (list of `String.t()`) - The list of node addresses. These can either be a single
   digit (e.g. `"3000"`), which is interpreted as a port on `127.0.0.1`, an IP address + port (e.g.
   `"127.0.0.1:3000"`), or just an IP address (e.g. `"127.0.0.1"`), which defaults to port `3001`.
@@ -37,16 +37,16 @@ defmodule TigerBeetlex do
 
   ## Examples
 
-      {:ok, client} = TigerBeetlex.connect(0, ["3000"], 32)
+      {:ok, client} = TigerBeetlex.connect(<<0::128>>, ["3000"], 32)
   """
   @spec connect(
-          cluster_id :: non_neg_integer(),
+          cluster_id :: Types.id_128(),
           addresses :: [binary()],
           concurrency_max :: pos_integer()
         ) ::
           {:ok, t()} | {:error, Types.client_init_error()}
-  def connect(cluster_id, addresses, concurrency_max)
-      when cluster_id >= 0 and is_list(addresses) and is_integer(concurrency_max) and
+  def connect(<<_::128>> = cluster_id, addresses, concurrency_max)
+      when is_list(addresses) and is_integer(concurrency_max) and
              concurrency_max > 0 do
     joined_addresses = Enum.join(addresses, ",")
 

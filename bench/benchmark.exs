@@ -5,14 +5,14 @@ alias TigerBeetlex.TransferBatch
 {:ok, _pid} =
   Connection.start_link(
     name: :tb,
-    cluster_id: 0,
+    cluster_id: <<0::128>>,
     addresses: ["3000"],
     concurrency_max: 1,
     partitions: 1
   )
 
 samples = 1_000_000
-batch_size = 8191
+batch_size = 8190
 
 bench = fn ->
   chunks =

@@ -19,7 +19,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
     args = [
       name: name,
-      cluster_id: 0,
+      cluster_id: <<0::128>>,
       addresses: ["3000"],
       concurrency_max: 32
     ]
@@ -190,6 +190,25 @@ defmodule TigerBeetlex.IntegrationTest do
              } = get_account!(conn, id_1)
 
       assert_account_not_existing(conn, id_2)
+    end
+
+    test "max batch size account creation", %{conn: conn} do
+      max_batch_size = 8190
+
+      batch =
+        Enum.reduce(1..max_batch_size, AccountBatch.new!(max_batch_size), fn _idx, batch ->
+          account = %Account{
+            id: random_id(),
+            ledger: 1,
+            code: 1,
+            flags: %Account.Flags{credits_must_not_exceed_debits: true}
+          }
+
+          AccountBatch.append!(batch, account)
+        end)
+
+      assert {:ok, stream} = Connection.create_accounts(conn, batch)
+      assert [] == Enum.to_list(stream)
     end
   end
 

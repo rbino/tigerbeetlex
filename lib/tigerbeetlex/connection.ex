@@ -27,7 +27,8 @@ defmodule TigerBeetlex.Connection do
       """
     ],
     cluster_id: [
-      type: :non_neg_integer,
+      type: {:custom, TigerBeetlex.ID128, :validate, []},
+      type_doc: "`t:TigerBeetlex.Types.id_128/0`",
       required: true,
       doc: "The TigerBeetle cluster id."
     ],
@@ -85,7 +86,7 @@ defmodule TigerBeetlex.Connection do
       # Start the TigerBeetlex connection
       {:ok, pid} =
         TigerBeetlex.Connection.start_link(
-          cluster_id: 0,
+          cluster_id: <<0::128>>,
           addresses: ["3000"],
           concurrency_max: 32
         )
@@ -93,7 +94,7 @@ defmodule TigerBeetlex.Connection do
       # Start a named TigerBeetlex connection
       {:ok, pid} =
         TigerBeetlex.Connection.start_link(
-          cluster_id: 0,
+          cluster_id: <<0::128>>,
           addresses: ["3000"],
           concurrency_max: 32,
           name: :tb

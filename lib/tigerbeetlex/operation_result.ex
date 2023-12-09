@@ -1,12 +1,13 @@
 defmodule TigerBeetlex.OperationResult do
   @moduledoc false
 
+  @src_path "src/tigerbeetle/src/tigerbeetle.zig"
   # Ensure we recompile this module whe tigerbeetle.zig changes
-  @external_resource "src/tigerbeetle/src/tigerbeetle.zig"
+  @external_resource @src_path
 
   def extract_result_map(enum_name) do
     File.cwd!()
-    |> Path.join("src/tigerbeetle/src/tigerbeetle.zig")
+    |> Path.join(@src_path)
     |> File.read!()
     |> Zig.Parser.parse()
     |> Map.fetch!(:code)

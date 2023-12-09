@@ -12,19 +12,12 @@ defmodule TigerBeetlex.Response do
     Account,
     CreateAccountError,
     CreateTransferError,
+    PacketStatus,
     Transfer
   }
 
-  @type status_ok :: 0
-  @type status_too_much_data :: 1
-  @type status_invalid_operation :: 2
-  @type status_invalid_data_size :: 3
-
-  @type status ::
-          status_ok()
-          | status_too_much_data()
-          | status_invalid_operation()
-          | status_invalid_data_size()
+  @status_map PacketStatus.extract_packet_status_map()
+  @type status :: unquote(PacketStatus.result_map_to_typespec(@status_map))
 
   @type operation_create_accounts :: 128
   @type operation_create_transfers :: 129
@@ -37,11 +30,6 @@ defmodule TigerBeetlex.Response do
           | operation_lookup_accounts()
           | operation_lookup_transfers()
 
-  # Taken from packet.zig
-  @status_ok 0
-  @status_too_much_data 1
-  @status_invalid_operation 2
-  @status_invalid_data_size 3
   @operation_create_accounts 128
   @operation_create_transfers 129
   @operation_lookup_accounts 130
@@ -67,22 +55,18 @@ defmodule TigerBeetlex.Response do
   """
   @spec to_stream(response :: {status :: status(), operation :: operation(), data :: binary()}) ::
           {:ok, Enumerable.t()} | {:error, reason :: atom()}
-  def to_stream({@status_ok, operation, data}) do
-    unfold_fun = unfold_function(operation)
+  for {status, status_integer} <- @status_map do
+    if status == :ok do
+      def to_stream({unquote(status_integer), operation, data}) do
+        unfold_fun = unfold_function(operation)
 
-    {:ok, Stream.unfold(data, unfold_fun)}
-  end
-
-  def to_stream({@status_too_much_data, _operation, _data}) do
-    {:error, :too_much_data}
-  end
-
-  def to_stream({@status_invalid_operation, _operation, _data}) do
-    {:error, :invalid_operation}
-  end
-
-  def to_stream({@status_invalid_data_size, _operation, _data}) do
-    {:error, :invalid_data_size}
+        {:ok, Stream.unfold(data, unfold_fun)}
+      end
+    else
+      def to_stream({unquote(status_integer), _operation, _data}) do
+        {:error, unquote(status)}
+      end
+    end
   end
 
   defp unfold_function(@operation_create_accounts) do

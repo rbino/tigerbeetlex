@@ -10,13 +10,7 @@ defmodule TigerBeetlex.ResponseTest do
 
   alias TigerBeetlex.Response
 
-  # Taken from packet.zig
-  @status [
-    ok: 0,
-    too_much_data: 1,
-    invalid_operation: 2,
-    invalid_data_size: 3
-  ]
+  @status TigerBeetlex.PacketStatus.extract_packet_status_map()
 
   @operation [
     create_accounts: 128,
@@ -26,7 +20,7 @@ defmodule TigerBeetlex.ResponseTest do
   ]
 
   describe "to_stream/1 returns error" do
-    for {error_status_name, _error_status_value} <- Keyword.delete(@status, :ok) do
+    for {error_status_name, _error_status_value} <- Map.delete(@status, :ok) do
       test "for status #{error_status_name}" do
         assert {:error, unquote(error_status_name)} ==
                  unquote(error_status_name)

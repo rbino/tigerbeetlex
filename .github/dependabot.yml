@@ -1,0 +1,12 @@
+version: 2
+updates:
+- package-ecosystem: mix
+  directory: "/"
+  schedule:
+    interval: monthly
+    time: "17:00"
+    timezone: Europe/London
+  ignore:
+      # ignore patch updates in dev dependencies
+    - dependency-name: "credo"
+      update-types: ["version-update:semver-patch"]

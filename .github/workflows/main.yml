@@ -102,10 +102,28 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install and start TigerBeetle
+      - name: Fetch TigerBeetle
         working-directory: ./src/tigerbeetle
         run: |
-          ./bootstrap.sh
+          git fetch --tags --force --quiet
+          version="$(git describe --tags)"
+          os="$(uname)"
+          arch="$(uname -m)"
+          if [ "$os" = "Darwin" ]; then
+              arch="universal"
+              os="macos"
+          elif [ "$os" = "Linux" ]; then
+              os="linux"
+          else
+              echo "Unsupported OS."
+              exit 1
+          fi
+          curl -sLO "https://github.com/tigerbeetle/tigerbeetle/releases/download/$version/tigerbeetle-$arch-$os.zip"
+          unzip -qo "tigerbeetle-$arch-$os.zip"
+
+      - name: Start TigerBeetle
+        working-directory: ./src/tigerbeetle
+        run: |
           ./tigerbeetle format --cluster=0 --replica=0 --replica-count=1 0_0.tigerbeetle
           ./tigerbeetle start --addresses=3000 0_0.tigerbeetle &
 

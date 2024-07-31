@@ -8,13 +8,12 @@ More documentation is coming, for now check out the integration test in the `tes
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `tigerbeetlex` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `tigerbeetlex` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:tigerbeetlex, "~> 0.1.0"}
+    {:tigerbeetlex, github: "rbino/tigerbeetlex", submodules: true}
   ]
 end
 ```

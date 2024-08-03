@@ -22,6 +22,7 @@ pub const vsr_options = .{
     .config_log_level = std.log.Level.info,
     .tracer_backend = .none,
     .hash_log_mode = .none,
+    .release = "0.0.1",
     .config_aof_record = false,
     .config_aof_recovery = false,
 };

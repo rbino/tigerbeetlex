@@ -62,7 +62,8 @@ fn OperationBatchItemType(comptime operation: tb_client.tb_operation_t) type {
         .create_accounts => Account,
         .create_transfers => Transfer,
         .lookup_accounts, .lookup_transfers => u128,
-        .get_account_transfers, .get_account_history => @panic("TODO"),
+        .get_account_transfers, .get_account_balances => @panic("TODO"),
+        .pulse => unreachable,
     };
 }
 

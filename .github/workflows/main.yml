@@ -98,6 +98,9 @@ jobs:
             # These actually are not relevant since brew just pulls the latest version
             otp: "latest"
             elixir: "latest"
+          - os: windows-2022
+            otp: "27.0.1"
+            elixir: "1.17.2"
 
     steps:
       - name: Clone the repository
@@ -117,6 +120,12 @@ jobs:
         run: |
           curl -Lo tigerbeetle.zip https://mac.tigerbeetle.com && unzip tigerbeetle.zip
 
+      - name: Fetch TigerBeetle for Windows
+        if: runner.os == 'Windows'
+        working-directory: ./src/tigerbeetle
+        run: |
+          curl.exe -Lo tigerbeetle.zip https://windows.tigerbeetle.com; Expand-Archive tigerbeetle.zip .
+
       - name: Start TigerBeetle
         working-directory: ./src/tigerbeetle
         run: |
@@ -124,7 +133,7 @@ jobs:
           ./tigerbeetle start --addresses=3000 --development 0_0.tigerbeetle &
 
       - name: Install OTP and Elixir
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' || runner.os == 'Windows'
         uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ matrix.otp }}

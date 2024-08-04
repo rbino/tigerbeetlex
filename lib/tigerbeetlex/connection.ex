@@ -40,14 +40,6 @@ defmodule TigerBeetlex.Connection do
       interpreted as a port on `127.0.0.1`, an IP address + port (e.g. `"127.0.0.1:3000"`), or just
       an IP address (e.g. `"127.0.0.1"`), which defaults to port `3001`.
       """
-    ],
-    concurrency_max: [
-      type: :pos_integer,
-      required: true,
-      doc: """
-      The maximum number of concurrent requests the client can handle. 32 is a good default, and can
-      be increased to 4096 if there's the need of increased throughput.
-      """
     ]
   ]
 
@@ -88,7 +80,6 @@ defmodule TigerBeetlex.Connection do
         TigerBeetlex.Connection.start_link(
           cluster_id: <<0::128>>,
           addresses: ["3000"],
-          concurrency_max: 32
         )
 
       # Start a named TigerBeetlex connection
@@ -96,7 +87,6 @@ defmodule TigerBeetlex.Connection do
         TigerBeetlex.Connection.start_link(
           cluster_id: <<0::128>>,
           addresses: ["3000"],
-          concurrency_max: 32,
           name: :tb
         )
   """
@@ -113,9 +103,8 @@ defmodule TigerBeetlex.Connection do
 
     cluster_id = Keyword.fetch!(tigerbeetlex_opts, :cluster_id)
     addresses = Keyword.fetch!(tigerbeetlex_opts, :addresses)
-    concurrency_max = Keyword.fetch!(tigerbeetlex_opts, :concurrency_max)
 
-    with {:ok, client} <- TigerBeetlex.connect(cluster_id, addresses, concurrency_max) do
+    with {:ok, client} <- TigerBeetlex.connect(cluster_id, addresses) do
       start_opts = Keyword.merge(partition_supervisor_opts, child_spec: {Receiver, client})
       PartitionSupervisor.start_link(start_opts)
     end

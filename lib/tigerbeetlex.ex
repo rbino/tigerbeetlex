@@ -31,9 +31,6 @@ defmodule TigerBeetlex do
   - `addresses` (list of `String.t()`) - The list of node addresses. These can either be a single
   digit (e.g. `"3000"`), which is interpreted as a port on `127.0.0.1`, an IP address + port (e.g.
   `"127.0.0.1:3000"`), or just an IP address (e.g. `"127.0.0.1"`), which defaults to port `3001`.
-  - `concurrency_max` (`pos_integer/0`) - The maximum number of concurrent requests the client can
-  handle. 32 is a good default, and can be increased to 4096 if there's the need of increased
-  throughput.
 
   ## Examples
 
@@ -41,16 +38,14 @@ defmodule TigerBeetlex do
   """
   @spec connect(
           cluster_id :: Types.id_128(),
-          addresses :: [binary()],
-          concurrency_max :: pos_integer()
+          addresses :: [binary()]
         ) ::
           {:ok, t()} | {:error, Types.client_init_error()}
-  def connect(<<_::128>> = cluster_id, addresses, concurrency_max)
-      when is_list(addresses) and is_integer(concurrency_max) and
-             concurrency_max > 0 do
+  def connect(<<_::128>> = cluster_id, addresses)
+      when is_list(addresses) do
     joined_addresses = Enum.join(addresses, ",")
 
-    with {:ok, ref} <- NifAdapter.client_init(cluster_id, joined_addresses, concurrency_max) do
+    with {:ok, ref} <- NifAdapter.client_init(cluster_id, joined_addresses) do
       {:ok, %__MODULE__{ref: ref}}
     end
   end

@@ -28,26 +28,26 @@ pub fn build(b: *std.Build) void {
             "-noshell",
         };
 
-        break :blk b.exec(&argv);
+        break :blk b.run(&argv);
     };
 
     const lib = b.addSharedLibrary(.{
         .name = "tigerbeetlex",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .path = "src/tigerbeetlex.zig" },
+        .root_source_file = .{ .src_path = .{ .owner = b, .sub_path = "src/tigerbeetlex.zig" } },
         .target = target,
         .optimize = optimize,
         .link_libc = true,
     });
-    lib.addSystemIncludePath(.{ .path = erts_include_dir });
+    lib.addSystemIncludePath(.{ .cwd_relative = erts_include_dir });
     // This is needed to avoid errors on MacOS when loading the NIF
     lib.linker_allow_shlib_undefined = true;
 
     // Do this so `lib` doesn't get prepended to the lib name, and `.so` is used as suffix also
     // on MacOS, since it's required by the NIF loading mechanism.
     // See https://github.com/ziglang/zig/issues/2231
-    const nif_so_install = b.addInstallFileWithDir(lib.getOutputSource(), .lib, "tigerbeetlex.so");
+    const nif_so_install = b.addInstallFileWithDir(lib.getEmittedBin(), .lib, "tigerbeetlex.so");
     nif_so_install.step.dependOn(&lib.step);
     b.getInstallStep().dependOn(&nif_so_install.step);
 }

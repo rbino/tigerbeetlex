@@ -7,7 +7,6 @@ alias TigerBeetlex.TransferBatch
     name: :tb,
     cluster_id: <<0::128>>,
     addresses: ["3000"],
-    concurrency_max: 1,
     partitions: 1
   )
 

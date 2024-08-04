@@ -22,16 +22,16 @@ pub const vsr_options = .{
     .config_log_level = std.log.Level.info,
     .tracer_backend = .none,
     .hash_log_mode = .none,
-    .release = "0.0.1",
+    .git_commit = null,
+    // TODO: take these from a proper place
+    .release = "0.15.4",
+    .release_client_min = "0.15.4",
     .config_aof_record = false,
     .config_aof_recovery = false,
 };
 
-// Lower the log level since currently Zig output screws up
-// Elixir output, especially in interactive shells
-// TODO: investigate why.
-pub const std_options = struct {
-    pub const log_level = .err;
+pub const std_options = .{
+    .log_level = .err,
 };
 
 var exported_nifs = [_]nif.FunctionEntry{

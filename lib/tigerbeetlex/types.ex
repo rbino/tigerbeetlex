@@ -74,7 +74,6 @@ defmodule TigerBeetlex.Types do
   @type tigerbeetlex_connection_start_option ::
           {:cluster_id, non_neg_integer()}
           | {:addresses, [String.t()]}
-          | {:concurrency_max, [pos_integer()]}
 
   @type partition_supervisor_start_option :: {atom(), any()}
 

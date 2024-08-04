@@ -6,7 +6,7 @@ defmodule TigerBeetlex.MixProject do
       app: :tigerbeetlex,
       version: "0.1.0",
       elixir: "~> 1.14",
-      install_zig: "0.11.0",
+      install_zig: "0.13.0",
       zig_build_mode: zig_build_mode(Mix.env()),
       compilers: [:build_dot_zig] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,

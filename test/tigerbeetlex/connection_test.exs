@@ -8,8 +8,7 @@ defmodule TigerBeetlex.ConnectionTest do
       valid_opts = [
         name: :tb,
         cluster_id: <<0::128>>,
-        addresses: ["3000"],
-        concurrency_max: 32
+        addresses: ["3000"]
       ]
 
       {:ok, valid_opts: valid_opts}
@@ -25,14 +24,6 @@ defmodule TigerBeetlex.ConnectionTest do
 
     test "raises with invalid addresses", %{valid_opts: opts} do
       opts = Keyword.put(opts, :addresses, 42)
-
-      assert_raise NimbleOptions.ValidationError, fn ->
-        Connection.start_link(opts)
-      end
-    end
-
-    test "raises with invalid concurrency_max", %{valid_opts: opts} do
-      opts = Keyword.put(opts, :concurrency_max, :invalid)
 
       assert_raise NimbleOptions.ValidationError, fn ->
         Connection.start_link(opts)

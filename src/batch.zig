@@ -51,14 +51,14 @@ pub fn append(
         }
         batch.len += 1;
 
-        // We need to pass the item as bytes and copy it with std.mem.copy
+        // We need to pass the item as bytes and copy it with @memcpy
         // because we can't enforce a specifi alignment to the underlying
         // ErlNifBinary, which becomes our slice of bytes
 
         // Get a pointer to the memory backing the newly inserted item
         const new_batch_item_bytes = std.mem.asBytes(&batch.items[batch.len - 1]);
         // Fill it with the input item bytes
-        std.mem.copy(u8, new_batch_item_bytes, item_bytes);
+        @memcpy(new_batch_item_bytes, item_bytes);
     }
 
     return beam.make_ok(env);
@@ -106,14 +106,14 @@ pub fn replace(
             return error.OutOfBounds;
         }
 
-        // We need to pass the item as bytes and copy it with std.mem.copy
+        // We need to pass the item as bytes and copy it with @memcpy
         // because we can't enforce a specific alignment to the underlying
         // ErlNifBinary, which becomes our slice of bytes
 
         // Get a pointer to the memory backing the newly inserted item
         const batch_item_bytes = std.mem.asBytes(&batch.items[idx]);
         // Fill it with the input item bytes
-        std.mem.copy(u8, batch_item_bytes, replacement_item_bytes);
+        @memcpy(batch_item_bytes, replacement_item_bytes);
     }
 
     return beam.make_ok(env);

@@ -116,10 +116,10 @@ fn large_beam_free(
 
 fn aligned_alloc(len: usize, log2_align: u8) ?[*]u8 {
     const alignment = @as(usize, 1) << @as(Allocator.Log2Align, @intCast(log2_align));
-    var unaligned_ptr: [*]u8 = @ptrCast(e.enif_alloc(len + alignment - 1 + @sizeOf(usize)) orelse return null);
+    const unaligned_ptr: [*]u8 = @ptrCast(e.enif_alloc(len + alignment - 1 + @sizeOf(usize)) orelse return null);
     const unaligned_addr = @intFromPtr(unaligned_ptr);
     const aligned_addr = std.mem.alignForward(usize, unaligned_addr + @sizeOf(usize), alignment);
-    var aligned_ptr = unaligned_ptr + (aligned_addr - unaligned_addr);
+    const aligned_ptr = unaligned_ptr + (aligned_addr - unaligned_addr);
     get_header(aligned_ptr).* = unaligned_ptr;
 
     return aligned_ptr;

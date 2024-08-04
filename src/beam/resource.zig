@@ -49,7 +49,7 @@ pub fn Resource(comptime T: anytype, comptime deinit_fn: ?DeinitFn) type {
 
         /// Allocates the memory of the resource
         pub fn alloc() !Self {
-            var raw_ptr: ?*anyopaque = e.enif_alloc_resource(res_type(), @sizeOf(T));
+            const raw_ptr: ?*anyopaque = e.enif_alloc_resource(res_type(), @sizeOf(T));
 
             if (raw_ptr) |p| {
                 return Self{ .raw_ptr = p };

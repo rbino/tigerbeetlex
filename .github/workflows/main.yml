@@ -9,16 +9,16 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: true
       matrix:
-        otp: ["25.3"]
-        elixir: ["1.14"]
-        zig: ["0.11.0"]
+        otp: ["27.0.1"]
+        elixir: ["1.17.2"]
+        zig: ["0.13.0"]
     steps:
       - name: Clone the repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -35,7 +35,7 @@ jobs:
 
       - name: Cache dependencies
         id: cache-deps
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             deps
@@ -65,7 +65,7 @@ jobs:
       # Don't cache PLTs based on mix.lock hash, as Dialyzer can incrementally update even old ones
       # Cache key based on Elixir & Erlang version (also useful when running in matrix)
       - name: Cache Dialyzer's PLT
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-plt
         with:
           path: priv/plts
@@ -90,42 +90,38 @@ jobs:
             otp: "25.3"
             elixir: "1.14"
           - os: ubuntu-22.04
-            otp: "26.0.2"
-            elixir: "1.15.2"
-          - os: macos-latest
-            otp: "26.0.2"
-            elixir: "1.15.2"
+            otp: "27.0.1"
+            elixir: "1.17.2"
+          # Use macos-13 since macos-lates doesn't seem to support AES hardware acceleration,
+          # which makes TigerBeetle fail at compile time
+          - os: macos-13
+            # These actually are not relevant since brew just pulls the latest version
+            otp: "latest"
+            elixir: "latest"
 
     steps:
       - name: Clone the repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Fetch TigerBeetle
+      - name: Fetch TigerBeetle for Linux
+        if: runner.os == 'Linux'
         working-directory: ./src/tigerbeetle
         run: |
-          git fetch --tags --force --quiet
-          version="$(git describe --tags)"
-          os="$(uname)"
-          arch="$(uname -m)"
-          if [ "$os" = "Darwin" ]; then
-              arch="universal"
-              os="macos"
-          elif [ "$os" = "Linux" ]; then
-              os="linux"
-          else
-              echo "Unsupported OS."
-              exit 1
-          fi
-          curl -sLO "https://github.com/tigerbeetle/tigerbeetle/releases/download/$version/tigerbeetle-$arch-$os.zip"
-          unzip -qo "tigerbeetle-$arch-$os.zip"
+          curl -Lo tigerbeetle.zip https://linux.tigerbeetle.com && unzip tigerbeetle.zip
+
+      - name: Fetch TigerBeetle for Mac
+        if: runner.os == 'macOS'
+        working-directory: ./src/tigerbeetle
+        run: |
+          curl -Lo tigerbeetle.zip https://mac.tigerbeetle.com && unzip tigerbeetle.zip
 
       - name: Start TigerBeetle
         working-directory: ./src/tigerbeetle
         run: |
-          ./tigerbeetle format --cluster=0 --replica=0 --replica-count=1 0_0.tigerbeetle
-          ./tigerbeetle start --addresses=3000 0_0.tigerbeetle &
+          ./tigerbeetle format --cluster=0 --replica=0 --replica-count=1 --development 0_0.tigerbeetle
+          ./tigerbeetle start --addresses=3000 --development 0_0.tigerbeetle &
 
       - name: Install OTP and Elixir
         if: runner.os == 'Linux'
@@ -142,7 +138,7 @@ jobs:
 
       - name: Cache dependencies
         id: cache-deps
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             deps

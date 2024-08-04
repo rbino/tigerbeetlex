@@ -13,11 +13,10 @@ defmodule TigerBeetlex.NifAdapter do
 
   @spec client_init(
           cluster_id :: Types.id_128(),
-          addresses :: binary(),
-          concurrency_max :: pos_integer()
+          addresses :: binary()
         ) ::
           {:ok, Types.client()} | {:error, Types.client_init_error()}
-  def client_init(_cluster_id, _addresses, _concurrency_max) do
+  def client_init(_cluster_id, _addresses) do
     :erlang.nif_error(:nif_not_loaded)
   end
 

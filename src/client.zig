@@ -22,14 +22,14 @@ const RequestContext = struct {
     caller_pid: beam.Pid,
     request_ref_binary: beam.Binary,
     payload_raw_obj: *anyopaque,
+    client_raw_obj: *anyopaque,
 };
 
-pub fn init(env: beam.Env, cluster_id: u128, addresses: []const u8, concurrency_max: u32) beam.Term {
+pub fn init(env: beam.Env, cluster_id: u128, addresses: []const u8) beam.Term {
     const client: tb_client.tb_client_t = tb_client.init(
         beam.general_purpose_allocator,
         cluster_id,
         addresses,
-        concurrency_max,
         @intFromPtr(beam.alloc_env()),
         on_completion,
     ) catch |err| switch (err) {
@@ -37,7 +37,6 @@ pub fn init(env: beam.Env, cluster_id: u128, addresses: []const u8, concurrency_
         error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
         error.AddressInvalid => return beam.make_error_atom(env, "invalid_address"),
         error.AddressLimitExceeded => return beam.make_error_atom(env, "address_limit_exceeded"),
-        error.ConcurrencyMaxInvalid => return beam.make_error_atom(env, "invalid_concurrency_max"),
         error.SystemResources => return beam.make_error_atom(env, "system_resources"),
         error.NetworkSubsystemFailed => return beam.make_error_atom(env, "network_subsystem"),
     };
@@ -62,6 +61,8 @@ fn OperationBatchItemType(comptime operation: tb_client.tb_operation_t) type {
         .create_accounts => Account,
         .create_transfers => Transfer,
         .lookup_accounts, .lookup_transfers => u128,
+        .get_account_transfers, .get_account_balances, .query_accounts, .query_transfers => @panic("TODO"),
+        .pulse => unreachable,
     };
 }
 
@@ -115,16 +116,13 @@ fn submit(
     const client = client_resource.value();
     const payload = payload_resource.ptr_const();
 
-    var out_packet: ?*tb_client.tb_packet_t = undefined;
-    const status = tb_client.acquire_packet(client, &out_packet);
-    const packet = switch (status) {
-        .ok => if (out_packet) |pkt| pkt else @panic("acquire packet returned null"),
-        .concurrency_max_exceeded => return error.TooManyRequests,
-        .shutdown => return error.Shutdown,
+    const packet = beam.general_purpose_allocator.create(tb_client.tb_packet_t) catch {
+        return error.OutOfMemory;
     };
-    errdefer tb_client.release_packet(client, packet);
+    errdefer beam.general_purpose_allocator.destroy(packet);
 
     var ctx: *RequestContext = try beam.general_purpose_allocator.create(RequestContext);
+    errdefer beam.general_purpose_allocator.destroy(ctx);
 
     // We're calling this from a process bound env so we expect not to fail
     ctx.caller_pid = process.self(env) catch unreachable;
@@ -140,8 +138,13 @@ fn submit(
     // collected until we release it
     payload_resource.keep();
 
-    // We save the raw pointer in the context so we can release it later
+    // We do the same with the client to make sure we don't deinit it until all requests
+    // have been handled
+    client_resource.keep();
+
+    // We save the raw pointers in the context so we can release it later
     ctx.payload_raw_obj = payload_resource.raw_ptr;
+    ctx.client_raw_obj = client_resource.raw_ptr;
 
     packet.operation = @intFromEnum(operation);
     packet.data = payload.items.ptr;
@@ -161,11 +164,14 @@ fn on_completion(
     result_ptr: ?[*]const u8,
     result_len: u32,
 ) callconv(.C) void {
-    var ctx: *RequestContext = @ptrCast(@alignCast(packet.user_data.?));
+    _ = client;
+    const ctx: *RequestContext = @ptrCast(@alignCast(packet.user_data.?));
     defer beam.general_purpose_allocator.destroy(ctx);
 
     // We don't need the payload anymore, let the garbage collector take care of it
     resource.raw_release(ctx.payload_raw_obj);
+    // Same for the client
+    resource.raw_release(ctx.client_raw_obj);
 
     const env: beam.Env = @ptrFromInt(context);
     defer beam.clear_env(env);
@@ -178,6 +184,7 @@ fn on_completion(
 
     const status = beam.make_u8(env, @intFromEnum(packet.status));
     const operation = beam.make_u8(env, packet.operation);
+    beam.general_purpose_allocator.destroy(packet);
     const result = if (result_ptr) |p|
         beam.make_slice(env, p[0..result_len])
     else
@@ -187,9 +194,6 @@ fn on_completion(
     const tag = beam.make_atom(env, "tigerbeetlex_response");
     const msg = beam.make_tuple(env, .{ tag, ref, response });
 
-    // We're done with the packet, put it back in the pool
-    tb_client.release_packet(client, packet);
-
     // Send the result to the caller
     process.send(caller_pid, env, msg) catch unreachable;
 }
@@ -197,9 +201,10 @@ fn on_completion(
 fn client_resource_deinit_fn(_: beam.Env, ptr: ?*anyopaque) callconv(.C) void {
     if (ptr) |p| {
         const cl: *Client = @ptrCast(@alignCast(p));
-        // TODO: this can now potentially block for a long time since it waits
-        // for all the requests to be drained, investigate what it is blocking
-        // and if this needs to be done in a separate thread
-        tb_client.deinit(cl.*);
+        defer tb_client.deinit(cl.*);
+
+        const completion_ctx = tb_client.completion_context(cl.*);
+        const env: beam.Env = @ptrFromInt(completion_ctx);
+        beam.free_env(env);
     } else unreachable;
 }

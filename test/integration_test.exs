@@ -14,14 +14,13 @@ defmodule TigerBeetlex.IntegrationTest do
     TransferBatch
   }
 
-  setup do
+  setup_all do
     name = :tb
 
     args = [
       name: name,
       cluster_id: <<0::128>>,
-      addresses: ["3000"],
-      concurrency_max: 32
+      addresses: ["3000"]
     ]
 
     _pid = start_supervised!({Connection, args})
@@ -193,7 +192,8 @@ defmodule TigerBeetlex.IntegrationTest do
     end
 
     test "max batch size account creation", %{conn: conn} do
-      max_batch_size = 8190
+      # 254 since it runs against a --development instance
+      max_batch_size = 254
 
       batch =
         Enum.reduce(1..max_batch_size, AccountBatch.new!(max_batch_size), fn _idx, batch ->

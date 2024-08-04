@@ -13,10 +13,10 @@ defmodule TigerBeetlex.ResponseTest do
   @status TigerBeetlex.PacketStatus.extract_packet_status_map()
 
   @operation [
-    create_accounts: 128,
-    create_transfers: 129,
-    lookup_accounts: 130,
-    lookup_transfers: 131
+    create_accounts: 129,
+    create_transfers: 130,
+    lookup_accounts: 131,
+    lookup_transfers: 132
   ]
 
   describe "to_stream/1 returns error" do

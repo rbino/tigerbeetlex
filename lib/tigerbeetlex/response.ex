@@ -19,10 +19,10 @@ defmodule TigerBeetlex.Response do
   @status_map PacketStatus.extract_packet_status_map()
   @type status :: unquote(PacketStatus.result_map_to_typespec(@status_map))
 
-  @type operation_create_accounts :: 128
-  @type operation_create_transfers :: 129
-  @type operation_lookup_accounts :: 130
-  @type operation_lookup_transfers :: 131
+  @type operation_create_accounts :: 129
+  @type operation_create_transfers :: 130
+  @type operation_lookup_accounts :: 131
+  @type operation_lookup_transfers :: 132
 
   @type operation ::
           operation_create_accounts()
@@ -30,10 +30,10 @@ defmodule TigerBeetlex.Response do
           | operation_lookup_accounts()
           | operation_lookup_transfers()
 
-  @operation_create_accounts 128
-  @operation_create_transfers 129
-  @operation_lookup_accounts 130
-  @operation_lookup_transfers 131
+  @operation_create_accounts 129
+  @operation_create_transfers 130
+  @operation_lookup_accounts 131
+  @operation_lookup_transfers 132
 
   typedstruct opaque: true do
     field :operation, non_neg_integer()

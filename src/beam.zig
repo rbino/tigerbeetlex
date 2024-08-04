@@ -91,7 +91,7 @@ pub fn make_error_atom(env: Env, atom_str: []const u8) Term {
 pub fn make_slice(env: Env, val: []const u8) Term {
     var result: Term = undefined;
     var bin: [*]u8 = @ptrCast(e.enif_make_new_binary(env, val.len, &result));
-    std.mem.copy(u8, bin[0..val.len], val);
+    @memcpy(bin[0..val.len], val);
 
     return result;
 }
@@ -140,7 +140,7 @@ pub fn get_u128(env: Env, src_term: Term) GetError!u128 {
     // We represent the u128 as a 16 byte binary, little endian (required by TigerBeetle)
     if (bin.len != required_length) return GetError.ArgumentError;
 
-    return std.mem.readIntLittle(u128, bin[0..required_length]);
+    return std.mem.readInt(u128, bin[0..required_length], .little);
 }
 
 /// Extract a u64 from a term
@@ -197,4 +197,9 @@ pub fn alloc_env() Env {
 /// Clears a process independent environment
 pub fn clear_env(env: Env) void {
     e.enif_clear_env(env);
+}
+
+/// Frees a process independent environment
+pub fn free_env(env: Env) void {
+    e.enif_free_env(env);
 }

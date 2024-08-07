@@ -26,23 +26,37 @@ be found at <https://hexdocs.pm/tigerbeetlex>.
 
 ### Setup
 
-```bash
-$ git clone --recurse-submodules https://github.com/rbino/tigerbeetlex.git 
-$ cd tigerbeetlex/src/tigerbeetle
-$ scripts/install.sh
-$ ./tigerbeetle format --cluster=0 --replica=0 --replica-count=1 0_0.tigerbeetle
-$ ./tigerbeetle start --addresses=3000 0_0.tigerbeetle
-```
-
-see the [TigerBeetle documentation](https://docs.tigerbeetle.com/) for more info.
-In a new terminal session:
+Clone the repo and fetch dependencies:
 
 ```bash
+$ git clone --recurse-submodules https://github.com/rbino/tigerbeetlex.git
 $ cd tigerbeetlex
 $ mix deps.get
 ```
 
-and finally ensure the tests pass:
+In a new terminal session, download TigerBeetle using the right command for your OS:
+
+```bash
+# Linux
+curl -Lo tigerbeetle.zip https://linux.tigerbeetle.com && unzip tigerbeetle.zip
+
+# macOS
+curl -Lo tigerbeetle.zip https://mac.tigerbeetle.com && unzip tigerbeetle.zip
+
+# Windows
+powershell -command "curl.exe -Lo tigerbeetle.zip https://windows.tigerbeetle.com; Expand-Archive tigerbeetle.zip"
+```
+
+Then create the data file and start your development cluster
+
+```bash
+./tigerbeetle format --cluster=0 --replica=0 --replica-count=1 --development 0_0.tigerbeetle
+./tigerbeetle start --addresses=3000 --development 0_0.tigerbeetle
+```
+
+See the [TigerBeetle documentation](https://docs.tigerbeetle.com/) for more info.
+
+Finally, in the first terminal, ensure the tests pass:
 
 ```bash
 $ mix test
@@ -50,7 +64,7 @@ $ mix test
 
 ## License
 
-Copyright 2023 Riccardo Binetti
+Copyright 2023-2024 Riccardo Binetti
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
 compliance with the License. You may obtain a copy of the License at

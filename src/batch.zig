@@ -4,7 +4,7 @@ const RwLock = std.Thread.RwLock;
 const beam = @import("beam.zig");
 const Resource = beam.resource.Resource;
 
-const tb = @import("tigerbeetle/src/tigerbeetle.zig");
+const tb = @import("vsr").tigerbeetle;
 const Account = tb.Account;
 const Transfer = tb.Transfer;
 

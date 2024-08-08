@@ -1,6 +1,12 @@
 defmodule TigerBeetlex.MixProject do
   use Mix.Project
 
+  @release_regex ~r{https://github.com/tigerbeetle/tigerbeetle/archive/refs/tags/(?<release>[0-9]+\.[0-9]+\.[0-9]+)\.tar\.gz}
+
+  @tigerbeetle_release File.read!("build.zig.zon")
+                       |> then(&Regex.named_captures(@release_regex, &1))
+                       |> Map.fetch!("release")
+
   def project do
     [
       app: :tigerbeetlex,
@@ -8,6 +14,7 @@ defmodule TigerBeetlex.MixProject do
       elixir: "~> 1.14",
       install_zig: "0.13.0",
       zig_build_mode: zig_build_mode(Mix.env()),
+      zig_extra_options: [tigerbeetle_release: @tigerbeetle_release],
       compilers: [:build_dot_zig] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       dialyzer: [plt_add_apps: [:zig_parser]],

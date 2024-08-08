@@ -6,8 +6,8 @@ const process = beam.process;
 const resource = beam.resource;
 const Resource = resource.Resource;
 
-const tb = @import("tigerbeetle/src/tigerbeetle.zig");
-const tb_client = @import("tigerbeetle/src/clients/c/tb_client.zig");
+const tb = @import("vsr").tigerbeetle;
+const tb_client = @import("vsr").tb_client;
 const Account = tb.Account;
 const Transfer = tb.Transfer;
 

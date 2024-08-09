@@ -43,6 +43,17 @@ pub fn build(b: *std.Build) !void {
     };
     const vsr_mod = b.dependency("tigerbeetle", opts).module("vsr");
 
+    const elixir_bindings_generator = b.addExecutable(.{
+        .name = "elixir_bindings",
+        .root_source_file = b.path("tools/elixir_bindings.zig"),
+        .target = b.graph.host,
+    });
+    elixir_bindings_generator.root_module.addImport("vsr", vsr_mod);
+
+    const elixir_bindings_generator_step = b.addRunArtifact(elixir_bindings_generator);
+    const generate = b.step("bindings", "Generates the Elixir bindings from TigerBeetle source");
+    generate.dependOn(&elixir_bindings_generator_step.step);
+
     const lib = b.addSharedLibrary(.{
         .name = "tigerbeetlex",
         // In this case the main source file is merely a path, however, in more

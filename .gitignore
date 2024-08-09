@@ -27,6 +27,7 @@ tigerbeetlex-*.tar
 
 # Sometimes created in the root folder
 zig-cache/
+.zig-cache/
 
 # Ignore .elixir_ls generated folder
 .elixir_ls/

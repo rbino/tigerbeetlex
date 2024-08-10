@@ -52,6 +52,34 @@ const type_mappings = .{
         .hidden_fields = &.{"padding"},
         .docs_link = "reference/query-filter#flags",
     } },
+    .{ tb.Account, TypeMapping{
+        .file_name = "account",
+        .module_name = "Account",
+        .docs_link = "reference/account#",
+    } },
+    .{ tb.AccountBalance, TypeMapping{
+        .file_name = "account_balance",
+        .module_name = "AccountBalance",
+        .hidden_fields = &.{"reserved"},
+        .docs_link = "reference/account-balances#",
+    } },
+    .{ tb.Transfer, TypeMapping{
+        .file_name = "transfer",
+        .module_name = "Transfer",
+        .docs_link = "reference/transfer#",
+    } },
+    .{ tb.QueryFilter, TypeMapping{
+        .file_name = "query_filter",
+        .module_name = "QueryFilter",
+        .hidden_fields = &.{"reserved"},
+        .docs_link = "reference/query-filter#",
+    } },
+    .{ tb.AccountFilter, TypeMapping{
+        .file_name = "account_filter",
+        .module_name = "AccountFilter",
+        .hidden_fields = &.{"reserved"},
+        .docs_link = "reference/account-filter#",
+    } },
 };
 
 fn emit_flags(
@@ -101,6 +129,48 @@ fn emit_flags(
     , .{});
 }
 
+fn emit_struct(
+    buffer: *std.ArrayList(u8),
+    comptime type_info: anytype,
+    comptime mapping: TypeMapping,
+) !void {
+    assert(type_info.layout == .@"extern");
+
+    try buffer.writer().print(
+        \\{[notice]s}
+        \\defmodule TigerBeetlex.{[module_name]s} do
+        \\
+    , .{
+        .notice = auto_generated_code_notice,
+        .module_name = mapping.module_name,
+    });
+
+    try emit_docs(buffer, mapping, null);
+
+    try buffer.writer().print(
+        \\
+        \\  defstruct [
+    , .{});
+
+    inline for (type_info.fields, 0..) |field, i| {
+        if (comptime mapping.hidden(field.name)) continue;
+
+        const leading_separator = if (i == 0) "\n" else ",\n";
+
+        try buffer.writer().print("{[leading_separator]s}    :{[field]s}", .{
+            .leading_separator = leading_separator,
+            .field = field.name,
+        });
+    }
+
+    try buffer.writer().print(
+        \\
+        \\  ]
+        \\end
+        \\
+    , .{});
+}
+
 fn emit_docs(
     buffer: anytype,
     comptime mapping: TypeMapping,
@@ -133,7 +203,7 @@ pub fn generate_bindings(
                 "Only packed or extern structs are supported: " ++ @typeName(ZigType),
             ),
             .@"packed" => try emit_flags(buffer, info, mapping),
-            .@"extern" => @panic("TODO"),
+            .@"extern" => try emit_struct(buffer, info, mapping),
         },
         .Enum => @panic("TODO"),
         else => @compileError("Type cannot be represented: " ++ @typeName(ZigType)),

@@ -16,4 +16,20 @@ defmodule TigerBeetlex.QueryFilterFlags do
   def reversed(current \\ 0) do
     current ||| 1 <<< 0
   end
+
+  @doc """
+  Given an integer flags value, returns a list of atoms indicating which flags are set.
+  """
+  def int_to_flags(int_value) when is_integer(int_value) do
+    flags = []
+
+    flags =
+      if (int_value &&& reversed()) != 0 do
+        [:reversed | flags]
+      else
+        flags
+      end
+
+    Enum.reverse(flags)
+  end
 end

@@ -134,6 +134,37 @@ fn emit_flags(
 
     try buffer.writer().print(
         \\
+        \\
+        \\  @doc """
+        \\  Given an integer flags value, returns a list of atoms indicating which flags are set.
+        \\  """
+        \\  def int_to_flags(int_value) when is_integer(int_value) do
+        \\    flags = []
+        \\
+    , .{});
+
+    inline for (type_info.fields) |field| {
+        if (comptime mapping.hidden(field.name)) continue;
+
+        try buffer.writer().print(
+            \\
+            \\    flags =
+            \\      if (int_value &&& {[function_name]s}()) != 0 do
+            \\        [:{[flag_name]s} | flags]
+            \\      else
+            \\        flags
+            \\      end
+            \\
+        , .{
+            .function_name = field.name,
+            .flag_name = field.name,
+        });
+    }
+
+    try buffer.writer().print(
+        \\
+        \\    Enum.reverse(flags)
+        \\  end
         \\end
         \\
     , .{});

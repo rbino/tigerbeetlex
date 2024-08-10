@@ -51,4 +51,55 @@ defmodule TigerBeetlex.TransferFlags do
   def balancing_credit(current \\ 0) do
     current ||| 1 <<< 5
   end
+
+  @doc """
+  Given an integer flags value, returns a list of atoms indicating which flags are set.
+  """
+  def int_to_flags(int_value) when is_integer(int_value) do
+    flags = []
+
+    flags =
+      if (int_value &&& linked()) != 0 do
+        [:linked | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& pending()) != 0 do
+        [:pending | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& post_pending_transfer()) != 0 do
+        [:post_pending_transfer | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& void_pending_transfer()) != 0 do
+        [:void_pending_transfer | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& balancing_debit()) != 0 do
+        [:balancing_debit | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& balancing_credit()) != 0 do
+        [:balancing_credit | flags]
+      else
+        flags
+      end
+
+    Enum.reverse(flags)
+  end
 end

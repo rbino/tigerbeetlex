@@ -80,6 +80,16 @@ const type_mappings = .{
         .hidden_fields = &.{"reserved"},
         .docs_link = "reference/account-filter#",
     } },
+    .{ tb.CreateAccountResult, TypeMapping{
+        .file_name = "create_account_result",
+        .module_name = "CreateAccountResult",
+        .docs_link = "reference/requests/create_accounts#",
+    } },
+    .{ tb.CreateTransferResult, TypeMapping{
+        .file_name = "create_transfer_result",
+        .module_name = "CreateTransferResult",
+        .docs_link = "reference/requests/create_transfers#",
+    } },
 };
 
 fn emit_flags(
@@ -171,6 +181,42 @@ fn emit_struct(
     , .{});
 }
 
+fn emit_enum(
+    buffer: *std.ArrayList(u8),
+    comptime Type: type,
+    comptime mapping: TypeMapping,
+) !void {
+    try buffer.writer().print(
+        \\{[notice]s}
+        \\defmodule TigerBeetlex.{[module_name]s} do
+        \\
+    , .{
+        .notice = auto_generated_code_notice,
+        .module_name = mapping.module_name,
+    });
+
+    try emit_docs(buffer, mapping, null);
+
+    const type_info = @typeInfo(Type).Enum;
+    inline for (type_info.fields) |field| {
+        if (comptime mapping.hidden(field.name)) continue;
+
+        try buffer.writer().print(
+            \\
+            \\  def to_atom({[int_value]d}), do: :{[field]s}
+        , .{
+            .int_value = @intFromEnum(@field(Type, field.name)),
+            .field = field.name,
+        });
+    }
+
+    try buffer.writer().print(
+        \\
+        \\end
+        \\
+    , .{});
+}
+
 fn emit_docs(
     buffer: anytype,
     comptime mapping: TypeMapping,
@@ -205,7 +251,7 @@ pub fn generate_bindings(
             .@"packed" => try emit_flags(buffer, info, mapping),
             .@"extern" => try emit_struct(buffer, info, mapping),
         },
-        .Enum => @panic("TODO"),
+        .Enum => try emit_enum(buffer, ZigType, mapping),
         else => @compileError("Type cannot be represented: " ++ @typeName(ZigType)),
     }
 }

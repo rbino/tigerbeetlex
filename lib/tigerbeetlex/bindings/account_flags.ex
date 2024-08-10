@@ -37,4 +37,41 @@ defmodule TigerBeetlex.AccountFlags do
   def history(current \\ 0) do
     current ||| 1 <<< 3
   end
+
+  @doc """
+  Given an integer flags value, returns a list of atoms indicating which flags are set.
+  """
+  def int_to_flags(int_value) when is_integer(int_value) do
+    flags = []
+
+    flags =
+      if (int_value &&& linked()) != 0 do
+        [:linked | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& debits_must_not_exceed_credits()) != 0 do
+        [:debits_must_not_exceed_credits | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& credits_must_not_exceed_debits()) != 0 do
+        [:credits_must_not_exceed_debits | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& history()) != 0 do
+        [:history | flags]
+      else
+        flags
+      end
+
+    Enum.reverse(flags)
+  end
 end

@@ -34,7 +34,7 @@ defmodule TigerBeetlex do
 
   ## Examples
 
-      {:ok, client} = TigerBeetlex.connect(<<0::128>>, ["3000"], 32)
+      {:ok, client} = TigerBeetlex.connect(<<0::128>>, ["3000"])
   """
   @spec connect(
           cluster_id :: Types.id_128(),

@@ -812,6 +812,21 @@ defmodule TigerBeetlex.IntegrationTest do
     end
   end
 
+  describe "query_accounts/2" do
+    test "query accounts by timestamp_min" do
+      # create account
+      # sleep 1 ms
+      timestamp = System.os_time(:nanosecond)
+      # create second account
+      query_filter = %TigerBeetlex.QueryFilter{
+        timestamp_min: timestamp,
+        flags: %TigerBeetlex.QueryFilter.Flags{}
+      }
+
+      # assert query accounts returns only second account
+    end
+  end
+
   defp random_id do
     Uniq.UUID.uuid7(:raw)
   end

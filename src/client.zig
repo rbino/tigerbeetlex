@@ -60,8 +60,8 @@ fn OperationBatchItemType(comptime operation: tb_client.tb_operation_t) type {
     return switch (operation) {
         .create_accounts => Account,
         .create_transfers => Transfer,
-        .lookup_accounts, .lookup_transfers => u128,
-        .get_account_transfers, .get_account_balances, .query_accounts, .query_transfers => @panic("TODO"),
+        .lookup_accounts, .lookup_transfers, .query_accounts => u128,
+        .get_account_transfers, .get_account_balances, .query_transfers => @panic("TODO"),
         .pulse => unreachable,
     };
 }
@@ -76,6 +76,7 @@ const SubmitError = error{
 pub const create_accounts = get_submit_fn(.create_accounts);
 pub const create_transfers = get_submit_fn(.create_transfers);
 pub const lookup_accounts = get_submit_fn(.lookup_accounts);
+pub const query_accounts = get_submit_fn(.query_accounts);
 pub const lookup_transfers = get_submit_fn(.lookup_transfers);
 
 fn get_submit_fn(comptime operation: tb_client.tb_operation_t) (fn (

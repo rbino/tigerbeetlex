@@ -25,6 +25,8 @@ defmodule TigerBeetlex.Types do
 
   @type user_data_32 :: <<_::32>>
 
+  @type query_filter :: <<_::64>>
+
   @type client_init_error ::
           :unexpected
           | :out_of_memory

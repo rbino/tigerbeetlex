@@ -55,10 +55,12 @@ defmodule TigerBeetlex.QueryFilter do
 
     <<user_data_128_default(user_data_128)::binary-size(16),
       user_data_64_default(user_data_64)::binary-size(8),
-      user_data_32_default(user_data_32)::binary-size(4), ledger::unsigned-little-32,
-      code::unsigned-little-16, timestamp_min::unsigned-little-64,
-      timestamp_max::unsigned-little-64, limit::unsigned-little-32, limit::unsigned-little-32,
-      flags_u32::unsigned-little-32, reserved::binary>>
+      user_data_32_default(user_data_32)::binary-size(4),
+      value_or_zero(ledger)::unsigned-little-32, value_or_zero(code)::unsigned-little-16,
+      value_or_zero(timestamp_min)::unsigned-little-64,
+      value_or_zero(timestamp_max)::unsigned-little-64, value_or_zero(limit)::unsigned-little-32,
+      value_or_zero(limit)::unsigned-little-32, value_or_zero(flags_u32)::unsigned-little-32,
+      reserved::binary>>
   end
 
   defp user_data_128_default(nil), do: <<0::unit(8)-size(16)>>
@@ -69,4 +71,7 @@ defmodule TigerBeetlex.QueryFilter do
 
   defp user_data_32_default(nil), do: <<0::unit(8)-size(4)>>
   defp user_data_32_default(value), do: value
+
+  defp value_or_zero(nil), do: 0
+  defp value_or_zero(value), do: value
 end

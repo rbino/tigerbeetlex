@@ -5,7 +5,7 @@
 
 defmodule TigerBeetlex.CreateAccountResult do
   @moduledoc """
-  See [CreateAccountResult](https://docs.tigerbeetle.com/reference/requests/create_accounts#).
+  See [CreateAccountResult](https://docs.tigerbeetle.com/reference/requests/create_accounts#result).
   """
   def to_atom(0), do: :ok
   def to_atom(1), do: :linked_event_failed
@@ -34,4 +34,32 @@ defmodule TigerBeetlex.CreateAccountResult do
   def to_atom(13), do: :ledger_must_not_be_zero
   def to_atom(14), do: :code_must_not_be_zero
   def to_atom(26), do: :imported_event_timestamp_must_not_regress
+
+  def from_atom(:ok), do: 0
+  def from_atom(:linked_event_failed), do: 1
+  def from_atom(:linked_event_chain_open), do: 2
+  def from_atom(:imported_event_expected), do: 22
+  def from_atom(:imported_event_not_expected), do: 23
+  def from_atom(:timestamp_must_be_zero), do: 3
+  def from_atom(:imported_event_timestamp_out_of_range), do: 24
+  def from_atom(:imported_event_timestamp_must_not_advance), do: 25
+  def from_atom(:reserved_field), do: 4
+  def from_atom(:reserved_flag), do: 5
+  def from_atom(:id_must_not_be_zero), do: 6
+  def from_atom(:id_must_not_be_int_max), do: 7
+  def from_atom(:exists_with_different_flags), do: 15
+  def from_atom(:exists_with_different_user_data_128), do: 16
+  def from_atom(:exists_with_different_user_data_64), do: 17
+  def from_atom(:exists_with_different_user_data_32), do: 18
+  def from_atom(:exists_with_different_ledger), do: 19
+  def from_atom(:exists_with_different_code), do: 20
+  def from_atom(:exists), do: 21
+  def from_atom(:flags_are_mutually_exclusive), do: 8
+  def from_atom(:debits_pending_must_be_zero), do: 9
+  def from_atom(:debits_posted_must_be_zero), do: 10
+  def from_atom(:credits_pending_must_be_zero), do: 11
+  def from_atom(:credits_posted_must_be_zero), do: 12
+  def from_atom(:ledger_must_not_be_zero), do: 13
+  def from_atom(:code_must_not_be_zero), do: 14
+  def from_atom(:imported_event_timestamp_must_not_regress), do: 26
 end

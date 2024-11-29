@@ -83,12 +83,12 @@ const type_mappings = .{
     .{ tb.CreateAccountResult, TypeMapping{
         .file_name = "create_account_result",
         .module_name = "CreateAccountResult",
-        .docs_link = "reference/requests/create_accounts#",
+        .docs_link = "reference/requests/create_accounts#result",
     } },
     .{ tb.CreateTransferResult, TypeMapping{
         .file_name = "create_transfer_result",
         .module_name = "CreateTransferResult",
-        .docs_link = "reference/requests/create_transfers#",
+        .docs_link = "reference/requests/create_transfers#result",
     } },
 };
 
@@ -322,6 +322,20 @@ fn emit_enum(
         try buffer.writer().print(
             \\
             \\  def to_atom({[int_value]d}), do: :{[field]s}
+        , .{
+            .int_value = @intFromEnum(@field(Type, field.name)),
+            .field = field.name,
+        });
+    }
+
+    try buffer.writer().print("\n", .{});
+
+    inline for (type_info.fields) |field| {
+        if (comptime mapping.hidden(field.name)) continue;
+
+        try buffer.writer().print(
+            \\
+            \\  def from_atom(:{[field]s}), do: {[int_value]}
         , .{
             .int_value = @intFromEnum(@field(Type, field.name)),
             .field = field.name,

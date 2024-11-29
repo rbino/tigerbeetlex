@@ -5,7 +5,7 @@
 
 defmodule TigerBeetlex.CreateTransferResult do
   @moduledoc """
-  See [CreateTransferResult](https://docs.tigerbeetle.com/reference/requests/create_transfers#).
+  See [CreateTransferResult](https://docs.tigerbeetle.com/reference/requests/create_transfers#result).
   """
   def to_atom(0), do: :ok
   def to_atom(1), do: :linked_event_failed
@@ -76,4 +76,74 @@ defmodule TigerBeetlex.CreateTransferResult do
   def to_atom(53), do: :overflows_timeout
   def to_atom(54), do: :exceeds_credits
   def to_atom(55), do: :exceeds_debits
+
+  def from_atom(:ok), do: 0
+  def from_atom(:linked_event_failed), do: 1
+  def from_atom(:linked_event_chain_open), do: 2
+  def from_atom(:imported_event_expected), do: 56
+  def from_atom(:imported_event_not_expected), do: 57
+  def from_atom(:timestamp_must_be_zero), do: 3
+  def from_atom(:imported_event_timestamp_out_of_range), do: 58
+  def from_atom(:imported_event_timestamp_must_not_advance), do: 59
+  def from_atom(:reserved_flag), do: 4
+  def from_atom(:id_must_not_be_zero), do: 5
+  def from_atom(:id_must_not_be_int_max), do: 6
+  def from_atom(:exists_with_different_flags), do: 36
+  def from_atom(:exists_with_different_pending_id), do: 40
+  def from_atom(:exists_with_different_timeout), do: 44
+  def from_atom(:exists_with_different_debit_account_id), do: 37
+  def from_atom(:exists_with_different_credit_account_id), do: 38
+  def from_atom(:exists_with_different_amount), do: 39
+  def from_atom(:exists_with_different_user_data_128), do: 41
+  def from_atom(:exists_with_different_user_data_64), do: 42
+  def from_atom(:exists_with_different_user_data_32), do: 43
+  def from_atom(:exists_with_different_ledger), do: 67
+  def from_atom(:exists_with_different_code), do: 45
+  def from_atom(:exists), do: 46
+  def from_atom(:id_already_failed), do: 68
+  def from_atom(:flags_are_mutually_exclusive), do: 7
+  def from_atom(:debit_account_id_must_not_be_zero), do: 8
+  def from_atom(:debit_account_id_must_not_be_int_max), do: 9
+  def from_atom(:credit_account_id_must_not_be_zero), do: 10
+  def from_atom(:credit_account_id_must_not_be_int_max), do: 11
+  def from_atom(:accounts_must_be_different), do: 12
+  def from_atom(:pending_id_must_be_zero), do: 13
+  def from_atom(:pending_id_must_not_be_zero), do: 14
+  def from_atom(:pending_id_must_not_be_int_max), do: 15
+  def from_atom(:pending_id_must_be_different), do: 16
+  def from_atom(:timeout_reserved_for_pending_transfer), do: 17
+  def from_atom(:closing_transfer_must_be_pending), do: 64
+  def from_atom(:amount_must_not_be_zero), do: 18
+  def from_atom(:ledger_must_not_be_zero), do: 19
+  def from_atom(:code_must_not_be_zero), do: 20
+  def from_atom(:debit_account_not_found), do: 21
+  def from_atom(:credit_account_not_found), do: 22
+  def from_atom(:accounts_must_have_the_same_ledger), do: 23
+  def from_atom(:transfer_must_have_the_same_ledger_as_accounts), do: 24
+  def from_atom(:pending_transfer_not_found), do: 25
+  def from_atom(:pending_transfer_not_pending), do: 26
+  def from_atom(:pending_transfer_has_different_debit_account_id), do: 27
+  def from_atom(:pending_transfer_has_different_credit_account_id), do: 28
+  def from_atom(:pending_transfer_has_different_ledger), do: 29
+  def from_atom(:pending_transfer_has_different_code), do: 30
+  def from_atom(:exceeds_pending_transfer_amount), do: 31
+  def from_atom(:pending_transfer_has_different_amount), do: 32
+  def from_atom(:pending_transfer_already_posted), do: 33
+  def from_atom(:pending_transfer_already_voided), do: 34
+  def from_atom(:pending_transfer_expired), do: 35
+  def from_atom(:imported_event_timestamp_must_not_regress), do: 60
+  def from_atom(:imported_event_timestamp_must_postdate_debit_account), do: 61
+  def from_atom(:imported_event_timestamp_must_postdate_credit_account), do: 62
+  def from_atom(:imported_event_timeout_must_be_zero), do: 63
+  def from_atom(:debit_account_already_closed), do: 65
+  def from_atom(:credit_account_already_closed), do: 66
+  def from_atom(:overflows_debits_pending), do: 47
+  def from_atom(:overflows_credits_pending), do: 48
+  def from_atom(:overflows_debits_posted), do: 49
+  def from_atom(:overflows_credits_posted), do: 50
+  def from_atom(:overflows_debits), do: 51
+  def from_atom(:overflows_credits), do: 52
+  def from_atom(:overflows_timeout), do: 53
+  def from_atom(:exceeds_credits), do: 54
+  def from_atom(:exceeds_debits), do: 55
 end

@@ -9,6 +9,10 @@ defmodule TigerBeetlex.AccountFilter do
   """
   defstruct [
     :account_id,
+    :user_data_128,
+    :user_data_64,
+    :user_data_32,
+    :code,
     :timestamp_min,
     :timestamp_max,
     :limit,

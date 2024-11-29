@@ -53,6 +53,27 @@ defmodule TigerBeetlex.TransferFlags do
   end
 
   @doc """
+  See [closing_debit](https://docs.tigerbeetle.com/reference/transfer#flagsclosing_debit).
+  """
+  def closing_debit(current \\ 0) do
+    current ||| 1 <<< 6
+  end
+
+  @doc """
+  See [closing_credit](https://docs.tigerbeetle.com/reference/transfer#flagsclosing_credit).
+  """
+  def closing_credit(current \\ 0) do
+    current ||| 1 <<< 7
+  end
+
+  @doc """
+  See [imported](https://docs.tigerbeetle.com/reference/transfer#flagsimported).
+  """
+  def imported(current \\ 0) do
+    current ||| 1 <<< 8
+  end
+
+  @doc """
   Given an integer flags value, returns a list of atoms indicating which flags are set.
   """
   def int_to_flags(int_value) when is_integer(int_value) do
@@ -96,6 +117,27 @@ defmodule TigerBeetlex.TransferFlags do
     flags =
       if (int_value &&& balancing_credit()) != 0 do
         [:balancing_credit | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& closing_debit()) != 0 do
+        [:closing_debit | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& closing_credit()) != 0 do
+        [:closing_credit | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& imported()) != 0 do
+        [:imported | flags]
       else
         flags
       end

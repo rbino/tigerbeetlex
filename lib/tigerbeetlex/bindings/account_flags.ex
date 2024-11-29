@@ -39,6 +39,20 @@ defmodule TigerBeetlex.AccountFlags do
   end
 
   @doc """
+  See [imported](https://docs.tigerbeetle.com/reference/account#flagsimported).
+  """
+  def imported(current \\ 0) do
+    current ||| 1 <<< 4
+  end
+
+  @doc """
+  See [closed](https://docs.tigerbeetle.com/reference/account#flagsclosed).
+  """
+  def closed(current \\ 0) do
+    current ||| 1 <<< 5
+  end
+
+  @doc """
   Given an integer flags value, returns a list of atoms indicating which flags are set.
   """
   def int_to_flags(int_value) when is_integer(int_value) do
@@ -68,6 +82,20 @@ defmodule TigerBeetlex.AccountFlags do
     flags =
       if (int_value &&& history()) != 0 do
         [:history | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& imported()) != 0 do
+        [:imported | flags]
+      else
+        flags
+      end
+
+    flags =
+      if (int_value &&& closed()) != 0 do
+        [:closed | flags]
       else
         flags
       end

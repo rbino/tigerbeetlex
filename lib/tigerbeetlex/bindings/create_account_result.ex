@@ -10,18 +10,15 @@ defmodule TigerBeetlex.CreateAccountResult do
   def to_atom(0), do: :ok
   def to_atom(1), do: :linked_event_failed
   def to_atom(2), do: :linked_event_chain_open
+  def to_atom(22), do: :imported_event_expected
+  def to_atom(23), do: :imported_event_not_expected
   def to_atom(3), do: :timestamp_must_be_zero
+  def to_atom(24), do: :imported_event_timestamp_out_of_range
+  def to_atom(25), do: :imported_event_timestamp_must_not_advance
   def to_atom(4), do: :reserved_field
   def to_atom(5), do: :reserved_flag
   def to_atom(6), do: :id_must_not_be_zero
   def to_atom(7), do: :id_must_not_be_int_max
-  def to_atom(8), do: :flags_are_mutually_exclusive
-  def to_atom(9), do: :debits_pending_must_be_zero
-  def to_atom(10), do: :debits_posted_must_be_zero
-  def to_atom(11), do: :credits_pending_must_be_zero
-  def to_atom(12), do: :credits_posted_must_be_zero
-  def to_atom(13), do: :ledger_must_not_be_zero
-  def to_atom(14), do: :code_must_not_be_zero
   def to_atom(15), do: :exists_with_different_flags
   def to_atom(16), do: :exists_with_different_user_data_128
   def to_atom(17), do: :exists_with_different_user_data_64
@@ -29,4 +26,12 @@ defmodule TigerBeetlex.CreateAccountResult do
   def to_atom(19), do: :exists_with_different_ledger
   def to_atom(20), do: :exists_with_different_code
   def to_atom(21), do: :exists
+  def to_atom(8), do: :flags_are_mutually_exclusive
+  def to_atom(9), do: :debits_pending_must_be_zero
+  def to_atom(10), do: :debits_posted_must_be_zero
+  def to_atom(11), do: :credits_pending_must_be_zero
+  def to_atom(12), do: :credits_posted_must_be_zero
+  def to_atom(13), do: :ledger_must_not_be_zero
+  def to_atom(14), do: :code_must_not_be_zero
+  def to_atom(26), do: :imported_event_timestamp_must_not_regress
 end

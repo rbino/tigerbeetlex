@@ -10,10 +10,27 @@ defmodule TigerBeetlex.CreateTransferResult do
   def to_atom(0), do: :ok
   def to_atom(1), do: :linked_event_failed
   def to_atom(2), do: :linked_event_chain_open
+  def to_atom(56), do: :imported_event_expected
+  def to_atom(57), do: :imported_event_not_expected
   def to_atom(3), do: :timestamp_must_be_zero
+  def to_atom(58), do: :imported_event_timestamp_out_of_range
+  def to_atom(59), do: :imported_event_timestamp_must_not_advance
   def to_atom(4), do: :reserved_flag
   def to_atom(5), do: :id_must_not_be_zero
   def to_atom(6), do: :id_must_not_be_int_max
+  def to_atom(36), do: :exists_with_different_flags
+  def to_atom(40), do: :exists_with_different_pending_id
+  def to_atom(44), do: :exists_with_different_timeout
+  def to_atom(37), do: :exists_with_different_debit_account_id
+  def to_atom(38), do: :exists_with_different_credit_account_id
+  def to_atom(39), do: :exists_with_different_amount
+  def to_atom(41), do: :exists_with_different_user_data_128
+  def to_atom(42), do: :exists_with_different_user_data_64
+  def to_atom(43), do: :exists_with_different_user_data_32
+  def to_atom(67), do: :exists_with_different_ledger
+  def to_atom(45), do: :exists_with_different_code
+  def to_atom(46), do: :exists
+  def to_atom(68), do: :id_already_failed
   def to_atom(7), do: :flags_are_mutually_exclusive
   def to_atom(8), do: :debit_account_id_must_not_be_zero
   def to_atom(9), do: :debit_account_id_must_not_be_int_max
@@ -25,6 +42,7 @@ defmodule TigerBeetlex.CreateTransferResult do
   def to_atom(15), do: :pending_id_must_not_be_int_max
   def to_atom(16), do: :pending_id_must_be_different
   def to_atom(17), do: :timeout_reserved_for_pending_transfer
+  def to_atom(64), do: :closing_transfer_must_be_pending
   def to_atom(18), do: :amount_must_not_be_zero
   def to_atom(19), do: :ledger_must_not_be_zero
   def to_atom(20), do: :code_must_not_be_zero
@@ -43,17 +61,12 @@ defmodule TigerBeetlex.CreateTransferResult do
   def to_atom(33), do: :pending_transfer_already_posted
   def to_atom(34), do: :pending_transfer_already_voided
   def to_atom(35), do: :pending_transfer_expired
-  def to_atom(36), do: :exists_with_different_flags
-  def to_atom(37), do: :exists_with_different_debit_account_id
-  def to_atom(38), do: :exists_with_different_credit_account_id
-  def to_atom(39), do: :exists_with_different_amount
-  def to_atom(40), do: :exists_with_different_pending_id
-  def to_atom(41), do: :exists_with_different_user_data_128
-  def to_atom(42), do: :exists_with_different_user_data_64
-  def to_atom(43), do: :exists_with_different_user_data_32
-  def to_atom(44), do: :exists_with_different_timeout
-  def to_atom(45), do: :exists_with_different_code
-  def to_atom(46), do: :exists
+  def to_atom(60), do: :imported_event_timestamp_must_not_regress
+  def to_atom(61), do: :imported_event_timestamp_must_postdate_debit_account
+  def to_atom(62), do: :imported_event_timestamp_must_postdate_credit_account
+  def to_atom(63), do: :imported_event_timeout_must_be_zero
+  def to_atom(65), do: :debit_account_already_closed
+  def to_atom(66), do: :credit_account_already_closed
   def to_atom(47), do: :overflows_debits_pending
   def to_atom(48), do: :overflows_credits_pending
   def to_atom(49), do: :overflows_debits_posted

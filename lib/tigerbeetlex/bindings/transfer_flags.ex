@@ -6,142 +6,85 @@
 defmodule TigerBeetlex.TransferFlags do
   import Bitwise
 
+  use TypedStruct
+
   @moduledoc """
   See [TransferFlags](https://docs.tigerbeetle.com/reference/transfer#flags).
   """
-
-  @doc """
-  See [linked](https://docs.tigerbeetle.com/reference/transfer#flagslinked).
-  """
-  def linked(current \\ 0) do
-    current ||| 1 <<< 0
+  typedstruct do
+    field :linked, boolean()
+    field :pending, boolean()
+    field :post_pending_transfer, boolean()
+    field :void_pending_transfer, boolean()
+    field :balancing_debit, boolean()
+    field :balancing_credit, boolean()
+    field :closing_debit, boolean()
+    field :closing_credit, boolean()
+    field :imported, boolean()
   end
 
   @doc """
-  See [pending](https://docs.tigerbeetle.com/reference/transfer#flagspending).
+  Given a binary flags value, returns the corresponding struct.
   """
-  def pending(current \\ 0) do
-    current ||| 1 <<< 1
+  def from_binary(<<_::binary-size(2)>> = bin) do
+    <<
+      _padding::7,
+      imported::1,
+      closing_credit::1,
+      closing_debit::1,
+      balancing_credit::1,
+      balancing_debit::1,
+      void_pending_transfer::1,
+      post_pending_transfer::1,
+      pending::1,
+      linked::1
+    >> = bin
+
+    %__MODULE__{
+      linked: linked == 1,
+      pending: pending == 1,
+      post_pending_transfer: post_pending_transfer == 1,
+      void_pending_transfer: void_pending_transfer == 1,
+      balancing_debit: balancing_debit == 1,
+      balancing_credit: balancing_credit == 1,
+      closing_debit: closing_debit == 1,
+      closing_credit: closing_credit == 1,
+      imported: imported == 1
+    }
   end
 
   @doc """
-  See [post_pending_transfer](https://docs.tigerbeetle.com/reference/transfer#flagspost_pending_transfer).
+  Given a `%TransferFlags{}` struct, returns the corresponding serialized binary value.
   """
-  def post_pending_transfer(current \\ 0) do
-    current ||| 1 <<< 2
+  def to_binary(flags) do
+    %__MODULE__{
+      linked: linked,
+      pending: pending,
+      post_pending_transfer: post_pending_transfer,
+      void_pending_transfer: void_pending_transfer,
+      balancing_debit: balancing_debit,
+      balancing_credit: balancing_credit,
+      closing_debit: closing_debit,
+      closing_credit: closing_credit,
+      imported: imported
+    } = flags
+
+    <<
+      # padding
+      0::7,
+      bool_to_u1(imported)::1,
+      bool_to_u1(closing_credit)::1,
+      bool_to_u1(closing_debit)::1,
+      bool_to_u1(balancing_credit)::1,
+      bool_to_u1(balancing_debit)::1,
+      bool_to_u1(void_pending_transfer)::1,
+      bool_to_u1(post_pending_transfer)::1,
+      bool_to_u1(pending)::1,
+      bool_to_u1(linked)::1
+    >>
   end
 
-  @doc """
-  See [void_pending_transfer](https://docs.tigerbeetle.com/reference/transfer#flagsvoid_pending_transfer).
-  """
-  def void_pending_transfer(current \\ 0) do
-    current ||| 1 <<< 3
-  end
-
-  @doc """
-  See [balancing_debit](https://docs.tigerbeetle.com/reference/transfer#flagsbalancing_debit).
-  """
-  def balancing_debit(current \\ 0) do
-    current ||| 1 <<< 4
-  end
-
-  @doc """
-  See [balancing_credit](https://docs.tigerbeetle.com/reference/transfer#flagsbalancing_credit).
-  """
-  def balancing_credit(current \\ 0) do
-    current ||| 1 <<< 5
-  end
-
-  @doc """
-  See [closing_debit](https://docs.tigerbeetle.com/reference/transfer#flagsclosing_debit).
-  """
-  def closing_debit(current \\ 0) do
-    current ||| 1 <<< 6
-  end
-
-  @doc """
-  See [closing_credit](https://docs.tigerbeetle.com/reference/transfer#flagsclosing_credit).
-  """
-  def closing_credit(current \\ 0) do
-    current ||| 1 <<< 7
-  end
-
-  @doc """
-  See [imported](https://docs.tigerbeetle.com/reference/transfer#flagsimported).
-  """
-  def imported(current \\ 0) do
-    current ||| 1 <<< 8
-  end
-
-  @doc """
-  Given an integer flags value, returns a list of atoms indicating which flags are set.
-  """
-  def int_to_flags(int_value) when is_integer(int_value) do
-    flags = []
-
-    flags =
-      if (int_value &&& linked()) != 0 do
-        [:linked | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& pending()) != 0 do
-        [:pending | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& post_pending_transfer()) != 0 do
-        [:post_pending_transfer | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& void_pending_transfer()) != 0 do
-        [:void_pending_transfer | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& balancing_debit()) != 0 do
-        [:balancing_debit | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& balancing_credit()) != 0 do
-        [:balancing_credit | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& closing_debit()) != 0 do
-        [:closing_debit | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& closing_credit()) != 0 do
-        [:closing_credit | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& imported()) != 0 do
-        [:imported | flags]
-      else
-        flags
-      end
-
-    Enum.reverse(flags)
-  end
+  @spec bool_to_u1(b :: boolean()) :: 0 | 1
+  defp bool_to_u1(true), do: 1
+  defp bool_to_u1(falsy) when falsy in [nil, false], do: 0
 end

@@ -6,30 +6,45 @@
 defmodule TigerBeetlex.QueryFilterFlags do
   import Bitwise
 
+  use TypedStruct
+
   @moduledoc """
   See [QueryFilterFlags](https://docs.tigerbeetle.com/reference/query-filter#flags).
   """
-
-  @doc """
-  See [reversed](https://docs.tigerbeetle.com/reference/query-filter#flagsreversed).
-  """
-  def reversed(current \\ 0) do
-    current ||| 1 <<< 0
+  typedstruct do
+    field :reversed, boolean()
   end
 
   @doc """
-  Given an integer flags value, returns a list of atoms indicating which flags are set.
+  Given a binary flags value, returns the corresponding struct.
   """
-  def int_to_flags(int_value) when is_integer(int_value) do
-    flags = []
+  def from_binary(<<_::binary-size(4)>> = bin) do
+    <<
+      _padding::31,
+      reversed::1
+    >> = bin
 
-    flags =
-      if (int_value &&& reversed()) != 0 do
-        [:reversed | flags]
-      else
-        flags
-      end
-
-    Enum.reverse(flags)
+    %__MODULE__{
+      reversed: reversed == 1
+    }
   end
+
+  @doc """
+  Given a `%QueryFilterFlags{}` struct, returns the corresponding serialized binary value.
+  """
+  def to_binary(flags) do
+    %__MODULE__{
+      reversed: reversed
+    } = flags
+
+    <<
+      # padding
+      0::31,
+      bool_to_u1(reversed)::1
+    >>
+  end
+
+  @spec bool_to_u1(b :: boolean()) :: 0 | 1
+  defp bool_to_u1(true), do: 1
+  defp bool_to_u1(falsy) when falsy in [nil, false], do: 0
 end

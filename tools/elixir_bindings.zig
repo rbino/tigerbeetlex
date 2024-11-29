@@ -104,6 +104,8 @@ fn emit_flags(
         \\defmodule TigerBeetlex.{[module_name]s} do
         \\  import Bitwise
         \\
+        \\  use TypedStruct
+        \\
         \\
     , .{
         .notice = auto_generated_code_notice,
@@ -112,59 +114,144 @@ fn emit_flags(
 
     try emit_docs(buffer, mapping, null);
 
-    inline for (type_info.fields, 0..) |field, i| {
-        if (comptime mapping.hidden(field.name)) continue;
-
-        try buffer.writer().print("\n\n", .{});
-
-        try emit_docs(buffer, mapping, field.name);
-
-        // TODO: we're assuming the initial value of packet structs is always 0
-        // Is this a reasonable assumption?
-        try buffer.writer().print(
-            \\
-            \\  def {[function_name]s}(current \\ 0) do
-            \\    current ||| 1 <<< {[shift]d}
-            \\  end
-        , .{
-            .function_name = field.name,
-            .shift = i,
-        });
-    }
-
-    try buffer.writer().print(
-        \\
-        \\
-        \\  @doc """
-        \\  Given an integer flags value, returns a list of atoms indicating which flags are set.
-        \\  """
-        \\  def int_to_flags(int_value) when is_integer(int_value) do
-        \\    flags = []
-        \\
-    , .{});
+    try buffer.writer().print("\n  typedstruct do\n", .{});
 
     inline for (type_info.fields) |field| {
         if (comptime mapping.hidden(field.name)) continue;
 
         try buffer.writer().print(
-            \\
-            \\    flags =
-            \\      if (int_value &&& {[function_name]s}()) != 0 do
-            \\        [:{[flag_name]s} | flags]
-            \\      else
-            \\        flags
-            \\      end
+            \\    field :{[field_name]s}, {[typespec_type]s}
             \\
         , .{
-            .function_name = field.name,
-            .flag_name = field.name,
+            .field_name = field.name,
+            // TODO: for now we assume boolean for flag fields
+            .typespec_type = "boolean()",
+        });
+    }
+
+    try buffer.writer().print("  end\n\n", .{});
+
+    try buffer.writer().print(
+        \\  @doc """
+        \\  Given a binary flags value, returns the corresponding struct.
+        \\  """
+        \\  def from_binary(<<_::binary-size({[byte_size]})>> = bin) do
+        \\    <<
+        \\
+    , .{
+        .byte_size = @sizeOf(type_info.backing_integer.?),
+    });
+
+    {
+        // Here we have to reverse the fields because they are laid out in little-endian
+        // order while when we match in Elixir we list things in big-endian order
+        comptime var reversed_fields = std.mem.reverseIterator(type_info.fields);
+        inline while (reversed_fields.next()) |field| {
+            try buffer.writer().print("      ", .{});
+
+            // Hidden == unused
+            if (comptime mapping.hidden(field.name))
+                try buffer.writer().print("_", .{});
+
+            try buffer.writer().print(
+                \\{[field_name]s}::{[bit_size]},
+                \\
+            , .{
+                .field_name = field.name,
+                .bit_size = @bitSizeOf(field.type),
+            });
+        }
+    }
+
+    try buffer.writer().print(
+        \\    >> = bin
+        \\
+        \\    %__MODULE__{{
+        \\
+    , .{});
+
+    inline for (type_info.fields) |field| {
+        // Hidden == unused
+        if (comptime mapping.hidden(field.name)) continue;
+
+        try buffer.writer().print(
+            \\      {[field_name]s}: {[field_name]s} == 1,
+            \\
+        , .{
+            .field_name = field.name,
         });
     }
 
     try buffer.writer().print(
-        \\
-        \\    Enum.reverse(flags)
+        \\    }}
         \\  end
+        \\
+        \\
+    , .{});
+
+    try buffer.writer().print(
+        \\  @doc """
+        \\  Given a `%{[module_name]s}{{}}` struct, returns the corresponding serialized binary value.
+        \\  """
+        \\  def to_binary(flags) do
+        \\    %__MODULE__{{
+        \\
+    , .{
+        .module_name = mapping.module_name,
+    });
+
+    inline for (type_info.fields) |field| {
+        // Hidden == unused
+        if (comptime mapping.hidden(field.name)) continue;
+
+        try buffer.writer().print(
+            \\      {[field_name]s}: {[field_name]s},
+            \\
+        , .{
+            .field_name = field.name,
+        });
+    }
+
+    try buffer.writer().print(
+        \\    }} = flags
+        \\
+        \\    <<
+        \\
+    , .{});
+
+    {
+        // Here we have to reverse the fields because they are laid out in little-endian
+        // order while when we match in Elixir we list things in big-endian order
+        comptime var reversed_fields = std.mem.reverseIterator(type_info.fields);
+        inline while (reversed_fields.next()) |field| {
+            // We assume hidden == padded with zeroes
+            if (comptime mapping.hidden(field.name)) {
+                try buffer.writer().print(
+                    \\      # {[field_name]s}
+                    \\      0::{[bit_size]},
+                    \\
+                , .{
+                    .field_name = field.name,
+                    .bit_size = @bitSizeOf(field.type),
+                });
+            } else {
+                try buffer.writer().print(
+                    \\      bool_to_u1({[field_name]s})::1,
+                    \\
+                , .{
+                    .field_name = field.name,
+                });
+            }
+        }
+    }
+
+    try buffer.writer().print(
+        \\    >>
+        \\  end
+        \\
+        \\  @spec bool_to_u1(b :: boolean()) :: 0 | 1
+        \\  defp bool_to_u1(true), do: 1
+        \\  defp bool_to_u1(falsy) when falsy in [nil, false], do: 0
         \\end
         \\
     , .{});

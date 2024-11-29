@@ -6,58 +6,55 @@
 defmodule TigerBeetlex.AccountFilterFlags do
   import Bitwise
 
+  use TypedStruct
+
   @moduledoc """
   See [AccountFilterFlags](https://docs.tigerbeetle.com/reference/account-filter#flags).
   """
-
-  @doc """
-  See [debits](https://docs.tigerbeetle.com/reference/account-filter#flagsdebits).
-  """
-  def debits(current \\ 0) do
-    current ||| 1 <<< 0
+  typedstruct do
+    field :debits, boolean()
+    field :credits, boolean()
+    field :reversed, boolean()
   end
 
   @doc """
-  See [credits](https://docs.tigerbeetle.com/reference/account-filter#flagscredits).
+  Given a binary flags value, returns the corresponding struct.
   """
-  def credits(current \\ 0) do
-    current ||| 1 <<< 1
+  def from_binary(<<_::binary-size(4)>> = bin) do
+    <<
+      _padding::29,
+      reversed::1,
+      credits::1,
+      debits::1
+    >> = bin
+
+    %__MODULE__{
+      debits: debits == 1,
+      credits: credits == 1,
+      reversed: reversed == 1
+    }
   end
 
   @doc """
-  See [reversed](https://docs.tigerbeetle.com/reference/account-filter#flagsreversed).
+  Given a `%AccountFilterFlags{}` struct, returns the corresponding serialized binary value.
   """
-  def reversed(current \\ 0) do
-    current ||| 1 <<< 2
+  def to_binary(flags) do
+    %__MODULE__{
+      debits: debits,
+      credits: credits,
+      reversed: reversed
+    } = flags
+
+    <<
+      # padding
+      0::29,
+      bool_to_u1(reversed)::1,
+      bool_to_u1(credits)::1,
+      bool_to_u1(debits)::1
+    >>
   end
 
-  @doc """
-  Given an integer flags value, returns a list of atoms indicating which flags are set.
-  """
-  def int_to_flags(int_value) when is_integer(int_value) do
-    flags = []
-
-    flags =
-      if (int_value &&& debits()) != 0 do
-        [:debits | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& credits()) != 0 do
-        [:credits | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& reversed()) != 0 do
-        [:reversed | flags]
-      else
-        flags
-      end
-
-    Enum.reverse(flags)
-  end
+  @spec bool_to_u1(b :: boolean()) :: 0 | 1
+  defp bool_to_u1(true), do: 1
+  defp bool_to_u1(falsy) when falsy in [nil, false], do: 0
 end

@@ -6,100 +6,70 @@
 defmodule TigerBeetlex.AccountFlags do
   import Bitwise
 
+  use TypedStruct
+
   @moduledoc """
   See [AccountFlags](https://docs.tigerbeetle.com/reference/account#flags).
   """
-
-  @doc """
-  See [linked](https://docs.tigerbeetle.com/reference/account#flagslinked).
-  """
-  def linked(current \\ 0) do
-    current ||| 1 <<< 0
+  typedstruct do
+    field :linked, boolean()
+    field :debits_must_not_exceed_credits, boolean()
+    field :credits_must_not_exceed_debits, boolean()
+    field :history, boolean()
+    field :imported, boolean()
+    field :closed, boolean()
   end
 
   @doc """
-  See [debits_must_not_exceed_credits](https://docs.tigerbeetle.com/reference/account#flagsdebits_must_not_exceed_credits).
+  Given a binary flags value, returns the corresponding struct.
   """
-  def debits_must_not_exceed_credits(current \\ 0) do
-    current ||| 1 <<< 1
+  def from_binary(<<_::binary-size(2)>> = bin) do
+    <<
+      _padding::10,
+      closed::1,
+      imported::1,
+      history::1,
+      credits_must_not_exceed_debits::1,
+      debits_must_not_exceed_credits::1,
+      linked::1
+    >> = bin
+
+    %__MODULE__{
+      linked: linked == 1,
+      debits_must_not_exceed_credits: debits_must_not_exceed_credits == 1,
+      credits_must_not_exceed_debits: credits_must_not_exceed_debits == 1,
+      history: history == 1,
+      imported: imported == 1,
+      closed: closed == 1
+    }
   end
 
   @doc """
-  See [credits_must_not_exceed_debits](https://docs.tigerbeetle.com/reference/account#flagscredits_must_not_exceed_debits).
+  Given a `%AccountFlags{}` struct, returns the corresponding serialized binary value.
   """
-  def credits_must_not_exceed_debits(current \\ 0) do
-    current ||| 1 <<< 2
+  def to_binary(flags) do
+    %__MODULE__{
+      linked: linked,
+      debits_must_not_exceed_credits: debits_must_not_exceed_credits,
+      credits_must_not_exceed_debits: credits_must_not_exceed_debits,
+      history: history,
+      imported: imported,
+      closed: closed
+    } = flags
+
+    <<
+      # padding
+      0::10,
+      bool_to_u1(closed)::1,
+      bool_to_u1(imported)::1,
+      bool_to_u1(history)::1,
+      bool_to_u1(credits_must_not_exceed_debits)::1,
+      bool_to_u1(debits_must_not_exceed_credits)::1,
+      bool_to_u1(linked)::1
+    >>
   end
 
-  @doc """
-  See [history](https://docs.tigerbeetle.com/reference/account#flagshistory).
-  """
-  def history(current \\ 0) do
-    current ||| 1 <<< 3
-  end
-
-  @doc """
-  See [imported](https://docs.tigerbeetle.com/reference/account#flagsimported).
-  """
-  def imported(current \\ 0) do
-    current ||| 1 <<< 4
-  end
-
-  @doc """
-  See [closed](https://docs.tigerbeetle.com/reference/account#flagsclosed).
-  """
-  def closed(current \\ 0) do
-    current ||| 1 <<< 5
-  end
-
-  @doc """
-  Given an integer flags value, returns a list of atoms indicating which flags are set.
-  """
-  def int_to_flags(int_value) when is_integer(int_value) do
-    flags = []
-
-    flags =
-      if (int_value &&& linked()) != 0 do
-        [:linked | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& debits_must_not_exceed_credits()) != 0 do
-        [:debits_must_not_exceed_credits | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& credits_must_not_exceed_debits()) != 0 do
-        [:credits_must_not_exceed_debits | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& history()) != 0 do
-        [:history | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& imported()) != 0 do
-        [:imported | flags]
-      else
-        flags
-      end
-
-    flags =
-      if (int_value &&& closed()) != 0 do
-        [:closed | flags]
-      else
-        flags
-      end
-
-    Enum.reverse(flags)
-  end
+  @spec bool_to_u1(b :: boolean()) :: 0 | 1
+  defp bool_to_u1(true), do: 1
+  defp bool_to_u1(falsy) when falsy in [nil, false], do: 0
 end

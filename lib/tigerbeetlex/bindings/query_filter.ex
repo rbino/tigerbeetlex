@@ -7,15 +7,73 @@ defmodule TigerBeetlex.QueryFilter do
   @moduledoc """
   See [QueryFilter](https://docs.tigerbeetle.com/reference/query-filter#).
   """
-  defstruct [
-    :user_data_128,
-    :user_data_64,
-    :user_data_32,
-    :ledger,
-    :code,
-    :timestamp_min,
-    :timestamp_max,
-    :limit,
-    :flags
-  ]
+  alias TigerBeetlex.QueryFilterFlags
+  use TypedStruct
+
+  typedstruct do
+    field :user_data_128, <<_::128>>, default: <<0::size(128)>>
+    field :user_data_64, non_neg_integer(), default: 0
+    field :user_data_32, non_neg_integer(), default: 0
+    field :ledger, non_neg_integer(), default: 0
+    field :code, non_neg_integer(), default: 0
+    field :timestamp_min, non_neg_integer(), default: 0
+    field :timestamp_max, non_neg_integer(), default: 0
+    field :limit, non_neg_integer(), default: 0
+    field :flags, QueryFilterFlags.t(), default: %QueryFilterFlags{}
+  end
+
+  def from_binary(<<_::binary-size(64)>> = bin) do
+    <<
+      user_data_128::binary-size(16),
+      user_data_64::unsigned-little-64,
+      user_data_32::unsigned-little-32,
+      ledger::unsigned-little-32,
+      code::unsigned-little-16,
+      _reserved::binary-size(6),
+      timestamp_min::unsigned-little-64,
+      timestamp_max::unsigned-little-64,
+      limit::unsigned-little-32,
+      flags::binary-size(4)
+    >> = bin
+
+    %__MODULE__{
+      user_data_128: user_data_128,
+      user_data_64: user_data_64,
+      user_data_32: user_data_32,
+      ledger: ledger,
+      code: code,
+      timestamp_min: timestamp_min,
+      timestamp_max: timestamp_max,
+      limit: limit,
+      flags: TigerBeetlex.QueryFilterFlags.from_binary(flags)
+    }
+  end
+
+  def to_binary(struct) do
+    %__MODULE__{
+      user_data_128: user_data_128,
+      user_data_64: user_data_64,
+      user_data_32: user_data_32,
+      ledger: ledger,
+      code: code,
+      timestamp_min: timestamp_min,
+      timestamp_max: timestamp_max,
+      limit: limit,
+      flags: flags
+    } = struct
+
+    <<
+      user_data_128::binary-size(16),
+      user_data_64::unsigned-little-64,
+      user_data_32::unsigned-little-32,
+      ledger::unsigned-little-32,
+      code::unsigned-little-16,
+      # reserved
+      0::unit(8)-size(6),
+      timestamp_min::unsigned-little-64,
+      timestamp_max::unsigned-little-64,
+      limit::unsigned-little-32,
+      QueryFilterFlags.to_binary(flags)::binary-size(4)
+    >>
+  end
 end

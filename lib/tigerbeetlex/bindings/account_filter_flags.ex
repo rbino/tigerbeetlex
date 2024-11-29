@@ -4,17 +4,16 @@
 #######################################################
 
 defmodule TigerBeetlex.AccountFilterFlags do
-  import Bitwise
-
-  use TypedStruct
-
   @moduledoc """
   See [AccountFilterFlags](https://docs.tigerbeetle.com/reference/account-filter#flags).
   """
+
+  use TypedStruct
+
   typedstruct do
-    field :debits, boolean()
-    field :credits, boolean()
-    field :reversed, boolean()
+    field :debits, boolean(), default: false
+    field :credits, boolean(), default: false
+    field :reversed, boolean(), default: false
   end
 
   @doc """
@@ -56,5 +55,5 @@ defmodule TigerBeetlex.AccountFilterFlags do
 
   @spec bool_to_u1(b :: boolean()) :: 0 | 1
   defp bool_to_u1(true), do: 1
-  defp bool_to_u1(falsy) when falsy in [nil, false], do: 0
+  defp bool_to_u1(false), do: 0
 end

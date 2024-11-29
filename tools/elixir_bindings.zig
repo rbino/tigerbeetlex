@@ -55,6 +55,7 @@ const type_mappings = .{
     .{ tb.Account, TypeMapping{
         .file_name = "account",
         .module_name = "Account",
+        .hidden_fields = &.{"reserved"},
         .docs_link = "reference/account#",
     } },
     .{ tb.AccountBalance, TypeMapping{
@@ -90,6 +91,16 @@ const type_mappings = .{
         .module_name = "CreateTransferResult",
         .docs_link = "reference/requests/create_transfers#result",
     } },
+    .{ tb.CreateAccountsResult, TypeMapping{
+        .file_name = "create_accounts_result",
+        .module_name = "CreateAccountsResult",
+        .docs_link = "reference/requests/create_accounts#",
+    } },
+    .{ tb.CreateTransfersResult, TypeMapping{
+        .file_name = "create_transfers_result",
+        .module_name = "CreateTransfersResult",
+        .docs_link = "reference/requests/create_transfers#",
+    } },
 };
 
 fn emit_flags(
@@ -102,10 +113,6 @@ fn emit_flags(
     try buffer.writer().print(
         \\{[notice]s}
         \\defmodule TigerBeetlex.{[module_name]s} do
-        \\  import Bitwise
-        \\
-        \\  use TypedStruct
-        \\
         \\
     , .{
         .notice = auto_generated_code_notice,
@@ -114,18 +121,30 @@ fn emit_flags(
 
     try emit_docs(buffer, mapping, null);
 
-    try buffer.writer().print("\n  typedstruct do\n", .{});
+    try buffer.writer().print(
+        \\
+        \\
+        \\  use TypedStruct
+        \\
+        \\  typedstruct do
+        \\
+    , .{});
 
     inline for (type_info.fields) |field| {
         if (comptime mapping.hidden(field.name)) continue;
 
+        const default_opt = if (comptime default_field_value(field.name, field.type)) |default|
+            std.fmt.comptimePrint(", default: {s}", .{default})
+        else
+            "";
+
         try buffer.writer().print(
-            \\    field :{[field_name]s}, {[typespec_type]s}
+            \\    field :{[field_name]s}, {[typespec_type]s}{[default_opt]s}
             \\
         , .{
             .field_name = field.name,
-            // TODO: for now we assume boolean for flag fields
-            .typespec_type = "boolean()",
+            .typespec_type = typespec_type(field.name, field.type),
+            .default_opt = default_opt,
         });
     }
 
@@ -251,7 +270,7 @@ fn emit_flags(
         \\
         \\  @spec bool_to_u1(b :: boolean()) :: 0 | 1
         \\  defp bool_to_u1(true), do: 1
-        \\  defp bool_to_u1(falsy) when falsy in [nil, false], do: 0
+        \\  defp bool_to_u1(false), do: 0
         \\end
         \\
     , .{});
@@ -261,6 +280,7 @@ fn emit_struct(
     buffer: *std.ArrayList(u8),
     comptime type_info: anytype,
     comptime mapping: TypeMapping,
+    comptime struct_size: comptime_int,
 ) !void {
     assert(type_info.layout == .@"extern");
 
@@ -275,29 +295,305 @@ fn emit_struct(
 
     try emit_docs(buffer, mapping, null);
 
-    try buffer.writer().print(
-        \\
-        \\  defstruct [
-    , .{});
-
-    inline for (type_info.fields, 0..) |field, i| {
+    inline for (type_info.fields) |field| {
         if (comptime mapping.hidden(field.name)) continue;
 
-        const leading_separator = if (i == 0) "\n" else ",\n";
-
-        try buffer.writer().print("{[leading_separator]s}    :{[field]s}", .{
-            .leading_separator = leading_separator,
-            .field = field.name,
-        });
+        switch (@typeInfo(field.type)) {
+            .Struct, .Enum => {
+                try buffer.writer().print(
+                    \\
+                    \\  alias TigerBeetlex.{[module_name]s}
+                , .{
+                    .module_name = comptime module_name_for(type_mappings, field.type),
+                });
+            },
+            else => {},
+        }
     }
 
     try buffer.writer().print(
         \\
-        \\  ]
+        \\  use TypedStruct
+        \\
+        \\  typedstruct do
+        \\
+    , .{});
+
+    inline for (type_info.fields) |field| {
+        if (comptime mapping.hidden(field.name)) continue;
+
+        const default_opt = if (comptime default_field_value(field.name, field.type)) |default|
+            std.fmt.comptimePrint(", default: {s}", .{default})
+        else
+            "";
+
+        try buffer.writer().print(
+            \\    field :{[field_name]s}, {[typespec_type]s}{[default_opt]s}
+            \\
+        , .{
+            .field_name = field.name,
+            .typespec_type = typespec_type(field.name, field.type),
+            .default_opt = default_opt,
+        });
+    }
+
+    try buffer.writer().print(
+        \\  end
+        \\
+        \\  def from_binary(<<_::binary-size({[byte_size]})>> = bin) do
+        \\    <<
+        \\
+    , .{
+        .byte_size = struct_size,
+    });
+
+    inline for (type_info.fields) |field| {
+        try buffer.writer().print("      ", .{});
+
+        // Hidden == unused
+        if (comptime mapping.hidden(field.name))
+            try buffer.writer().print("_", .{});
+
+        try buffer.writer().print(
+            \\{[field_name]s}::{[bitstring_options]s},
+            \\
+        , .{
+            .field_name = field.name,
+            .bitstring_options = bitstring_options(field.name, field.type),
+        });
+    }
+
+    try buffer.writer().print(
+        \\    >> = bin
+        \\
+        \\    %__MODULE__{{
+        \\
+    , .{});
+
+    inline for (type_info.fields) |field| {
+        if (comptime mapping.hidden(field.name)) continue;
+
+        try buffer.writer().print(
+            \\      {[field_name]s}: {[nested_deserialization]s},
+            \\
+        , .{
+            .field_name = field.name,
+            .nested_deserialization = deserialize_struct_field(field.name, field.type),
+        });
+    }
+
+    try buffer.writer().print(
+        \\    }}
+        \\  end
+        \\
+        \\  def to_binary(struct) do
+        \\    %__MODULE__{{
+        \\
+    , .{});
+
+    inline for (type_info.fields) |field| {
+        if (comptime mapping.hidden(field.name)) continue;
+
+        try buffer.writer().print(
+            \\      {[field_name]s}: {[field_name]s},
+            \\
+        , .{
+            .field_name = field.name,
+        });
+    }
+
+    try buffer.writer().print(
+        \\    }} = struct
+        \\
+        \\    <<
+        \\
+    , .{});
+
+    inline for (type_info.fields) |field| {
+        // We assume hidden == padded with zeroes
+        if (comptime mapping.hidden(field.name)) {
+            try buffer.writer().print(
+                \\      # {[field_name]s}
+                \\      0::unit(8)-size({[byte_size]}),
+                \\
+            , .{
+                .field_name = field.name,
+                .byte_size = @sizeOf(field.type),
+            });
+            continue;
+        }
+
+        try buffer.writer().print(
+            \\      {[serialized_value]s}::{[bitstring_options]s},
+            \\
+        , .{
+            .serialized_value = serialized_value(field.name, field.type),
+            .bitstring_options = bitstring_options(field.name, field.type),
+        });
+    }
+
+    try buffer.writer().print(
+        \\    >>
+        \\  end
         \\end
         \\
     , .{});
 }
+
+fn typespec_type(comptime field_name: []const u8, comptime Type: type) []const u8 {
+    switch (@typeInfo(Type)) {
+        .Bool => return "boolean()",
+        .Int => |int| {
+            if (int.bits == 128 and !big_integer.contains(field_name))
+                return "<<_::128>>";
+
+            return if (int.signedness == .unsigned) "non_neg_integer()" else "integer()";
+        },
+        .Enum => return "atom()",
+        .Struct => return std.fmt.comptimePrint("{[module_name]s}.t()", .{
+            .module_name = comptime module_name_for(type_mappings, Type),
+        }),
+        else => unreachable,
+    }
+}
+
+fn bitstring_options(comptime field_name: []const u8, comptime Type: type) []const u8 {
+    switch (@typeInfo(Type)) {
+        .Int => |info| {
+            if (info.bits == 128 and !big_integer.contains(field_name))
+                return "binary-size(16)";
+
+            return int_bitstring_options(info);
+        },
+        .Enum => |info| {
+            const tag_info = @typeInfo(info.tag_type);
+            assert(tag_info == .Int);
+            return int_bitstring_options(tag_info.Int);
+        },
+        .Struct => |info| {
+            assert(info.layout == .@"packed");
+
+            return std.fmt.comptimePrint("binary-size({[byte_size]})", .{
+                .byte_size = @sizeOf(Type),
+            });
+        },
+        // This should always be padding
+        .Array => |info| {
+            assert(info.child == u8);
+
+            return std.fmt.comptimePrint("binary-size({[byte_size]})", .{
+                .byte_size = info.len,
+            });
+        },
+        else => unreachable,
+    }
+}
+
+fn int_bitstring_options(comptime info: std.builtin.Type.Int) []const u8 {
+    const signedness = if (info.signedness == .signed) "signed" else "unsigned";
+    return std.fmt.comptimePrint("{[signedness]s}-little-{[bits]}", .{
+        .signedness = signedness,
+        .bits = info.bits,
+    });
+}
+
+fn deserialize_struct_field(comptime field_name: []const u8, comptime Type: type) []const u8 {
+    switch (@typeInfo(Type)) {
+        .Enum => {
+            return std.fmt.comptimePrint("TigerBeetlex.{[module_name]s}.to_atom({[field_name]s})", .{
+                .module_name = comptime module_name_for(type_mappings, Type),
+                .field_name = field_name,
+            });
+        },
+        .Struct => |info| {
+            assert(info.layout == .@"packed");
+
+            return std.fmt.comptimePrint("TigerBeetlex.{[module_name]s}.from_binary({[field_name]s})", .{
+                .module_name = comptime module_name_for(type_mappings, Type),
+                .field_name = field_name,
+            });
+        },
+        .Int => return field_name,
+        else => unreachable,
+    }
+}
+
+fn default_field_value(comptime field_name: []const u8, comptime Type: type) ?[]const u8 {
+    switch (@typeInfo(Type)) {
+        .Bool => return "false",
+
+        .Int => |info| {
+            if (info.bits == 128 and !big_integer.contains(field_name))
+                return "<<0::size(128)>>";
+
+            return "0";
+        },
+
+        .Struct => |info| {
+            assert(info.layout == .@"packed");
+
+            return std.fmt.comptimePrint("%{[module_name]s}{{}}", .{
+                .module_name = comptime module_name_for(type_mappings, Type),
+            });
+        },
+
+        else => return null,
+    }
+}
+
+fn serialized_value(comptime field_name: []const u8, comptime Type: type) []const u8 {
+    switch (@typeInfo(Type)) {
+        .Int => return field_name,
+
+        .Enum => {
+            return std.fmt.comptimePrint("{[module_name]s}.from_atom({[field_name]s})", .{
+                .module_name = comptime module_name_for(type_mappings, Type),
+                .field_name = field_name,
+            });
+        },
+
+        .Struct => |info| {
+            assert(info.layout == .@"packed");
+
+            return std.fmt.comptimePrint(
+                "{[module_name]s}.to_binary({[field_name]s})",
+                .{
+                    .module_name = comptime module_name_for(type_mappings, Type),
+                    .field_name = field_name,
+                },
+            );
+        },
+
+        else => unreachable,
+    }
+}
+
+fn module_name_for(mappings: anytype, comptime Type: type) []const u8 {
+    comptime for (mappings) |mapping| {
+        const ZigType, const type_mapping = mapping;
+        if (ZigType == Type) return type_mapping.module_name;
+    };
+
+    unreachable;
+}
+
+/// Some 128-bit fields are better represented as numbers,
+/// otherwise they are considered IDs and exposed as binaries.
+const big_integer = struct {
+    const fields = .{
+        "credits_posted",
+        "credits_pending",
+        "debits_posted",
+        "debits_pending",
+        "amount",
+    };
+
+    fn contains(comptime field: []const u8) bool {
+        return comptime blk: for (fields) |value| {
+            if (std.mem.eql(u8, field, value)) break :blk true;
+        } else false;
+    }
+};
 
 fn emit_enum(
     buffer: *std.ArrayList(u8),
@@ -381,7 +677,7 @@ pub fn generate_bindings(
                 "Only packed or extern structs are supported: " ++ @typeName(ZigType),
             ),
             .@"packed" => try emit_flags(buffer, info, mapping),
-            .@"extern" => try emit_struct(buffer, info, mapping),
+            .@"extern" => try emit_struct(buffer, info, mapping, @sizeOf(ZigType)),
         },
         .Enum => try emit_enum(buffer, ZigType, mapping),
         else => @compileError("Type cannot be represented: " ++ @typeName(ZigType)),

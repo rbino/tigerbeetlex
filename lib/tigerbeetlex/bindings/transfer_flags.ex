@@ -4,23 +4,22 @@
 #######################################################
 
 defmodule TigerBeetlex.TransferFlags do
-  import Bitwise
-
-  use TypedStruct
-
   @moduledoc """
   See [TransferFlags](https://docs.tigerbeetle.com/reference/transfer#flags).
   """
+
+  use TypedStruct
+
   typedstruct do
-    field :linked, boolean()
-    field :pending, boolean()
-    field :post_pending_transfer, boolean()
-    field :void_pending_transfer, boolean()
-    field :balancing_debit, boolean()
-    field :balancing_credit, boolean()
-    field :closing_debit, boolean()
-    field :closing_credit, boolean()
-    field :imported, boolean()
+    field :linked, boolean(), default: false
+    field :pending, boolean(), default: false
+    field :post_pending_transfer, boolean(), default: false
+    field :void_pending_transfer, boolean(), default: false
+    field :balancing_debit, boolean(), default: false
+    field :balancing_credit, boolean(), default: false
+    field :closing_debit, boolean(), default: false
+    field :closing_credit, boolean(), default: false
+    field :imported, boolean(), default: false
   end
 
   @doc """
@@ -86,5 +85,5 @@ defmodule TigerBeetlex.TransferFlags do
 
   @spec bool_to_u1(b :: boolean()) :: 0 | 1
   defp bool_to_u1(true), do: 1
-  defp bool_to_u1(falsy) when falsy in [nil, false], do: 0
+  defp bool_to_u1(false), do: 0
 end

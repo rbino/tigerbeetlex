@@ -7,19 +7,88 @@ defmodule TigerBeetlex.Account do
   @moduledoc """
   See [Account](https://docs.tigerbeetle.com/reference/account#).
   """
-  defstruct [
-    :id,
-    :debits_pending,
-    :debits_posted,
-    :credits_pending,
-    :credits_posted,
-    :user_data_128,
-    :user_data_64,
-    :user_data_32,
-    :reserved,
-    :ledger,
-    :code,
-    :flags,
-    :timestamp
-  ]
+  alias TigerBeetlex.AccountFlags
+  use TypedStruct
+
+  typedstruct do
+    field :id, <<_::128>>, default: <<0::size(128)>>
+    field :debits_pending, non_neg_integer(), default: 0
+    field :debits_posted, non_neg_integer(), default: 0
+    field :credits_pending, non_neg_integer(), default: 0
+    field :credits_posted, non_neg_integer(), default: 0
+    field :user_data_128, <<_::128>>, default: <<0::size(128)>>
+    field :user_data_64, non_neg_integer(), default: 0
+    field :user_data_32, non_neg_integer(), default: 0
+    field :ledger, non_neg_integer(), default: 0
+    field :code, non_neg_integer(), default: 0
+    field :flags, AccountFlags.t(), default: %AccountFlags{}
+    field :timestamp, non_neg_integer(), default: 0
+  end
+
+  def from_binary(<<_::binary-size(128)>> = bin) do
+    <<
+      id::binary-size(16),
+      debits_pending::unsigned-little-128,
+      debits_posted::unsigned-little-128,
+      credits_pending::unsigned-little-128,
+      credits_posted::unsigned-little-128,
+      user_data_128::binary-size(16),
+      user_data_64::unsigned-little-64,
+      user_data_32::unsigned-little-32,
+      _reserved::unsigned-little-32,
+      ledger::unsigned-little-32,
+      code::unsigned-little-16,
+      flags::binary-size(2),
+      timestamp::unsigned-little-64
+    >> = bin
+
+    %__MODULE__{
+      id: id,
+      debits_pending: debits_pending,
+      debits_posted: debits_posted,
+      credits_pending: credits_pending,
+      credits_posted: credits_posted,
+      user_data_128: user_data_128,
+      user_data_64: user_data_64,
+      user_data_32: user_data_32,
+      ledger: ledger,
+      code: code,
+      flags: TigerBeetlex.AccountFlags.from_binary(flags),
+      timestamp: timestamp
+    }
+  end
+
+  def to_binary(struct) do
+    %__MODULE__{
+      id: id,
+      debits_pending: debits_pending,
+      debits_posted: debits_posted,
+      credits_pending: credits_pending,
+      credits_posted: credits_posted,
+      user_data_128: user_data_128,
+      user_data_64: user_data_64,
+      user_data_32: user_data_32,
+      ledger: ledger,
+      code: code,
+      flags: flags,
+      timestamp: timestamp
+    } = struct
+
+    <<
+      id::binary-size(16),
+      debits_pending::unsigned-little-128,
+      debits_posted::unsigned-little-128,
+      credits_pending::unsigned-little-128,
+      credits_posted::unsigned-little-128,
+      user_data_128::binary-size(16),
+      user_data_64::unsigned-little-64,
+      user_data_32::unsigned-little-32,
+      # reserved
+      0::unit(8)-size(4),
+      ledger::unsigned-little-32,
+      code::unsigned-little-16,
+      AccountFlags.to_binary(flags)::binary-size(2),
+      timestamp::unsigned-little-64
+    >>
+  end
 end

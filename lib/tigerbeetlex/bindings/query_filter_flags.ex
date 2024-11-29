@@ -4,15 +4,14 @@
 #######################################################
 
 defmodule TigerBeetlex.QueryFilterFlags do
-  import Bitwise
-
-  use TypedStruct
-
   @moduledoc """
   See [QueryFilterFlags](https://docs.tigerbeetle.com/reference/query-filter#flags).
   """
+
+  use TypedStruct
+
   typedstruct do
-    field :reversed, boolean()
+    field :reversed, boolean(), default: false
   end
 
   @doc """
@@ -46,5 +45,5 @@ defmodule TigerBeetlex.QueryFilterFlags do
 
   @spec bool_to_u1(b :: boolean()) :: 0 | 1
   defp bool_to_u1(true), do: 1
-  defp bool_to_u1(falsy) when falsy in [nil, false], do: 0
+  defp bool_to_u1(false), do: 0
 end

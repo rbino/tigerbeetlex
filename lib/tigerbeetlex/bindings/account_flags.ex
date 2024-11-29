@@ -4,20 +4,19 @@
 #######################################################
 
 defmodule TigerBeetlex.AccountFlags do
-  import Bitwise
-
-  use TypedStruct
-
   @moduledoc """
   See [AccountFlags](https://docs.tigerbeetle.com/reference/account#flags).
   """
+
+  use TypedStruct
+
   typedstruct do
-    field :linked, boolean()
-    field :debits_must_not_exceed_credits, boolean()
-    field :credits_must_not_exceed_debits, boolean()
-    field :history, boolean()
-    field :imported, boolean()
-    field :closed, boolean()
+    field :linked, boolean(), default: false
+    field :debits_must_not_exceed_credits, boolean(), default: false
+    field :credits_must_not_exceed_debits, boolean(), default: false
+    field :history, boolean(), default: false
+    field :imported, boolean(), default: false
+    field :closed, boolean(), default: false
   end
 
   @doc """
@@ -71,5 +70,5 @@ defmodule TigerBeetlex.AccountFlags do
 
   @spec bool_to_u1(b :: boolean()) :: 0 | 1
   defp bool_to_u1(true), do: 1
-  defp bool_to_u1(falsy) when falsy in [nil, false], do: 0
+  defp bool_to_u1(false), do: 0
 end

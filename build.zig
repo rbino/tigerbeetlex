@@ -51,8 +51,12 @@ pub fn build(b: *std.Build) !void {
     elixir_bindings_generator.root_module.addImport("vsr", vsr_mod);
 
     const elixir_bindings_generator_step = b.addRunArtifact(elixir_bindings_generator);
+
+    const elixir_bindings_formatting_step = b.addSystemCommand(&.{ "mix", "format" });
+    elixir_bindings_formatting_step.step.dependOn(&elixir_bindings_generator_step.step);
+
     const generate = b.step("bindings", "Generates the Elixir bindings from TigerBeetle source");
-    generate.dependOn(&elixir_bindings_generator_step.step);
+    generate.dependOn(&elixir_bindings_formatting_step.step);
 
     const lib = b.addSharedLibrary(.{
         .name = "tigerbeetlex",

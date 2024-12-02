@@ -3,7 +3,7 @@ const std = @import("std");
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) !void {
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
@@ -16,7 +16,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     // Get ERTS_INCLUDE_DIR from env, which should be passed by :build_dot_zig
-    const erts_include_dir = std.process.getEnvVarOwned(b.allocator, "ERTS_INCLUDE_DIR") catch blk: {
+    const erts_include_dir = b.graph.env_map.get("ERTS_INCLUDE_DIR") orelse blk: {
         // Fallback to extracting it from the erlang shell so we can also execute zig build manually
         const argv = [_][]const u8{
             "erl",
@@ -31,6 +31,28 @@ pub fn build(b: *std.Build) void {
         break :blk b.run(&argv);
     };
 
+    // This is passed from mix.exs, which extracts it by "parsing" build.zig.zon
+    const release = b.option(
+        []const u8,
+        "tigerbeetle_release",
+        "The release of TigerBeetle targeted by the client",
+    ) orelse {
+        std.log.err("tigerbeetle_release option is required", .{});
+        return error.MissingTigerBeetleRelease;
+    };
+
+    // This is hardcoded in TigerBeetle in src/scripts/release.zig
+    const release_client_min: []const u8 = "0.15.3";
+
+    const opts = .{
+        .target = target,
+        .@"config-release" = release,
+        .@"config-release-client-min" = release_client_min,
+        // The rest of VSR options will use the default value
+        // TODO: should we expose other VSR build options here?
+    };
+    const vsr_mod = b.dependency("tigerbeetle", opts).module("vsr");
+
     const lib = b.addSharedLibrary(.{
         .name = "tigerbeetlex",
         // In this case the main source file is merely a path, however, in more
@@ -41,6 +63,8 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     lib.addSystemIncludePath(.{ .cwd_relative = erts_include_dir });
+    // TigerBeetle imports
+    lib.root_module.addImport("vsr", vsr_mod);
     // This is needed to avoid errors on MacOS when loading the NIF
     lib.linker_allow_shlib_undefined = true;
 

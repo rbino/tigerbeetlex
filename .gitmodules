@@ -1,3 +1,0 @@
-[submodule "src/tigerbeetle"]
-	path = src/tigerbeetle
-	url = git@github.com:tigerbeetledb/tigerbeetle.git

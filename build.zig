@@ -47,7 +47,9 @@ pub fn build(b: *std.Build) void {
     // Do this so `lib` doesn't get prepended to the lib name, and `.so` is used as suffix also
     // on MacOS, since it's required by the NIF loading mechanism.
     // See https://github.com/ziglang/zig/issues/2231
-    const nif_so_install = b.addInstallFileWithDir(lib.getEmittedBin(), .lib, "tigerbeetlex.so");
+    // Windows still needs the .dll suffix
+    const lib_name = if (target.result.os.tag == .windows) "tigerbeetlex.dll" else "tigerbeetlex.so";
+    const nif_so_install = b.addInstallFileWithDir(lib.getEmittedBin(), .lib, lib_name);
     nif_so_install.step.dependOn(&lib.step);
     b.getInstallStep().dependOn(&nif_so_install.step);
 }

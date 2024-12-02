@@ -100,4 +100,8 @@ defmodule TigerBeetlex.NifAdapter do
   @spec lookup_transfers(client :: Types.client(), id_batch :: Types.id_batch()) ::
           {:ok, reference()} | {:error, Types.lookup_transfers_error()}
   def lookup_transfers(_client, _id_batch), do: :erlang.nif_error(:nif_not_loaded)
+
+  # @spec encode_query_filter(client :: Types.client(), query_filter :: Types.query_filter()) ::
+  #         {:ok, reference()} | {:error, Types.query_accounts_error()}
+  def query_accounts(_client, _query_filter), do: :erlang.nif_error(:nif_not_loaded)
 end

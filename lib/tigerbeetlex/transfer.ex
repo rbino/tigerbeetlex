@@ -4,7 +4,7 @@ defmodule TigerBeetlex.Transfer do
 
   This module defines a struct that represents a TigerBeetle transfer.
 
-  See [TigerBeetle docs](https://docs.tigerbeetle.com/reference/transfers) for the meaning of the
+  See [TigerBeetle docs](https://docs.tigerbeetle.com/reference/transfer/) for the meaning of the
   fields.
   """
 

@@ -35,7 +35,7 @@ defmodule TigerBeetlex.MixProject do
       {:build_dot_zig, "~> 0.5.0", runtime: false},
       {:uniq, "~> 0.6", only: :test},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
-      {:benchee, "~> 1.0", runtime: false},
+      {:benchee, "~> 1.0", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false}
     ]
   end

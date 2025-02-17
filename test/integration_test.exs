@@ -35,6 +35,35 @@ defmodule TigerBeetlex.IntegrationTest do
       {:ok, batch: batch}
     end
 
+    test "we can get account balances", ctx do
+      %{
+        batch: batch,
+        conn: conn,
+      } = ctx
+
+      id = random_id()
+
+      account = %Account{
+        id: id,
+        ledger: 1,
+        code: 1,
+        flags: %Account.Flags{history: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, account)
+
+      assert {:ok, stream} = Connection.create_accounts(conn, batch)
+      assert [] == Enum.to_list(stream)
+
+      assert %Account{
+               id: ^id,
+               ledger: 1,
+               code: 1,
+               flags: %Account.Flags{history: true}
+             } = get_account!(conn, id)
+    end
+
+
     test "successful account creation", %{conn: conn, batch: batch} do
       id = random_id()
 
@@ -823,6 +852,7 @@ defmodule TigerBeetlex.IntegrationTest do
       assert {:ok, stream} = Connection.lookup_transfers(conn, batch)
       assert [%Transfer{id: ^transfer_id}] = Enum.to_list(stream)
     end
+
   end
 
   defp random_id do

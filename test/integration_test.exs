@@ -406,7 +406,8 @@ defmodule TigerBeetlex.IntegrationTest do
       post_pending_transfer = %Transfer{
         id: post_pending_id,
         pending_id: pending_id,
-        flags: %Transfer.Flags{post_pending_transfer: true}
+        flags: %Transfer.Flags{post_pending_transfer: true},
+        amount: 100
       }
 
       {:ok, batch} = TransferBatch.append(batch, post_pending_transfer)
@@ -425,12 +426,24 @@ defmodule TigerBeetlex.IntegrationTest do
                flags: %Transfer.Flags{post_pending_transfer: true}
              } = get_transfer!(conn, post_pending_id)
 
+      assert %Transfer{
+               id: ^pending_id,
+               credit_account_id: ^credit_account_id,
+               debit_account_id: ^debit_account_id,
+               ledger: 1,
+               code: 1,
+               amount: 100,
+               flags: %Transfer.Flags{pending: true}
+             } = get_transfer!(conn, pending_id)
+
       assert %Account{
                id: ^credit_account_id,
                ledger: 1,
                code: 1,
                credits_pending: 0,
-               credits_posted: 100
+               credits_posted: 100,
+               debits_pending: 0,
+               debits_posted: 0
              } = get_account!(conn, credit_account_id)
 
       assert %Account{

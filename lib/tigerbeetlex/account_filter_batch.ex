@@ -24,7 +24,7 @@ defmodule TigerBeetlex.AccountFilterBatch do
   """
   @spec new(filter :: AccountFilter.t()) ::
           {:ok, t()} | {:error, Types.create_batch_error()} | {:error, Types.append_error()}
-  def new(filter) do
+  def new(%AccountFilter{} = filter) do
     binary = AccountFilter.to_batch_item(filter)
     # 1 is the only valid value here - since that's what tigerbeetle expects
     # https://docs.tigerbeetle.com/reference/requests/#batching-events
@@ -38,8 +38,8 @@ defmodule TigerBeetlex.AccountFilterBatch do
   Creates a new account batch with the specified capacity, rasing in case of an error.
   """
   @spec new!(filter :: AccountFilter.t()) :: t()
-  def new!(capacity) when is_integer(capacity) and capacity > 0 do
-    case new(capacity) do
+  def new!(%AccountFilter{} = filter) do
+    case new(filter) do
       {:ok, batch} -> batch
       {:error, :out_of_memory} -> raise OutOfMemoryError
       {:error, :invalid_batch} -> raise InvalidBatchError

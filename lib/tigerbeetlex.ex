@@ -14,6 +14,7 @@ defmodule TigerBeetlex do
   end
 
   alias TigerBeetlex.AccountBatch
+  alias TigerBeetlex.AccountFilterBatch
   alias TigerBeetlex.IDBatch
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.TransferBatch
@@ -184,6 +185,14 @@ defmodule TigerBeetlex do
           {:ok, reference()} | {:error, Types.create_transfers_error()}
   def create_transfers(%__MODULE__{} = client, %TransferBatch{} = transfer_batch) do
     NifAdapter.create_transfers(client.ref, transfer_batch.ref)
+  end
+
+  def get_account_balances(%__MODULE__{} = client, %AccountFilterBatch{} = batch) do
+    NifAdapter.get_account_balances(client.ref, batch.ref)
+  end
+
+  def get_account_transfers(%__MODULE__{} = client, %AccountFilterBatch{} = batch) do
+    NifAdapter.get_account_transfers(client.ref, batch.ref)
   end
 
   @doc """

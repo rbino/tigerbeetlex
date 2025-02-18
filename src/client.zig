@@ -8,6 +8,7 @@ const Resource = resource.Resource;
 
 const tb = @import("vsr").tigerbeetle;
 const tb_client = @import("vsr").tb_client;
+const AccountFilter = tb.AccountFilter;
 const Account = tb.Account;
 const Transfer = tb.Transfer;
 
@@ -61,7 +62,8 @@ fn OperationBatchItemType(comptime operation: tb_client.tb_operation_t) type {
         .create_accounts => Account,
         .create_transfers => Transfer,
         .lookup_accounts, .lookup_transfers => u128,
-        .get_account_transfers, .get_account_balances, .query_accounts, .query_transfers => @panic("TODO"),
+        .get_account_transfers, .get_account_balances => AccountFilter,
+        .query_accounts, .query_transfers => @panic("TODO"),
         .pulse => unreachable,
     };
 }
@@ -77,6 +79,8 @@ pub const create_accounts = get_submit_fn(.create_accounts);
 pub const create_transfers = get_submit_fn(.create_transfers);
 pub const lookup_accounts = get_submit_fn(.lookup_accounts);
 pub const lookup_transfers = get_submit_fn(.lookup_transfers);
+pub const get_account_transfers = get_submit_fn(.get_account_transfers);
+pub const get_account_balances = get_submit_fn(.get_account_balances);
 
 fn get_submit_fn(comptime operation: tb_client.tb_operation_t) (fn (
     env: beam.Env,

@@ -5,7 +5,10 @@ defmodule TigerBeetlex.IntegrationTest do
 
   alias TigerBeetlex.{
     Account,
+    AccountBalance,
     AccountBatch,
+    AccountFilter,
+    AccountFilterBatch,
     AccountFlags,
     Connection,
     CreateAccountsResult,
@@ -15,6 +18,9 @@ defmodule TigerBeetlex.IntegrationTest do
     TransferBatch,
     TransferFlags
   }
+
+  # 254 since it runs against a --development instance
+  @max_batch_size 254
 
   setup_all do
     name = :tb
@@ -28,6 +34,216 @@ defmodule TigerBeetlex.IntegrationTest do
     _pid = start_supervised!({Connection, args})
 
     {:ok, conn: name}
+  end
+
+  describe "get_account_balances/2" do
+    setup do
+      {:ok, batch} = AccountBatch.new(32)
+
+      {:ok, batch: batch}
+    end
+
+    test "we can fetch an account balances for an account", ctx do
+      %{
+        batch: batch,
+        conn: conn
+      } = ctx
+
+      debit_account_id = random_id()
+      credit_account_id = random_id()
+
+      deposit = %Account{
+        id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        flags: %AccountFlags{history: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, deposit)
+
+      credit = %Account{
+        id: credit_account_id,
+        ledger: 1,
+        code: 1,
+        flags: %AccountFlags{history: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, credit)
+
+      assert {:ok, []} = Connection.create_accounts(conn, batch)
+
+      {:ok, tbatch} = TransferBatch.new(32)
+
+      transfer = %Transfer{
+        id: random_id(),
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        user_data_128: <<42::128>>,
+        amount: 100
+      }
+
+      {:ok, tbatch} = TransferBatch.append(tbatch, transfer)
+
+      transfer = %Transfer{
+        id: random_id(),
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        user_data_128: <<43::128>>,
+        amount: 3000
+      }
+
+      {:ok, tbatch} = TransferBatch.append(tbatch, transfer)
+
+      assert {:ok, []} = Connection.create_transfers(conn, tbatch)
+
+      assert %Account{
+               ledger: 1,
+               code: 1,
+               credits_pending: 0,
+               credits_posted: 0,
+               debits_pending: 0,
+               debits_posted: 3100,
+               flags: %AccountFlags{history: true}
+             } = get_account!(conn, debit_account_id)
+
+      assert %Account{
+               ledger: 1,
+               code: 1,
+               credits_pending: 0,
+               credits_posted: 3100,
+               debits_pending: 0,
+               debits_posted: 0,
+               flags: %AccountFlags{history: true}
+             } = get_account!(conn, credit_account_id)
+
+      assert [
+               %AccountBalance{
+                 debits_pending: 0,
+                 debits_posted: 100,
+                 credits_pending: 0,
+                 credits_posted: 0
+               },
+               %AccountBalance{
+                 debits_pending: 0,
+                 debits_posted: 3100,
+                 credits_pending: 0,
+                 credits_posted: 0
+               }
+             ] = get_balances!(conn, debit_account_id)
+
+      assert [
+               %AccountBalance{
+                 debits_pending: 0,
+                 debits_posted: 0,
+                 credits_pending: 0,
+                 credits_posted: 100
+               },
+               %AccountBalance{
+                 debits_pending: 0,
+                 debits_posted: 0,
+                 credits_pending: 0,
+                 credits_posted: 3100
+               }
+             ] = get_balances!(conn, credit_account_id)
+    end
+
+    @tag only: true
+    test "we can list transfers on an account", ctx do
+      %{
+        batch: batch,
+        conn: conn
+      } = ctx
+
+      debit_account_id = random_id()
+      credit_account_id = random_id()
+
+      deposit = %Account{
+        id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        flags: %AccountFlags{history: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, deposit)
+
+      credit = %Account{
+        id: credit_account_id,
+        ledger: 1,
+        code: 1,
+        flags: %AccountFlags{history: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, credit)
+      assert {:ok, []} = Connection.create_accounts(conn, batch)
+
+      {:ok, tbatch} = TransferBatch.new(32)
+
+      transfer = %Transfer{
+        id: random_id(),
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        user_data_128: <<42::128>>,
+        amount: 100
+      }
+
+      {:ok, tbatch} = TransferBatch.append(tbatch, transfer)
+
+      transfer = %Transfer{
+        id: random_id(),
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        user_data_128: <<43::128>>,
+        amount: 3000
+      }
+
+      {:ok, tbatch} = TransferBatch.append(tbatch, transfer)
+
+      assert {:ok, []} = Connection.create_transfers(conn, tbatch)
+
+      assert %Account{
+               ledger: 1,
+               code: 1,
+               credits_pending: 0,
+               credits_posted: 0,
+               debits_pending: 0,
+               debits_posted: 3100
+             } = get_account!(conn, debit_account_id)
+
+      assert %Account{
+               ledger: 1,
+               code: 1,
+               credits_pending: 0,
+               credits_posted: 3100,
+               debits_pending: 0,
+               debits_posted: 0
+             } = get_account!(conn, credit_account_id)
+
+      assert [
+               %TigerBeetlex.Transfer{
+                 amount: 100
+               },
+               %TigerBeetlex.Transfer{
+                 amount: 3000
+               }
+             ] = get_account_transfers!(conn, debit_account_id)
+
+      assert [
+               %TigerBeetlex.Transfer{
+                 amount: 100
+               },
+               %TigerBeetlex.Transfer{
+                 amount: 3000
+               }
+             ] = get_account_transfers!(conn, credit_account_id)
+    end
   end
 
   describe "create_accounts/2" do
@@ -192,11 +408,8 @@ defmodule TigerBeetlex.IntegrationTest do
     end
 
     test "max batch size account creation", %{conn: conn} do
-      # 254 since it runs against a --development instance
-      max_batch_size = 254
-
       batch =
-        Enum.reduce(1..max_batch_size, AccountBatch.new!(max_batch_size), fn _idx, batch ->
+        Enum.reduce(1..@max_batch_size, AccountBatch.new!(@max_batch_size), fn _idx, batch ->
           account = %Account{
             id: random_id(),
             ledger: 1,
@@ -852,6 +1065,32 @@ defmodule TigerBeetlex.IntegrationTest do
     assert [] = results
 
     id
+  end
+
+  defp get_balances!(conn, account_id) do
+    {:ok, batch} =
+      AccountFilterBatch.new(%AccountFilter{
+        account_id: account_id,
+        limit: @max_batch_size,
+        flags: %TigerBeetlex.AccountFilterFlags{debits: true, credits: true}
+      })
+
+    assert {:ok, list} = Connection.get_account_balances(conn, batch)
+
+    list
+  end
+
+  defp get_account_transfers!(conn, account_id) do
+    {:ok, batch} =
+      AccountFilterBatch.new(%AccountFilter{
+        account_id: account_id,
+        limit: @max_batch_size,
+        flags: %TigerBeetlex.AccountFilterFlags{debits: true, credits: true}
+      })
+
+    assert {:ok, list} = Connection.get_account_transfers(conn, batch)
+
+    list
   end
 
   defp get_account!(conn, id) do

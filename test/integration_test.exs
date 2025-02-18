@@ -256,32 +256,20 @@ defmodule TigerBeetlex.IntegrationTest do
              } = get_account!(conn, credit_account_id)
 
       assert [
-               %TigerBeetlex.AccountBalance{
-                 debits_pending: 0,
-                 debits_posted: 100,
-                 credits_pending: 0,
-                 credits_posted: 0
+               %TigerBeetlex.Transfer{
+                 amount: 100
                },
-               %TigerBeetlex.AccountBalance{
-                 debits_pending: 0,
-                 debits_posted: 3100,
-                 credits_pending: 0,
-                 credits_posted: 0
+               %TigerBeetlex.Transfer{
+                 amount: 3000
                }
              ] = get_account_transfers!(conn, debit_account_id)
 
       assert [
-               %TigerBeetlex.AccountBalance{
-                 debits_pending: 0,
-                 debits_posted: 0,
-                 credits_pending: 0,
-                 credits_posted: 100
+               %TigerBeetlex.Transfer{
+                 amount: 100
                },
-               %TigerBeetlex.AccountBalance{
-                 debits_pending: 0,
-                 debits_posted: 0,
-                 credits_pending: 0,
-                 credits_posted: 3100
+               %TigerBeetlex.Transfer{
+                 amount: 3000
                }
              ] = get_account_transfers!(conn, credit_account_id)
     end

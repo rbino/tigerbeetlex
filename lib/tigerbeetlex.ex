@@ -200,7 +200,7 @@ defmodule TigerBeetlex do
   end
 
   def get_account_transfers(%__MODULE__{} = client, %AccountFilterBatch{} = batch) do
-    NifAdapter.get_account_balances(client.ref, batch.ref)
+    NifAdapter.get_account_transfers(client.ref, batch.ref)
   end
 
   @doc """

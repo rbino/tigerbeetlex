@@ -42,7 +42,6 @@ defmodule TigerBeetlex.Response do
   @operation_get_account_transfers 133
   @operation_get_account_balances 134
 
-
   typedstruct opaque: true do
     field :operation, non_neg_integer()
     field :data, binary()

@@ -64,14 +64,14 @@ defmodule TigerBeetlex.NifAdapter do
   def get_account_balances(_client, _id), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec create_account_filter_batch(capacity :: non_neg_integer()) ::
-          {:ok, Types.account_filter_batch()} | {:error, Types.create_batch_error()} 
+          {:ok, Types.account_filter_batch()} | {:error, Types.create_batch_error()}
   def create_account_filter_batch(_capacity), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec append_account_filter(
           batch :: Types.account_filter_batch(),
           binary :: Types.account_filter_binary()
-  ) ::
-          {:ok, Types.account_filter_batch()} | {:error, Types.append_batch_error()} 
+        ) ::
+          {:ok, Types.account_filter_batch()} | {:error, Types.append_batch_error()}
   def append_account_filter(_batch, _binary), do: :erlang.nif_error(:nif_not_loaded)
 
   @spec append_transfer(

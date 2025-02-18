@@ -50,16 +50,11 @@ defmodule TigerBeetlex.AccountFilter do
 
     flags_u32 = (flags || %Flags{}) |> Flags.to_u32!()
 
-    <<account_id::binary-size(16),
-      user_data_128_default(user_data_128)::binary-size(16),
+    <<account_id::binary-size(16), user_data_128_default(user_data_128)::binary-size(16),
       user_data_64_default(user_data_64)::binary-size(8),
-      user_data_32_default(user_data_32)::binary-size(4), 
-      code::unsigned-little-16,
-      reserved::binary,
-      timestamp_min::unsigned-little-64,
-      timestamp_max::unsigned-little-64,
-      limit::unsigned-little-32,
-      flags_u32::unsigned-little-32>>
+      user_data_32_default(user_data_32)::binary-size(4), code::unsigned-little-16,
+      reserved::binary, timestamp_min::unsigned-little-64, timestamp_max::unsigned-little-64,
+      limit::unsigned-little-32, flags_u32::unsigned-little-32>>
   end
 
   defp user_data_128_default(nil), do: <<0::unit(8)-size(16)>>

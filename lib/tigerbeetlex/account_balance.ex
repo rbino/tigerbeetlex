@@ -38,7 +38,7 @@ defmodule TigerBeetlex.AccountBalance do
       debits_pending: debits_pending,
       debits_posted: debits_posted,
       credits_pending: credits_pending,
-      credits_posted: credits_posted,
+      credits_posted: credits_posted
     }
   end
 end

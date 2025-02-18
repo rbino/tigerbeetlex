@@ -10,6 +10,7 @@ defmodule TigerBeetlex.Connection do
   """
 
   alias TigerBeetlex.{
+    AccountFilterBatch,
     AccountBatch,
     IDBatch,
     Receiver,
@@ -286,6 +287,16 @@ defmodule TigerBeetlex.Connection do
   def lookup_transfers(name, %IDBatch{} = id_batch) do
     via_tuple(name)
     |> GenServer.call({:lookup_transfers, id_batch})
+  end
+
+  def get_account_balances(name, %AccountFilterBatch{} = batch) do
+    via_tuple(name)
+    |> GenServer.call({:get_account_balances, batch})
+  end
+
+  def get_account_transfers(name, %AccountFilterBatch{} = batch) do
+    via_tuple(name)
+    |> GenServer.call({:get_account_transfers, batch})
   end
 
   defp via_tuple(name) do

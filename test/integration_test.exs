@@ -5,7 +5,10 @@ defmodule TigerBeetlex.IntegrationTest do
 
   alias TigerBeetlex.{
     Account,
+    AccountBalance,
     AccountBatch,
+    AccountFilter,
+    AccountFilterBatch,
     Connection,
     CreateAccountError,
     CreateTransferError,
@@ -28,17 +31,18 @@ defmodule TigerBeetlex.IntegrationTest do
     {:ok, conn: name}
   end
 
-  describe "create_accounts/2" do
+  describe "get_account_balances/2" do
     setup do
       {:ok, batch} = AccountBatch.new(32)
 
       {:ok, batch: batch}
     end
 
-    test "we can get account balances", ctx do
+    @tag only: true
+    test "we can create an account with balances", ctx do
       %{
         batch: batch,
-        conn: conn,
+        conn: conn
       } = ctx
 
       id = random_id()
@@ -63,6 +67,233 @@ defmodule TigerBeetlex.IntegrationTest do
              } = get_account!(conn, id)
     end
 
+    @tag only: true
+    test "we can fetch an account balances for an account", ctx do
+      %{
+        batch: batch,
+        conn: conn
+      } = ctx
+
+      debit_account_id = random_id()
+      credit_account_id = random_id()
+
+      deposit = %Account{
+        id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        flags: %Account.Flags{history: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, deposit)
+
+      credit = %Account{
+        id: credit_account_id,
+        ledger: 1,
+        code: 1,
+        flags: %Account.Flags{history: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, credit)
+
+      assert {:ok, stream} = Connection.create_accounts(conn, batch)
+      assert [] == Enum.to_list(stream)
+
+      {:ok, tbatch} = TransferBatch.new(32)
+
+      transfer = %Transfer{
+        id: random_id(),
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        user_data_128: <<42::128>>,
+        amount: 100
+      }
+
+      {:ok, tbatch} = TransferBatch.append(tbatch, transfer)
+
+      transfer = %Transfer{
+        id: random_id(),
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        user_data_128: <<43::128>>,
+        amount: 3000
+      }
+
+      {:ok, tbatch} = TransferBatch.append(tbatch, transfer)
+
+      assert {:ok, stream} = Connection.create_transfers(conn, tbatch)
+      assert [] == Enum.to_list(stream)
+
+      assert %Account{
+               ledger: 1,
+               code: 1,
+               credits_pending: 0,
+               credits_posted: 0,
+               debits_pending: 0,
+               debits_posted: 3100,
+               flags: %Account.Flags{history: true}
+             } = get_account!(conn, debit_account_id)
+
+      assert %Account{
+               ledger: 1,
+               code: 1,
+               credits_pending: 0,
+               credits_posted: 3100,
+               debits_pending: 0,
+               debits_posted: 0,
+               flags: %Account.Flags{history: true}
+             } = get_account!(conn, credit_account_id)
+
+      assert [
+               %TigerBeetlex.AccountBalance{
+                 debits_pending: 0,
+                 debits_posted: 100,
+                 credits_pending: 0,
+                 credits_posted: 0
+               },
+               %TigerBeetlex.AccountBalance{
+                 debits_pending: 0,
+                 debits_posted: 3100,
+                 credits_pending: 0,
+                 credits_posted: 0
+               }
+             ] = get_balances!(conn, debit_account_id)
+
+      assert [
+               %TigerBeetlex.AccountBalance{
+                 debits_pending: 0,
+                 debits_posted: 0,
+                 credits_pending: 0,
+                 credits_posted: 100
+               },
+               %TigerBeetlex.AccountBalance{
+                 debits_pending: 0,
+                 debits_posted: 0,
+                 credits_pending: 0,
+                 credits_posted: 3100
+               }
+             ] = get_balances!(conn, credit_account_id)
+    end
+
+    @tag only: true
+    test "we can list transfers on an account", ctx do
+      %{
+        batch: batch,
+        conn: conn
+      } = ctx
+
+      debit_account_id = random_id()
+      credit_account_id = random_id()
+
+      deposit = %Account{
+        id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        flags: %Account.Flags{history: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, deposit)
+
+      credit = %Account{
+        id: credit_account_id,
+        ledger: 1,
+        code: 1,
+        flags: %Account.Flags{history: true}
+      }
+
+      {:ok, batch} = AccountBatch.append(batch, credit)
+      assert {:ok, stream} = Connection.create_accounts(conn, batch)
+      assert [] == Enum.to_list(stream)
+
+      {:ok, tbatch} = TransferBatch.new(32)
+
+      transfer = %Transfer{
+        id: random_id(),
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        user_data_128: <<42::128>>,
+        amount: 100
+      }
+
+      {:ok, tbatch} = TransferBatch.append(tbatch, transfer)
+
+      transfer = %Transfer{
+        id: random_id(),
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        user_data_128: <<43::128>>,
+        amount: 3000
+      }
+
+      {:ok, tbatch} = TransferBatch.append(tbatch, transfer)
+
+      assert {:ok, stream} = Connection.create_transfers(conn, tbatch)
+      assert [] == Enum.to_list(stream)
+
+      assert %Account{
+               ledger: 1,
+               code: 1,
+               credits_pending: 0,
+               credits_posted: 0,
+               debits_pending: 0,
+               debits_posted: 3100
+             } = get_account!(conn, debit_account_id)
+
+      assert %Account{
+               ledger: 1,
+               code: 1,
+               credits_pending: 0,
+               credits_posted: 3100,
+               debits_pending: 0,
+               debits_posted: 0
+             } = get_account!(conn, credit_account_id)
+
+      assert [
+               %TigerBeetlex.AccountBalance{
+                 debits_pending: 0,
+                 debits_posted: 100,
+                 credits_pending: 0,
+                 credits_posted: 0
+               },
+               %TigerBeetlex.AccountBalance{
+                 debits_pending: 0,
+                 debits_posted: 3100,
+                 credits_pending: 0,
+                 credits_posted: 0
+               }
+             ] = get_account_transfers!(conn, debit_account_id)
+
+      assert [
+                             %TigerBeetlex.AccountBalance{
+                debits_pending: 0,
+                debits_posted: 0,
+                credits_pending: 0,
+                credits_posted: 100
+              },
+              %TigerBeetlex.AccountBalance{
+                debits_pending: 0,
+                debits_posted: 0,
+                credits_pending: 0,
+                credits_posted: 3100
+              }
+
+             ] = get_account_transfers!(conn, credit_account_id)
+    end
+  end
+
+  describe "create_accounts/2" do
+    setup do
+      {:ok, batch} = AccountBatch.new(32)
+
+      {:ok, batch: batch}
+    end
 
     test "successful account creation", %{conn: conn, batch: batch} do
       id = random_id()
@@ -852,7 +1083,6 @@ defmodule TigerBeetlex.IntegrationTest do
       assert {:ok, stream} = Connection.lookup_transfers(conn, batch)
       assert [%Transfer{id: ^transfer_id}] = Enum.to_list(stream)
     end
-
   end
 
   defp random_id do
@@ -901,6 +1131,28 @@ defmodule TigerBeetlex.IntegrationTest do
     assert [] = Enum.to_list(stream)
 
     id
+  end
+
+  defp get_balances!(conn, account_id) do
+    {:ok, batch} =
+      AccountFilterBatch.new(%AccountFilter{
+        account_id: account_id,
+        flags: %TigerBeetlex.AccountFilter.Flags{debits: true, credits: true}
+      })
+
+    {:ok, stream} = Connection.get_account_balances(conn, batch)
+    Enum.to_list(stream)
+  end
+
+  defp get_account_transfers!(conn, account_id) do
+    {:ok, batch} =
+      AccountFilterBatch.new(%AccountFilter{
+        account_id: account_id,
+        flags: %TigerBeetlex.AccountFilter.Flags{debits: true, credits: true}
+      })
+
+    {:ok, stream} = Connection.get_account_transfers(conn, batch)
+    Enum.to_list(stream)
   end
 
   defp get_account!(conn, id) do

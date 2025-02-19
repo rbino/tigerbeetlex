@@ -31,23 +31,21 @@ pub fn build(b: *std.Build) !void {
         break :blk b.run(&argv);
     };
 
-    // TODO: these should be centralized in a single place and passed down from there
-    const release: []const u8 = "0.15.4";
-    const release_client_min: []const u8 = "0.15.3";
+    const tigerbeetle_dep = b.dependency("tigerbeetle", .{});
+    const vsr_mod = b.createModule(.{
+        .root_source_file = tigerbeetle_dep.path("src/vsr.zig"),
+    });
 
-    const opts = .{
-        .@"config-release" = release,
-        .@"config-release-client-min" = release_client_min,
-        // The rest of VSR options will use the default value
-        // TODO: should we expose other VSR build options here?
-    };
-    const vsr_mod = b.dependency("tigerbeetle", opts).module("vsr");
+    const config_mod = b.createModule(.{
+        .root_source_file = b.path("src/config.zig"),
+    });
 
     const elixir_bindings_generator = b.addExecutable(.{
         .name = "elixir_bindings",
         .root_source_file = b.path("tools/elixir_bindings.zig"),
         .target = b.graph.host,
     });
+    elixir_bindings_generator.root_module.addImport("config", config_mod);
     elixir_bindings_generator.root_module.addImport("vsr", vsr_mod);
 
     const elixir_bindings_generator_step = b.addRunArtifact(elixir_bindings_generator);
@@ -68,6 +66,8 @@ pub fn build(b: *std.Build) !void {
         .link_libc = true,
     });
     lib.addSystemIncludePath(.{ .cwd_relative = erts_include_dir });
+    // Config (vsr_config) imports
+    lib.root_module.addImport("config", config_mod);
     // TigerBeetle imports
     lib.root_module.addImport("vsr", vsr_mod);
     // This is needed to avoid errors on MacOS when loading the NIF

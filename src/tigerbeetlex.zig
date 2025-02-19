@@ -17,6 +17,10 @@ const AccountBatchResource = account_batch.AccountBatchResource;
 const IdBatchResource = id_batch.IdBatchResource;
 const TransferBatchResource = transfer_batch.TransferBatchResource;
 
+// Needed to configure VSR
+pub const vsr_options = @import("config").vsr_options;
+
+// Reduce log spamminess
 pub const std_options = .{
     .log_level = .err,
 };

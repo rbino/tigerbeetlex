@@ -65,15 +65,15 @@ defmodule TigerBeetlex do
       {:tigerbeetlex_response, request_ref, response}
 
   Where `request_ref` is the same `ref` returned when this function was called and `response` is
-  a response that can be decoded using `TigerBeetlex.Response.to_stream/1`.
+  a response that can be decoded using `TigerBeetlex.Response.decode/1`.
 
-  The value returned from `TigerBeetlex.Response.to_stream(response)` will either be
-  `{:error, reason}` or `{:ok, stream}`.
+  The value returned from `TigerBeetlex.Response.decode(response)` will either be
+  `{:error, reason}` or `{:ok, results}`.
 
-  `stream` is an enumerable that can lazily produce `%TigerBeetlex.CreateAccountError{}` structs
+  `results` is a list of `%TigerBeetlex.CreateAccountsResult{}` structs
   which contain the index of the account batch and the reason of the failure. An account has a
-  corresponding `%TigerBeetlex.CreateAccountError{}` only if it fails to be created, otherwise
-  the account has been created succesfully (so a successful request returns an empty stream).
+  corresponding `%TigerBeetlex.CreateAccountsResult{}` only if it fails to be created, otherwise
+  the account has been created succesfully (so a successful request returns an empty list).
 
   ## Examples
 
@@ -84,13 +84,11 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.create_accounts(client, batch)
 
-      {:ok, stream} =
-        receive do
-          {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.to_stream(response)
-        end
+      receive do
+        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
+      end
 
-      Enum.to_list(stream)
-      #=> []
+      #=> {:ok, []}
 
       # Creation error
       batch =
@@ -99,13 +97,11 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.create_accounts(client, batch)
 
-      {:ok, stream} =
-        receive do
-          {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.to_stream(response)
-        end
+      receive do
+        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
+      end
 
-      Enum.to_list(stream)
-      #=> [%TigerBeetlex.CreateAccountError{index: 0, reason: :id_must_not_be_zero}]
+      #=> {:ok, [%TigerBeetlex.CreateAccountError{index: 0, reason: :id_must_not_be_zero}]}
   """
   @spec create_accounts(client :: t(), account_batch :: TigerBeetlex.AccountBatch.t()) ::
           {:ok, reference()} | {:error, Types.create_accounts_error()}
@@ -128,15 +124,15 @@ defmodule TigerBeetlex do
       {:tigerbeetlex_response, request_ref, response}
 
   Where `request_ref` is the same `ref` returned when this function was called and `response` is
-  a response that can be decoded using `TigerBeetlex.Response.to_stream/1`.
+  a response that can be decoded using `TigerBeetlex.Response.decode/1`.
 
-  The value returned from `TigerBeetlex.Response.to_stream(response)` will either be
-  `{:error, reason}` or `{:ok, stream}`.
+  The value returned from `TigerBeetlex.Response.decode(response)` will either be
+  `{:error, reason}` or `{:ok, results}`.
 
-  `stream` is an enumerable that can lazily produce `%TigerBeetlex.CreateTransferError{}` structs
+  `results` is a list of `%TigerBeetlex.CreateTransfersResult{}` structs
   which contain the index of the transfer batch and the reason of the failure. An transfer has a
-  corresponding `%TigerBeetlex.CreateTransferError{}` only if it fails to be created, otherwise
-  the transfer has been created succesfully (so a successful request returns an empty stream).
+  corresponding `%TigerBeetlex.CreateTransfersResult{}` only if it fails to be created, otherwise
+  the transfer has been created succesfully (so a successful request returns an empty list).
 
   ## Examples
 
@@ -156,13 +152,11 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.create_transfers(client, batch)
 
-      {:ok, stream} =
-        receive do
-          {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.to_stream(response)
-        end
+      receive do
+        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
+      end
 
-      Enum.to_list(stream)
-      #=> []
+      #=> {:ok, []}
 
       # Creation error
       batch =
@@ -180,13 +174,11 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.create_transfers(client, batch)
 
-      {:ok, stream} =
-        receive do
-          {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.to_stream(response)
-        end
+      receive do
+        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
+      end
 
-      Enum.to_list(stream)
-      #=> [%TigerBeetlex.CreateTransferError{index: 0, reason: :id_must_not_be_zero}]
+      #=> {:ok, [%TigerBeetlex.CreateTransferError{index: 0, reason: :id_must_not_be_zero}]}
   """
   @spec create_transfers(client :: t(), transfer_batch :: TigerBeetlex.TransferBatch.t()) ::
           {:ok, reference()} | {:error, Types.create_transfers_error()}
@@ -209,14 +201,14 @@ defmodule TigerBeetlex do
       {:tigerbeetlex_response, request_ref, response}
 
   Where `request_ref` is the same `ref` returned when this function was called and `response` is
-  a response that can be decoded using `TigerBeetlex.Response.to_stream/1`.
+  a response that can be decoded using `TigerBeetlex.Response.decode/1`.
 
-  The value returned from `TigerBeetlex.Response.to_stream(response)` will either be
-  `{:error, reason}` or `{:ok, stream}`.
+  The value returned from `TigerBeetlex.Response.decode(response)` will either be
+  `{:error, reason}` or `{:ok, results}`.
 
-  `stream` is an enumerable that can lazily produce `%TigerBeetlex.Account{}` structs. If an id in
-  the batch does not correspond to an existing account, it will simply be skipped, so the result
-  could have less accounts then the provided ids in the id batch.
+  `results` is a list of `%TigerBeetlex.Account{}` structs. If an id in the batch does not
+  correspond to an existing account, it will simply be skipped, so the result could have less
+  accounts then the provided ids in the id batch.
 
   ## Examples
 
@@ -226,13 +218,11 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.lookup_accounts(client, batch)
 
-      {:ok, stream} =
-        receive do
-          {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.to_stream(response)
-        end
+      receive do
+        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
+      end
 
-      Enum.to_list(stream)
-      #=> [%TigerBeetlex.Account{}]
+      #=> {:ok, [%TigerBeetlex.Account{}]}
   """
   @spec lookup_accounts(client :: t(), id_batch :: TigerBeetlex.IDBatch.t()) ::
           {:ok, reference()} | {:error, Types.lookup_accounts_error()}
@@ -255,14 +245,14 @@ defmodule TigerBeetlex do
       {:tigerbeetlex_response, request_ref, response}
 
   Where `request_ref` is the same `ref` returned when this function was called and `response` is
-  a response that can be decoded using `TigerBeetlex.Response.to_stream/1`.
+  a response that can be decoded using `TigerBeetlex.Response.decode/1`.
 
-  The value returned from `TigerBeetlex.Response.to_stream(response)` will either be
-  `{:error, reason}` or `{:ok, stream}`.
+  The value returned from `TigerBeetlex.Response.decode(response)` will either be
+  `{:error, reason}` or `{:ok, results}`.
 
-  `stream` is an enumerable that can lazily produce `%TigerBeetlex.Transfer{}` structs. If an id in
-  the batch does not correspond to an existing transfer, it will simply be skipped, so the result
-  could have less accounts then the provided ids in the id batch.
+  `results` is list of `%TigerBeetlex.Transfer{}` structs. If an id in the batch does not correspond
+  to an existing transfer, it will simply be skipped, so the result could have less accounts then
+  the provided ids in the id batch.
 
   ## Examples
 
@@ -272,13 +262,11 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.lookup_transfers(client, batch)
 
-      {:ok, stream} =
-        receive do
-          {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.to_stream(response)
-        end
+      receive do
+        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
+      end
 
-      Enum.to_list(stream)
-      #=> [%TigerBeetlex.Transfer{}]
+      #=> {:ok, [%TigerBeetlex.Transfer{}]}
   """
   @spec lookup_transfers(client :: t(), id_batch :: TigerBeetlex.IDBatch.t()) ::
           {:ok, reference()} | {:error, Types.lookup_transfers_error()}

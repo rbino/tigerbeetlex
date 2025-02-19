@@ -50,7 +50,7 @@ defmodule TigerBeetlex.Receiver do
   @impl true
   def handle_info({:tigerbeetlex_response, ref, response}, state) do
     {from, new_pending_requests} = Map.pop!(state.pending_requests, ref)
-    response = Response.to_stream(response)
+    response = Response.decode(response)
     GenServer.reply(from, response)
     {:noreply, %{state | pending_requests: new_pending_requests}}
   end

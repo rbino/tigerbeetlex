@@ -1,94 +1,82 @@
 defmodule TigerBeetlex.ResponseTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias TigerBeetlex.{
     Account,
-    CreateAccountError,
-    CreateTransferError,
+    CreateAccountsResult,
+    CreateTransfersResult,
     Transfer
   }
 
   alias TigerBeetlex.Response
 
-  @status TigerBeetlex.PacketStatus.extract_packet_status_map()
-
-  @operation [
-    create_accounts: 129,
-    create_transfers: 130,
-    lookup_accounts: 131,
-    lookup_transfers: 132
-  ]
-
-  describe "to_stream/1 returns error" do
-    for {error_status_name, _error_status_value} <- Map.delete(@status, :ok) do
+  describe "decode/1 returns error" do
+    for {error_status_name, error_status_value} <- Map.delete(Response.status_map(), :ok) do
       test "for status #{error_status_name}" do
         assert {:error, unquote(error_status_name)} ==
-                 unquote(error_status_name)
+                 unquote(error_status_value)
                  |> error_response()
-                 |> Response.to_stream()
+                 |> Response.decode()
       end
     end
   end
 
-  describe "to_stream/1 returns empty stream" do
-    for {op_name, op_value} <- @operation do
+  describe "decode/1 returns empty list" do
+    for {op_name, op_value} <- Response.operation_map() do
       test "for operation #{op_name} with empty data" do
-        assert {:ok, stream} =
+        assert {:ok, []} =
                  unquote(op_value)
                  |> ok_response(<<>>)
-                 |> Response.to_stream()
-
-        assert Enum.to_list(stream) == []
+                 |> Response.decode()
       end
     end
   end
 
-  describe "to_stream/1" do
-    test "returns stream of CreateAccountError for create_accounts operation" do
-      assert {:ok, stream} =
-               @operation[:create_accounts]
+  describe "decode/1" do
+    test "returns list of CreateAccountsResult for create_accounts operation" do
+      assert {:ok, [%CreateAccountsResult{}]} =
+               :create_accounts
+               |> operation()
                |> ok_response(<<0::unsigned-little-32, 1::unsigned-little-32>>)
-               |> Response.to_stream()
-
-      assert [%CreateAccountError{}] = Enum.to_list(stream)
+               |> Response.decode()
     end
 
-    test "returns stream of CreateTransferError for create_transfers operation" do
-      assert {:ok, stream} =
-               @operation[:create_transfers]
+    test "returns list of CreateTransfersResult for create_transfers operation" do
+      assert {:ok, [%CreateTransfersResult{}]} =
+               :create_transfers
+               |> operation()
                |> ok_response(<<0::unsigned-little-32, 1::unsigned-little-32>>)
-               |> Response.to_stream()
-
-      assert [%CreateTransferError{}] = Enum.to_list(stream)
+               |> Response.decode()
     end
 
-    test "returns stream of Account for lookup_accounts operation" do
-      assert {:ok, stream} =
-               @operation[:lookup_accounts]
+    test "returns list of Account for lookup_accounts operation" do
+      assert {:ok, [%Account{}]} =
+               :lookup_accounts
+               |> operation()
                |> ok_response(:binary.copy(<<0>>, 128))
-               |> Response.to_stream()
-
-      assert [%Account{}] = Enum.to_list(stream)
+               |> Response.decode()
     end
 
-    test "returns stream of Transfer for lookup_transfers operation" do
-      assert {:ok, stream} =
-               @operation[:lookup_transfers]
+    test "returns list of Transfer for lookup_transfers operation" do
+      assert {:ok, [%Transfer{}]} =
+               :lookup_transfers
+               |> operation()
                |> ok_response(:binary.copy(<<0>>, 128))
-               |> Response.to_stream()
-
-      assert [%Transfer{}] = Enum.to_list(stream)
+               |> Response.decode()
     end
   end
 
-  defp error_response(error_status_name) do
-    {_op_name, op_value} = Enum.random(@operation)
+  defp error_response(error_status_value) do
+    {_op_name, op_value} = Response.operation_map() |> Enum.random()
     data = Enum.random(0..16) |> :rand.bytes()
 
-    {@status[error_status_name], op_value, data}
+    {error_status_value, op_value, data}
   end
 
   defp ok_response(operation, data) do
-    {@status[:ok], operation, data}
+    {status(:ok), operation, data}
   end
+
+  defp status(status_name), do: Response.status_map() |> Map.fetch!(status_name)
+  defp operation(operation_name), do: Response.operation_map() |> Map.fetch!(operation_name)
 end

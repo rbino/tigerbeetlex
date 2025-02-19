@@ -62,7 +62,7 @@ defmodule TigerBeetlex.AccountBatch do
   def append(%AccountBatch{} = batch, %Account{} = account) do
     %AccountBatch{ref: ref} = batch
 
-    account_binary = Account.to_batch_item(account)
+    account_binary = Account.to_binary(account)
 
     with :ok <- NifAdapter.append_account(ref, account_binary) do
       {:ok, batch}
@@ -113,7 +113,7 @@ defmodule TigerBeetlex.AccountBatch do
           {:ok, t()} | {:error, Types.replace_error()}
   def replace(%AccountBatch{} = batch, idx, %Account{} = account)
       when is_number(idx) and idx >= 0 do
-    account_binary = Account.to_batch_item(account)
+    account_binary = Account.to_binary(account)
 
     with :ok <- NifAdapter.replace_account(batch.ref, idx, account_binary) do
       {:ok, batch}

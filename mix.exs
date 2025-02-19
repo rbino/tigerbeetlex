@@ -31,7 +31,6 @@ defmodule TigerBeetlex.MixProject do
     [
       {:typed_struct, "~> 0.3.0"},
       {:nimble_options, "~> 1.0"},
-      {:zig_parser, "~> 0.4.0", runtime: false},
       {:build_dot_zig, "~> 0.5.0", runtime: false},
       {:uniq, "~> 0.6", only: :test},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},

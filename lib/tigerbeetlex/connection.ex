@@ -118,11 +118,11 @@ defmodule TigerBeetlex.Connection do
   `account_batch` is a `%TigerBeetlex.AccountBatch{}`, see `TigerBeetlex.AccountBatch` for
   the functions to create and manipulate it.
 
-  If successful, the function returns `{:ok, stream}` where `stream` is an enumerable that
-  can lazily produce `%TigerBeetlex.CreateAccountError{}` structs which contain the index
+  If successful, the function returns `{:ok, results}` where `results` is a list of
+  `%TigerBeetlex.CreateAccountsResult{}` structs which contain the index
   of the account batch and the reason of the failure. An account has a corresponding
-  `%TigerBeetlex.CreateAccountError{}` only if it fails to be created, otherwise the account
-  has been created succesfully (so a successful request returns an empty stream).
+  `%TigerBeetlex.CreateAccountsResult{}` only if it fails to be created, otherwise the account
+  has been created succesfully (so a successful request returns an empty list).
 
   ## Examples
 
@@ -131,20 +131,17 @@ defmodule TigerBeetlex.Connection do
         TigerBeetlex.AccountBatch.new!(10)
         |> TigerBeetlex.AccountBatch.append!(%Account{id: <<42::128>>, ledger: 3, code: 4})
 
-      {:ok, stream} = TigerBeetlex.Connection.create_accounts(:tb, batch)
-
-      Enum.to_list(stream)
-      #=> []
+      TigerBeetlex.Connection.create_accounts(:tb, batch)
+      #=> {:ok, []}
 
       # Creation error
       batch =
         TigerBeetlex.AccountBatch.new!(10)
         |> TigerBeetlex.AccountBatch.append!(%Account{id: <<0::128>>, ledger: 3, code: 4})
 
-      {:ok, stream} = TigerBeetlex.Connection.create_accounts(:tb, batch)
+      TigerBeetlex.Connection.create_accounts(:tb, batch)
 
-      Enum.to_list(stream)
-      #=> [%TigerBeetlex.CreateAccountError{index: 0, reason: :id_must_not_be_zero}]
+      #=> {:ok, [%TigerBeetlex.CreateAccountError{index: 0, reason: :id_must_not_be_zero}]}
   """
   @spec create_accounts(
           name :: PartitionSupervisor.name(),
@@ -164,11 +161,11 @@ defmodule TigerBeetlex.Connection do
   `transfer_batch` is a `%TigerBeetlex.TransferBatch{}`, see `TigerBeetlex.TransferBatch` for
   the functions to create and manipulate it.
 
-  If successful, the function returns `{:ok, stream}` where `stream` is an enumerable that
-  can lazily produce `%TigerBeetlex.CreateTransferError{}` structs which contain the index
+  If successful, the function returns `{:ok, results}` where `results` is a list of
+  `%TigerBeetlex.CreateTransfersResult{}` structs which contain the index
   of the transfer batch and the reason of the failure. An transfer has a corresponding
-  `%TigerBeetlex.CreateTransferError{}` only if it fails to be created, otherwise the transfer
-  has been created succesfully (so a successful request returns an empty stream).
+  `%TigerBeetlex.CreateTransfersResult{}` only if it fails to be created, otherwise the transfer
+  has been created succesfully (so a successful request returns an empty list).
 
   ## Examples
 
@@ -186,10 +183,8 @@ defmodule TigerBeetlex.Connection do
           }
         )
 
-      {:ok, stream} = TigerBeetlex.Connection.create_transfers(:tb, batch)
-
-      Enum.to_list(stream)
-      #=> []
+      TigerBeetlex.Connection.create_transfers(:tb, batch)
+      #=> {:ok, []}
 
       # Creation error
       batch =
@@ -205,10 +200,8 @@ defmodule TigerBeetlex.Connection do
           }
         )
 
-      {:ok, stream} = TigerBeetlex.Connection.create_transfers(:tb, batch)
-
-      Enum.to_list(stream)
-      #=> [%TigerBeetlex.CreateTransferError{index: 0, reason: :id_must_not_be_zero}]
+      TigerBeetlex.Connection.create_transfers(:tb, batch)
+      #=> {:ok, [%TigerBeetlex.CreateTransferError{index: 0, reason: :id_must_not_be_zero}]}
   """
   @spec create_transfers(
           name :: PartitionSupervisor.name(),
@@ -228,10 +221,10 @@ defmodule TigerBeetlex.Connection do
   `id_batch` is a `%TigerBeetlex.IDBatch{}`, see `TigerBeetlex.IDBatch` for the functions to
   create and manipulate it.
 
-  If successful, the function returns `{:ok, stream}` where `stream` is an enumerable that
-  can lazily produce `%TigerBeetlex.Account{}` structs. If an id in the batch does not correspond
-  to an existing account, it will simply be skipped, so the result could have less accounts then
-  the provided ids in the id batch.
+  If successful, the function returns `{:ok, results}` where `results` is a list of
+  `%TigerBeetlex.Account{}` structs. If an id in the batch does not correspond to an existing
+  account, it will simply be skipped, so the result can have less accounts then the provided
+  ids in the id batch.
 
   ## Examples
 
@@ -239,10 +232,9 @@ defmodule TigerBeetlex.Connection do
         TigerBeetlex.IDBatch.new!(10)
         |> TigerBeetlex.IDBatch.append!(<<42::128>>)
 
-      {:ok, stream} = TigerBeetlex.Connection.lookup_accounts(:tb, batch)
+      TigerBeetlex.Connection.lookup_accounts(:tb, batch)
 
-      Enum.to_list(stream)
-      #=> [%TigerBeetlex.Account{}]
+      #=> {:ok, [%TigerBeetlex.Account{}]}
   """
   @spec lookup_accounts(
           name :: PartitionSupervisor.name(),
@@ -262,10 +254,10 @@ defmodule TigerBeetlex.Connection do
   `id_batch` is a `%TigerBeetlex.IDBatch{}`, see `TigerBeetlex.IDBatch` for the functions to
   create and manipulate it.
 
-  If successful, the function returns `{:ok, stream}` where `stream` is an enumerable that
-  can lazily produce `%TigerBeetlex.Transfer{}` structs. If an id in the batch does not correspond
-  to an existing transfer, it will simply be skipped, so the result could have less transfers then
-  the provided ids in the id batch.
+  If successful, the function returns `{:ok, results}` where `results` is a list of
+  `%TigerBeetlex.Transfer{}` structs. If an id in the batch does not correspond to an existing
+  transfer, it will simply be skipped, so the result could have less transfers then the provided
+  ids in the id batch.
 
   ## Examples
 
@@ -273,10 +265,8 @@ defmodule TigerBeetlex.Connection do
         TigerBeetlex.IDBatch.new!(10)
         |> TigerBeetlex.IDBatch.append!(<<42::128>>)
 
-      {:ok, stream} = TigerBeetlex.Connection.lookup_transfers(:tb, batch)
-
-      Enum.to_list(stream)
-      #=> [%TigerBeetlex.Transfer{}]
+      TigerBeetlex.Connection.lookup_transfers(:tb, batch)
+      #=> {:ok, [%TigerBeetlex.Transfer{}]}
   """
   @spec lookup_transfers(
           name :: PartitionSupervisor.name(),

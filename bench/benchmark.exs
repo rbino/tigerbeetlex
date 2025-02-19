@@ -40,9 +40,9 @@ bench = fn ->
 
       {elapsed, response} = :timer.tc(fn -> Connection.create_transfers(:tb, batch) end)
 
-      {:ok, stream} = response
+      {:ok, results} = response
 
-      if length(Enum.to_list(stream)) != length(chunk), do: raise("Invalid result")
+      if length(results) != length(chunk), do: raise("Invalid result")
 
       max = max(max_batch_us, elapsed)
       total = time_total_us + elapsed

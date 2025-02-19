@@ -1,5 +1,5 @@
 defmodule TigerBeetlex.TransferBatchTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias TigerBeetlex.BatchFullError
   alias TigerBeetlex.OutOfBoundsError

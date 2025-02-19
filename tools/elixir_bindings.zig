@@ -2,7 +2,14 @@ const std = @import("std");
 const assert = std.debug.assert;
 
 const vsr = @import("vsr");
+const constants = vsr.constants;
+const IO = vsr.io.IO;
+
+const Storage = vsr.storage.StorageType(IO);
+const StateMachine = vsr.state_machine.StateMachineType(Storage, constants.state_machine_config);
+
 const tb = vsr.tigerbeetle;
+const tb_client = vsr.tb_client;
 
 const auto_generated_code_notice =
     \\#######################################################
@@ -695,6 +702,164 @@ pub fn generate_bindings(
     }
 }
 
+fn emit_response_module(
+    buffer: *std.ArrayList(u8),
+) !void {
+    try buffer.writer().print(
+        \\defmodule TigerBeetlex.Response do
+        \\  @moduledoc """
+        \\  NIF Response parsing.
+        \\  This module is responsible for converting a response received from the TigerBeetle NIF to either
+        \\  an error or a list of results.
+        \\  """
+        \\
+        \\  @doc """
+        \\  Converts a NIF message response to a list of results.
+        \\
+        \\  If the response contains an error, `{{:error, reason}}` is returned.
+        \\
+        \\  If successful, it returns `{{:ok, list}}`. The type of the items of the list depend on the
+        \\  operation.
+        \\
+        \\
+    , .{});
+
+    {
+        const operation_info = @typeInfo(tb_client.tb_operation_t).Enum;
+        inline for (operation_info.fields) |field| {
+            const result_type = StateMachine.ResultType(@enumFromInt(field.value));
+            if (result_type == void) continue;
+
+            try buffer.writer().print(
+                \\  - `{[operation_name]s}`: a list of `%TigerBeetlex.{[result_module]s}{{}}`
+                \\
+            , .{
+                .operation_name = field.name,
+                .result_module = comptime module_name_for(type_mappings, result_type),
+            });
+        }
+    }
+
+    try buffer.writer().print(
+        \\  """
+        \\
+    , .{});
+
+    {
+        const packet_status_info = @typeInfo(tb_client.tb_packet_status_t).Enum;
+        inline for (packet_status_info.fields) |field| {
+            const status: tb_client.tb_packet_status_t = @enumFromInt(field.value);
+            if (status == .ok) {
+                try buffer.writer().print(
+                    \\  def decode({{{[ok_value]}, operation, batch}}) do
+                    \\    {{:ok, build_result_list(operation, batch)}}
+                    \\  end
+                    \\
+                    \\
+                , .{
+                    .ok_value = field.value,
+                });
+            } else {
+                try buffer.writer().print(
+                    \\  def decode({{{[error_value]}, _operation, _batch}}) do
+                    \\    {{:error, :{[error_name]s}}}
+                    \\  end
+                    \\
+                    \\
+                , .{
+                    .error_value = field.value,
+                    .error_name = field.name,
+                });
+            }
+        }
+    }
+
+    {
+        const operation_info = @typeInfo(tb_client.tb_operation_t).Enum;
+        inline for (operation_info.fields) |field| {
+            const result_type = StateMachine.ResultType(@enumFromInt(field.value));
+            if (result_type == void) continue;
+
+            try buffer.writer().print(
+                \\  defp build_result_list({[operation_value]}, batch) when rem(bit_size(batch), {[result_bit_size]}) == 0 do
+                \\    for <<item::binary-size({[result_byte_size]}) <- batch>> do
+                \\      TigerBeetlex.{[result_module]s}.from_binary(item)
+                \\    end
+                \\  end
+                \\
+                \\
+            , .{
+                .operation_value = field.value,
+                .result_bit_size = @bitSizeOf(result_type),
+                .result_byte_size = @sizeOf(result_type),
+                .result_module = comptime module_name_for(type_mappings, result_type),
+            });
+        }
+    }
+
+    {
+        const packet_status_info = @typeInfo(tb_client.tb_packet_status_t).Enum;
+
+        try buffer.writer().print(
+            \\  @doc false
+            \\  def status_map do
+            \\    %{{
+            \\
+        , .{});
+
+        inline for (packet_status_info.fields) |field| {
+            try buffer.writer().print(
+                \\      {[error_name]s}: {[error_value]},
+                \\
+            , .{
+                .error_name = field.name,
+                .error_value = field.value,
+            });
+        }
+
+        try buffer.writer().print(
+            \\    }}
+            \\  end
+            \\
+        , .{});
+    }
+
+    {
+        const operation_info = @typeInfo(tb_client.tb_operation_t).Enum;
+
+        try buffer.writer().print(
+            \\  @doc false
+            \\  def operation_map do
+            \\    %{{
+            \\
+        , .{});
+
+        inline for (operation_info.fields) |field| {
+            const result_type = StateMachine.ResultType(@enumFromInt(field.value));
+            if (result_type == void) continue;
+
+            try buffer.writer().print(
+                \\      {[error_name]s}: {[error_value]},
+                \\
+            , .{
+                .error_name = field.name,
+                .error_value = field.value,
+            });
+        }
+
+        try buffer.writer().print(
+            \\    }}
+            \\  end
+            \\
+        , .{});
+    }
+
+    try buffer.writer().print(
+        \\end
+        \\
+    , .{});
+}
+
 // TODO: accept this from the build system
 const target_dir_path = "lib/tigerbeetlex/bindings";
 
@@ -717,6 +882,16 @@ pub fn main() !void {
 
         try target_dir.writeFile(.{
             .sub_path = mapping.file_name ++ ".ex",
+            .data = buffer.items,
+        });
+    }
+
+    {
+        var buffer = std.ArrayList(u8).init(allocator);
+        try emit_response_module(&buffer);
+
+        try target_dir.writeFile(.{
+            .sub_path = "response.ex",
             .data = buffer.items,
         });
     }

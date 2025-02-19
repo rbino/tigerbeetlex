@@ -19,13 +19,13 @@ defmodule TigerBeetlex.AccountFilterFlags do
   @doc """
   Given a binary flags value, returns the corresponding struct.
   """
-  def from_binary(<<_::binary-size(4)>> = bin) do
+  def from_binary(<<n::unsigned-little-32>>) do
     <<
       _padding::29,
       reversed::1,
       credits::1,
       debits::1
-    >> = bin
+    >> = <<n::unsigned-big-32>>
 
     %__MODULE__{
       debits: debits == 1,
@@ -44,13 +44,16 @@ defmodule TigerBeetlex.AccountFilterFlags do
       reversed: reversed
     } = flags
 
-    <<
-      # padding
-      0::29,
-      bool_to_u1(reversed)::1,
-      bool_to_u1(credits)::1,
-      bool_to_u1(debits)::1
-    >>
+    <<n::unsigned-big-32>> =
+      <<
+        # padding
+        0::29,
+        bool_to_u1(reversed)::1,
+        bool_to_u1(credits)::1,
+        bool_to_u1(debits)::1
+      >>
+
+    <<n::unsigned-little-32>>
   end
 
   @spec bool_to_u1(b :: boolean()) :: 0 | 1

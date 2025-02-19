@@ -22,7 +22,7 @@ defmodule TigerBeetlex.AccountFlags do
   @doc """
   Given a binary flags value, returns the corresponding struct.
   """
-  def from_binary(<<_::binary-size(2)>> = bin) do
+  def from_binary(<<n::unsigned-little-16>>) do
     <<
       _padding::10,
       closed::1,
@@ -31,7 +31,7 @@ defmodule TigerBeetlex.AccountFlags do
       credits_must_not_exceed_debits::1,
       debits_must_not_exceed_credits::1,
       linked::1
-    >> = bin
+    >> = <<n::unsigned-big-16>>
 
     %__MODULE__{
       linked: linked == 1,
@@ -56,16 +56,19 @@ defmodule TigerBeetlex.AccountFlags do
       closed: closed
     } = flags
 
-    <<
-      # padding
-      0::10,
-      bool_to_u1(closed)::1,
-      bool_to_u1(imported)::1,
-      bool_to_u1(history)::1,
-      bool_to_u1(credits_must_not_exceed_debits)::1,
-      bool_to_u1(debits_must_not_exceed_credits)::1,
-      bool_to_u1(linked)::1
-    >>
+    <<n::unsigned-big-16>> =
+      <<
+        # padding
+        0::10,
+        bool_to_u1(closed)::1,
+        bool_to_u1(imported)::1,
+        bool_to_u1(history)::1,
+        bool_to_u1(credits_must_not_exceed_debits)::1,
+        bool_to_u1(debits_must_not_exceed_credits)::1,
+        bool_to_u1(linked)::1
+      >>
+
+    <<n::unsigned-little-16>>
   end
 
   @spec bool_to_u1(b :: boolean()) :: 0 | 1

@@ -154,16 +154,17 @@ fn emit_flags(
         \\  @doc """
         \\  Given a binary flags value, returns the corresponding struct.
         \\  """
-        \\  def from_binary(<<_::binary-size({[byte_size]})>> = bin) do
+        \\  def from_binary(<<n::unsigned-little-{[bit_size]}>>) do
         \\    <<
         \\
     , .{
-        .byte_size = @sizeOf(type_info.backing_integer.?),
+        .bit_size = @bitSizeOf(type_info.backing_integer.?),
     });
 
     {
         // Here we have to reverse the fields because they are laid out in little-endian
-        // order while when we match in Elixir we list things in big-endian order
+        // order while when we match in Elixir we list things in big-endian order to
+        // avoid having to manually swap bytes
         comptime var reversed_fields = std.mem.reverseIterator(type_info.fields);
         inline while (reversed_fields.next()) |field| {
             try buffer.writer().print("      ", .{});
@@ -183,11 +184,13 @@ fn emit_flags(
     }
 
     try buffer.writer().print(
-        \\    >> = bin
+        \\    >> = <<n::unsigned-big-{[bit_size]}>>
         \\
         \\    %__MODULE__{{
         \\
-    , .{});
+    , .{
+        .bit_size = @bitSizeOf(type_info.backing_integer.?),
+    });
 
     inline for (type_info.fields) |field| {
         // Hidden == unused
@@ -234,20 +237,24 @@ fn emit_flags(
     try buffer.writer().print(
         \\    }} = flags
         \\
-        \\    <<
+        \\    <<n::unsigned-big-{[bit_size]}>> =
+        \\      <<
         \\
-    , .{});
+    , .{
+        .bit_size = @bitSizeOf(type_info.backing_integer.?),
+    });
 
     {
         // Here we have to reverse the fields because they are laid out in little-endian
-        // order while when we match in Elixir we list things in big-endian order
+        // order while when we match in Elixir we list things in big-endian order to
+        // avoid having to manually swap bytes
         comptime var reversed_fields = std.mem.reverseIterator(type_info.fields);
         inline while (reversed_fields.next()) |field| {
             // We assume hidden == padded with zeroes
             if (comptime mapping.hidden(field.name)) {
                 try buffer.writer().print(
-                    \\      # {[field_name]s}
-                    \\      0::{[bit_size]},
+                    \\        # {[field_name]s}
+                    \\        0::{[bit_size]},
                     \\
                 , .{
                     .field_name = field.name,
@@ -255,7 +262,7 @@ fn emit_flags(
                 });
             } else {
                 try buffer.writer().print(
-                    \\      bool_to_u1({[field_name]s})::1,
+                    \\        bool_to_u1({[field_name]s})::1,
                     \\
                 , .{
                     .field_name = field.name,
@@ -266,6 +273,8 @@ fn emit_flags(
 
     try buffer.writer().print(
         \\    >>
+        \\
+        \\    <<n::unsigned-little-{[bit_size]}>>
         \\  end
         \\
         \\  @spec bool_to_u1(b :: boolean()) :: 0 | 1
@@ -273,7 +282,9 @@ fn emit_flags(
         \\  defp bool_to_u1(false), do: 0
         \\end
         \\
-    , .{});
+    , .{
+        .bit_size = @bitSizeOf(type_info.backing_integer.?),
+    });
 }
 
 fn emit_struct(

@@ -25,7 +25,7 @@ defmodule TigerBeetlex.TransferFlags do
   @doc """
   Given a binary flags value, returns the corresponding struct.
   """
-  def from_binary(<<_::binary-size(2)>> = bin) do
+  def from_binary(<<n::unsigned-little-16>>) do
     <<
       _padding::7,
       imported::1,
@@ -37,7 +37,7 @@ defmodule TigerBeetlex.TransferFlags do
       post_pending_transfer::1,
       pending::1,
       linked::1
-    >> = bin
+    >> = <<n::unsigned-big-16>>
 
     %__MODULE__{
       linked: linked == 1,
@@ -68,19 +68,22 @@ defmodule TigerBeetlex.TransferFlags do
       imported: imported
     } = flags
 
-    <<
-      # padding
-      0::7,
-      bool_to_u1(imported)::1,
-      bool_to_u1(closing_credit)::1,
-      bool_to_u1(closing_debit)::1,
-      bool_to_u1(balancing_credit)::1,
-      bool_to_u1(balancing_debit)::1,
-      bool_to_u1(void_pending_transfer)::1,
-      bool_to_u1(post_pending_transfer)::1,
-      bool_to_u1(pending)::1,
-      bool_to_u1(linked)::1
-    >>
+    <<n::unsigned-big-16>> =
+      <<
+        # padding
+        0::7,
+        bool_to_u1(imported)::1,
+        bool_to_u1(closing_credit)::1,
+        bool_to_u1(closing_debit)::1,
+        bool_to_u1(balancing_credit)::1,
+        bool_to_u1(balancing_debit)::1,
+        bool_to_u1(void_pending_transfer)::1,
+        bool_to_u1(post_pending_transfer)::1,
+        bool_to_u1(pending)::1,
+        bool_to_u1(linked)::1
+      >>
+
+    <<n::unsigned-little-16>>
   end
 
   @spec bool_to_u1(b :: boolean()) :: 0 | 1

@@ -11,9 +11,9 @@ defmodule TigerBeetlex.AccountFilterBatch do
 
   alias TigerBeetlex.AccountFilter
   alias TigerBeetlex.AccountFilterBatch
+  alias TigerBeetlex.BatchFullError
   alias TigerBeetlex.InvalidBatchError
   alias TigerBeetlex.NifAdapter
-  alias TigerBeetlex.OutOfBoundsError
   alias TigerBeetlex.OutOfMemoryError
   alias TigerBeetlex.Types
 

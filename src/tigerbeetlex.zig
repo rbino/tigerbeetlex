@@ -26,7 +26,7 @@ pub const vsr_options = .{
     .git_commit = null,
     // TODO: take these from a proper place
     .release = "0.16.18",
-    .release_client_min = "0.16.18",
+    .release_client_min = "0.15.4",
     .config_aof_recovery = false,
 };
 

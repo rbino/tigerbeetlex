@@ -29,7 +29,7 @@ be found at <https://hexdocs.pm/tigerbeetlex>.
 Clone the repo and fetch dependencies:
 
 ```bash
-$ git clone --recurse-submodules https://github.com/rbino/tigerbeetlex.git
+$ git clone https://github.com/rbino/tigerbeetlex.git
 $ cd tigerbeetlex
 $ mix deps.get
 ```
@@ -64,7 +64,7 @@ $ mix test
 
 ## License
 
-Copyright 2023-2024 Riccardo Binetti
+Copyright 2023-2025 Riccardo Binetti
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
 compliance with the License. You may obtain a copy of the License at

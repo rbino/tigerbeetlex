@@ -40,7 +40,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          key: lint-${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
 
       - name: Install and compile dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -143,7 +143,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ matrix.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          key: test-${{ matrix.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
 
       - name: Install and compile dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'

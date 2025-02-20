@@ -13,8 +13,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        otp: ["27.0.1"]
-        elixir: ["1.17.2"]
+        otp: ["27.2.4"]
+        elixir: ["1.18.2-otp-27"]
         zig: ["0.13.0"]
     steps:
       - name: Clone the repository
@@ -40,7 +40,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          key: lint-${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
 
       - name: Install and compile dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -86,14 +86,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             otp: "25.3"
             elixir: "1.14"
-          - os: ubuntu-22.04
-            otp: "27.0.1"
-            elixir: "1.17.2"
-          # Use macos-13 since macos-lates doesn't seem to support AES hardware acceleration,
-          # which makes TigerBeetle fail at compile time
+          - os: ubuntu-24.04
+            otp: "27.2.4"
+            elixir: "1.18.2-otp-27"
+          # Use macos-13 since the macos-14 and macos-15 runners seemingly miss AES
+          # hardware acceleration support, which makes TigerBeetle fail at compile time
           - os: macos-13
             # These actually are not relevant since brew just pulls the latest version
             otp: "latest"
@@ -143,7 +143,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ matrix.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          key: test-${{ matrix.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
 
       - name: Install and compile dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'

@@ -148,13 +148,13 @@ defmodule TigerBeetlex.IntegrationTest do
              } = get_account!(conn, credit_account_id)
 
       assert [
-               %TigerBeetlex.AccountBalance{
+               %AccountBalance{
                  debits_pending: 0,
                  debits_posted: 100,
                  credits_pending: 0,
                  credits_posted: 0
                },
-               %TigerBeetlex.AccountBalance{
+               %AccountBalance{
                  debits_pending: 0,
                  debits_posted: 3100,
                  credits_pending: 0,
@@ -163,13 +163,13 @@ defmodule TigerBeetlex.IntegrationTest do
              ] = get_balances!(conn, debit_account_id)
 
       assert [
-               %TigerBeetlex.AccountBalance{
+               %AccountBalance{
                  debits_pending: 0,
                  debits_posted: 0,
                  credits_pending: 0,
                  credits_posted: 100
                },
-               %TigerBeetlex.AccountBalance{
+               %AccountBalance{
                  debits_pending: 0,
                  debits_posted: 0,
                  credits_pending: 0,
@@ -256,19 +256,19 @@ defmodule TigerBeetlex.IntegrationTest do
              } = get_account!(conn, credit_account_id)
 
       assert [
-               %TigerBeetlex.Transfer{
+               %Transfer{
                  amount: 100
                },
-               %TigerBeetlex.Transfer{
+               %Transfer{
                  amount: 3000
                }
              ] = get_account_transfers!(conn, debit_account_id)
 
       assert [
-               %TigerBeetlex.Transfer{
+               %Transfer{
                  amount: 100
                },
-               %TigerBeetlex.Transfer{
+               %Transfer{
                  amount: 3000
                }
              ] = get_account_transfers!(conn, credit_account_id)
@@ -1124,7 +1124,7 @@ defmodule TigerBeetlex.IntegrationTest do
     {:ok, batch} =
       AccountFilterBatch.new(%AccountFilter{
         account_id: account_id,
-        flags: %TigerBeetlex.AccountFilter.Flags{debits: true, credits: true}
+        flags: %AccountFilter.Flags{debits: true, credits: true}
       })
 
     {:ok, stream} = Connection.get_account_balances(conn, batch)
@@ -1135,7 +1135,7 @@ defmodule TigerBeetlex.IntegrationTest do
     {:ok, batch} =
       AccountFilterBatch.new(%AccountFilter{
         account_id: account_id,
-        flags: %TigerBeetlex.AccountFilter.Flags{debits: true, credits: true}
+        flags: %AccountFilter.Flags{debits: true, credits: true}
       })
 
     {:ok, stream} = Connection.get_account_transfers(conn, batch)

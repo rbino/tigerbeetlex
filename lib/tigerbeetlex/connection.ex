@@ -10,8 +10,8 @@ defmodule TigerBeetlex.Connection do
   """
 
   alias TigerBeetlex.{
-    AccountFilterBatch,
     AccountBatch,
+    AccountFilterBatch,
     IDBatch,
     Receiver,
     TransferBatch,

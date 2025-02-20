@@ -13,8 +13,8 @@ defmodule TigerBeetlex do
     field :ref, reference(), enforce: true
   end
 
-  alias TigerBeetlex.AccountFilterBatch
   alias TigerBeetlex.AccountBatch
+  alias TigerBeetlex.AccountFilterBatch
   alias TigerBeetlex.IDBatch
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.TransferBatch

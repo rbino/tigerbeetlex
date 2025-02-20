@@ -32,7 +32,6 @@ defmodule TigerBeetlex.AccountFilter do
   Converts a `%TigerBeetlex.AccountFilter{}` to its binary representation (128 bytes
   binary).
   """
-  # TODO @spec to_binary(account :: t()) :: Types.account_binary()
   def to_batch_item(%AccountFilter{} = filter) do
     %AccountFilter{
       account_id: account_id,

@@ -728,10 +728,11 @@ fn emit_response_module(
     , .{});
 
     {
-        const operation_info = @typeInfo(tb_client.tb_operation_t).Enum;
+        const operation_info = @typeInfo(tb_client.Operation).Enum;
         inline for (operation_info.fields) |field| {
-            const result_type = StateMachine.ResultType(@enumFromInt(field.value));
-            if (result_type == void) continue;
+            const operation: tb_client.Operation = @enumFromInt(field.value);
+            if (operation == .pulse or operation == .get_events) continue;
+            const result_type = StateMachine.ResultType(operation);
 
             try buffer.writer().print(
                 \\  - `{[operation_name]s}`: a list of `%TigerBeetlex.{[result_module]s}{{}}`
@@ -749,9 +750,9 @@ fn emit_response_module(
     , .{});
 
     {
-        const packet_status_info = @typeInfo(tb_client.tb_packet_status_t).Enum;
+        const packet_status_info = @typeInfo(tb_client.PacketStatus).Enum;
         inline for (packet_status_info.fields) |field| {
-            const status: tb_client.tb_packet_status_t = @enumFromInt(field.value);
+            const status: tb_client.PacketStatus = @enumFromInt(field.value);
             if (status == .ok) {
                 try buffer.writer().print(
                     \\  def decode({{{[ok_value]}, operation, batch}}) do
@@ -778,10 +779,11 @@ fn emit_response_module(
     }
 
     {
-        const operation_info = @typeInfo(tb_client.tb_operation_t).Enum;
+        const operation_info = @typeInfo(tb_client.Operation).Enum;
         inline for (operation_info.fields) |field| {
-            const result_type = StateMachine.ResultType(@enumFromInt(field.value));
-            if (result_type == void) continue;
+            const operation: tb_client.Operation = @enumFromInt(field.value);
+            if (operation == .pulse or operation == .get_events) continue;
+            const result_type = StateMachine.ResultType(operation);
 
             try buffer.writer().print(
                 \\  defp build_result_list({[operation_value]}, batch) when rem(bit_size(batch), {[result_bit_size]}) == 0 do
@@ -801,7 +803,7 @@ fn emit_response_module(
     }
 
     {
-        const packet_status_info = @typeInfo(tb_client.tb_packet_status_t).Enum;
+        const packet_status_info = @typeInfo(tb_client.PacketStatus).Enum;
 
         try buffer.writer().print(
             \\  @doc false
@@ -828,7 +830,7 @@ fn emit_response_module(
     }
 
     {
-        const operation_info = @typeInfo(tb_client.tb_operation_t).Enum;
+        const operation_info = @typeInfo(tb_client.Operation).Enum;
 
         try buffer.writer().print(
             \\  @doc false
@@ -838,8 +840,8 @@ fn emit_response_module(
         , .{});
 
         inline for (operation_info.fields) |field| {
-            const result_type = StateMachine.ResultType(@enumFromInt(field.value));
-            if (result_type == void) continue;
+            const operation: tb_client.Operation = @enumFromInt(field.value);
+            if (operation == .pulse or operation == .get_events) continue;
 
             try buffer.writer().print(
                 \\      {[error_name]s}: {[error_value]},

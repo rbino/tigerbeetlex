@@ -16,8 +16,8 @@ const batch = @import("batch.zig");
 const Batch = batch.Batch;
 const BatchResource = batch.BatchResource;
 
-pub const Client = tb_client.tb_client_t;
-pub const ClientResource = Resource(Client, client_resource_deinit_fn);
+const ClientInterface = tb_client.ClientInterface;
+pub const ClientResource = Resource(*ClientInterface, client_resource_deinit_fn);
 
 const RequestContext = struct {
     caller_pid: beam.Pid,
@@ -27,19 +27,27 @@ const RequestContext = struct {
 };
 
 pub fn init(env: beam.Env, cluster_id: u128, addresses: []const u8) beam.Term {
-    const client: tb_client.tb_client_t = tb_client.init(
+    const client = beam.general_purpose_allocator.create(tb_client.ClientInterface) catch {
+        return beam.make_error_atom(env, "out_of_memory");
+    };
+    tb_client.init(
         beam.general_purpose_allocator,
+        client,
         cluster_id,
         addresses,
         @intFromPtr(beam.alloc_env()),
         on_completion,
-    ) catch |err| switch (err) {
-        error.Unexpected => return beam.make_error_atom(env, "unexpected"),
-        error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
-        error.AddressInvalid => return beam.make_error_atom(env, "invalid_address"),
-        error.AddressLimitExceeded => return beam.make_error_atom(env, "address_limit_exceeded"),
-        error.SystemResources => return beam.make_error_atom(env, "system_resources"),
-        error.NetworkSubsystemFailed => return beam.make_error_atom(env, "network_subsystem"),
+    ) catch |err| {
+        // TODO: do some refactoring to allow using errdefer
+        beam.general_purpose_allocator.destroy(client);
+        switch (err) {
+            error.Unexpected => return beam.make_error_atom(env, "unexpected"),
+            error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
+            error.AddressInvalid => return beam.make_error_atom(env, "invalid_address"),
+            error.AddressLimitExceeded => return beam.make_error_atom(env, "address_limit_exceeded"),
+            error.SystemResources => return beam.make_error_atom(env, "system_resources"),
+            error.NetworkSubsystemFailed => return beam.make_error_atom(env, "network_subsystem"),
+        }
     };
 
     const client_resource = ClientResource.init(client) catch |err|
@@ -47,7 +55,8 @@ pub fn init(env: beam.Env, cluster_id: u128, addresses: []const u8) beam.Term {
         error.OutOfMemory => {
             // Deinit the client
             // TODO: do some refactoring to allow using errdefer
-            tb_client.deinit(client);
+            client.deinit() catch unreachable;
+            beam.general_purpose_allocator.destroy(client);
             return beam.make_error_atom(env, "out_of_memory");
         },
     };
@@ -57,14 +66,14 @@ pub fn init(env: beam.Env, cluster_id: u128, addresses: []const u8) beam.Term {
     return beam.make_ok_term(env, term_handle);
 }
 
-fn OperationBatchItemType(comptime operation: tb_client.tb_operation_t) type {
+fn OperationBatchItemType(comptime operation: tb_client.Operation) type {
     return switch (operation) {
         .create_accounts => Account,
         .create_transfers => Transfer,
         .lookup_accounts, .lookup_transfers => u128,
         .get_account_transfers, .get_account_balances => AccountFilter,
         .query_accounts, .query_transfers => @panic("TODO"),
-        .pulse => unreachable,
+        .pulse, .get_events => unreachable,
     };
 }
 
@@ -82,7 +91,7 @@ pub const lookup_transfers = get_submit_fn(.lookup_transfers);
 pub const get_account_transfers = get_submit_fn(.get_account_transfers);
 pub const get_account_balances = get_submit_fn(.get_account_balances);
 
-fn get_submit_fn(comptime operation: tb_client.tb_operation_t) (fn (
+fn get_submit_fn(comptime operation: tb_client.Operation) (fn (
     env: beam.Env,
     client_resource: beam.Term,
     payload_term: beam.Term,
@@ -111,7 +120,7 @@ fn get_submit_fn(comptime operation: tb_client.tb_operation_t) (fn (
 }
 
 fn submit(
-    comptime operation: tb_client.tb_operation_t,
+    comptime operation: tb_client.Operation,
     env: beam.Env,
     client_resource: ClientResource,
     payload_resource: BatchResource(OperationBatchItemType(operation)),
@@ -120,7 +129,7 @@ fn submit(
     const client = client_resource.value();
     const payload = payload_resource.ptr_const();
 
-    const packet = beam.general_purpose_allocator.create(tb_client.tb_packet_t) catch {
+    const packet = beam.general_purpose_allocator.create(tb_client.Packet) catch {
         return error.OutOfMemory;
     };
     errdefer beam.general_purpose_allocator.destroy(packet);
@@ -150,26 +159,29 @@ fn submit(
     ctx.payload_raw_obj = payload_resource.raw_ptr;
     ctx.client_raw_obj = client_resource.raw_ptr;
 
-    packet.operation = @intFromEnum(operation);
-    packet.data = payload.items.ptr;
-    packet.data_size = @sizeOf(Item) * payload.len;
-    packet.user_data = ctx;
-    packet.status = .ok;
+    packet.* = .{
+        .user_data = ctx,
+        .operation = @intFromEnum(operation),
+        .data = payload.items.ptr,
+        .data_size = @sizeOf(Item) * payload.len,
+        .user_tag = 0,
+        .status = undefined,
+    };
 
-    tb_client.submit(client, packet);
+    client.submit(packet) catch |err| switch (err) {
+        error.ClientInvalid => return beam.make_error_atom(env, "client_closed"),
+    };
 
     return beam.make_ok_term(env, ref);
 }
 
 fn on_completion(
     context: usize,
-    client: tb_client.tb_client_t,
-    packet: *tb_client.tb_packet_t,
+    packet: *tb_client.Packet,
     timestamp: u64,
     result_ptr: ?[*]const u8,
     result_len: u32,
 ) callconv(.C) void {
-    _ = client;
     _ = timestamp;
     const ctx: *RequestContext = @ptrCast(@alignCast(packet.user_data.?));
     defer beam.general_purpose_allocator.destroy(ctx);
@@ -206,10 +218,14 @@ fn on_completion(
 
 fn client_resource_deinit_fn(_: beam.Env, ptr: ?*anyopaque) callconv(.C) void {
     if (ptr) |p| {
-        const cl: *Client = @ptrCast(@alignCast(p));
-        defer tb_client.deinit(cl.*);
+        const client: *ClientInterface = @ptrCast(@alignCast(p));
+        // The client was already closed, we just return
+        defer client.deinit() catch {};
 
-        const completion_ctx = tb_client.completion_context(cl.*);
+        const completion_ctx = client.completion_context() catch |err| switch (err) {
+            // The client was already closed, we just return
+            error.ClientInvalid => return,
+        };
         const env: beam.Env = @ptrFromInt(completion_ctx);
         beam.free_env(env);
     } else unreachable;

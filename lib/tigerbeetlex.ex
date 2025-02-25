@@ -14,6 +14,7 @@ defmodule TigerBeetlex do
   end
 
   alias TigerBeetlex.AccountBatch
+  alias TigerBeetlex.AccountFilterBatch
   alias TigerBeetlex.IDBatch
   alias TigerBeetlex.NifAdapter
   alias TigerBeetlex.TransferBatch
@@ -184,6 +185,80 @@ defmodule TigerBeetlex do
           {:ok, reference()} | {:error, Types.create_transfers_error()}
   def create_transfers(%__MODULE__{} = client, %TransferBatch{} = transfer_batch) do
     NifAdapter.create_transfers(client.ref, transfer_batch.ref)
+  end
+
+  @doc """
+  Fetch a list of historical `%TigerBeetlex.AccountBalance{}` for a given `%TigerBeetlex.Account{}`.
+
+  Only accounts created with the `history` flag set retain historical balances. This is off by default.
+
+  `client` is a `%TigerBeetlex{}` client.
+
+  `account_filter_batch` is a `TigerBeetlex.AccountFilterBatch` struct.
+
+  The function returns a ref which can be used to match the received response message.
+
+  The response message has this format:
+
+      {:tigerbeetlex_response, request_ref, response}
+
+  Where `request_ref` is the same `ref` returned when this function was called and `response` is
+  a response that can be decoded using `TigerBeetlex.Response.decode/1`.
+
+  The value returned from `TigerBeetlex.Response.decode(response)` will either be
+  `{:error, reason}` or `{:ok, results}`, where `results` is a list of `%TigerBeetlex.AccountBalance{}`
+  structs.
+
+  ## Examples
+
+      batch = TigerBeetlex.AccountFilterBatch.new!(%AccountFilter{id: <<42::128>>})
+
+      {:ok, ref} = TigerBeetlex.get_account_balances(client, batch)
+
+      receive do
+        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
+      end
+
+      #=> {:ok, [%TigerBeetlex.AccountBalance{}]}
+  """
+  def get_account_balances(%__MODULE__{} = client, %AccountFilterBatch{} = batch) do
+    NifAdapter.get_account_balances(client.ref, batch.ref)
+  end
+
+  @doc """
+  Fetch a list of `%TigerBeetlex.Transfer{}` involving a `%TigerBeetlex.Account{}`.
+
+  `client` is a `%TigerBeetlex{}` client.
+
+  `account_filter_batch` is a `TigerBeetlex.AccountFilterBatch` struct.
+
+  The function returns a ref which can be used to match the received response message.
+
+  The response message has this format:
+
+      {:tigerbeetlex_response, request_ref, response}
+
+  Where `request_ref` is the same `ref` returned when this function was called and `response` is
+  a response that can be decoded using `TigerBeetlex.Response.decode/1`.
+
+  The value returned from `TigerBeetlex.Response.decode(response)` will either be
+  `{:error, reason}` or `{:ok, results}`, where `results` is a list of `%TigerBeetlex.Transfer{}`
+  structs.
+
+  ## Examples
+
+      batch = TigerBeetlex.AccountFilterBatch.new!(%AccountFilter{id: <<42::128>>})
+
+      {:ok, ref} = TigerBeetlex.get_account_balances(client, batch)
+
+      receive do
+        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
+      end
+
+      #=> {:ok, [%TigerBeetlex.Transfer{}]}
+  """
+  def get_account_transfers(%__MODULE__{} = client, %AccountFilterBatch{} = batch) do
+    NifAdapter.get_account_transfers(client.ref, batch.ref)
   end
 
   @doc """

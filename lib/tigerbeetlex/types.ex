@@ -11,6 +11,10 @@ defmodule TigerBeetlex.Types do
 
   @type account_binary :: <<_::1024>>
 
+  @type account_filter_batch :: reference()
+
+  @type account_filter_binary :: <<_::1024>>
+
   @type transfer_batch :: reference()
 
   @type transfer_binary :: <<_::1024>>

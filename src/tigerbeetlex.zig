@@ -12,7 +12,6 @@ const AccountBatch = account_batch.AccountBatch;
 const IdBatch = id_batch.IdBatch;
 const TransferBatch = transfer_batch.TransferBatch;
 const AccountFilterBatch = account_filter_batch.TransferBatch;
-const Client = client.Client;
 
 const ClientResource = client.ClientResource;
 const AccountBatchResource = account_batch.AccountBatchResource;

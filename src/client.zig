@@ -6,8 +6,8 @@ const process = beam.process;
 const resource = beam.resource;
 const Resource = resource.Resource;
 
-const tb = @import("tigerbeetle/src/tigerbeetle.zig");
-const tb_client = @import("tigerbeetle/src/clients/c/tb_client.zig");
+const tb = @import("vsr").tigerbeetle;
+const tb_client = @import("vsr").tb_client;
 const Account = tb.Account;
 const Transfer = tb.Transfer;
 
@@ -161,10 +161,12 @@ fn on_completion(
     context: usize,
     client: tb_client.tb_client_t,
     packet: *tb_client.tb_packet_t,
+    timestamp: u64,
     result_ptr: ?[*]const u8,
     result_len: u32,
 ) callconv(.C) void {
     _ = client;
+    _ = timestamp;
     const ctx: *RequestContext = @ptrCast(@alignCast(packet.user_data.?));
     defer beam.general_purpose_allocator.destroy(ctx);
 

@@ -17,19 +17,10 @@ const AccountBatchResource = account_batch.AccountBatchResource;
 const IdBatchResource = id_batch.IdBatchResource;
 const TransferBatchResource = transfer_batch.TransferBatchResource;
 
-pub const vsr_options = .{
-    .config_base = .default,
-    .config_log_level = std.log.Level.info,
-    .tracer_backend = .none,
-    .hash_log_mode = .none,
-    .git_commit = null,
-    // TODO: take these from a proper place
-    .release = "0.15.4",
-    .release_client_min = "0.15.4",
-    .config_aof_record = false,
-    .config_aof_recovery = false,
-};
+// Needed to configure VSR
+pub const vsr_options = @import("config").vsr_options;
 
+// Reduce log spamminess
 pub const std_options = .{
     .log_level = .err,
 };

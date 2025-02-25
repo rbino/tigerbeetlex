@@ -1,5 +1,5 @@
 defmodule TigerBeetlex.AccountBatchTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountBatch

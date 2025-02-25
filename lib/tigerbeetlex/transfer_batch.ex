@@ -64,7 +64,7 @@ defmodule TigerBeetlex.TransferBatch do
   def append(%TransferBatch{} = batch, %Transfer{} = transfer) do
     %TransferBatch{ref: ref} = batch
 
-    transfer_binary = Transfer.to_batch_item(transfer)
+    transfer_binary = Transfer.to_binary(transfer)
 
     with :ok <- NifAdapter.append_transfer(ref, transfer_binary) do
       {:ok, batch}
@@ -115,7 +115,7 @@ defmodule TigerBeetlex.TransferBatch do
           {:ok, t()} | {:error, Types.replace_error()}
   def replace(%TransferBatch{} = batch, idx, %Transfer{} = transfer)
       when is_number(idx) and idx >= 0 do
-    transfer_binary = Transfer.to_batch_item(transfer)
+    transfer_binary = Transfer.to_binary(transfer)
 
     with :ok <- NifAdapter.replace_transfer(batch.ref, idx, transfer_binary) do
       {:ok, batch}

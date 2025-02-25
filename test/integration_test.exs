@@ -1,17 +1,19 @@
 defmodule TigerBeetlex.IntegrationTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   @moduletag :integration
 
   alias TigerBeetlex.{
     Account,
     AccountBatch,
+    AccountFlags,
     Connection,
-    CreateAccountError,
-    CreateTransferError,
+    CreateAccountsResult,
+    CreateTransfersResult,
     IDBatch,
     Transfer,
-    TransferBatch
+    TransferBatch,
+    TransferFlags
   }
 
   setup_all do
@@ -42,19 +44,18 @@ defmodule TigerBeetlex.IntegrationTest do
         id: id,
         ledger: 1,
         code: 1,
-        flags: %Account.Flags{credits_must_not_exceed_debits: true}
+        flags: %AccountFlags{credits_must_not_exceed_debits: true}
       }
 
       {:ok, batch} = AccountBatch.append(batch, account)
 
-      assert {:ok, stream} = Connection.create_accounts(conn, batch)
-      assert [] == Enum.to_list(stream)
+      assert {:ok, []} = Connection.create_accounts(conn, batch)
 
       assert %Account{
                id: ^id,
                ledger: 1,
                code: 1,
-               flags: %Account.Flags{credits_must_not_exceed_debits: true}
+               flags: %AccountFlags{credits_must_not_exceed_debits: true}
              } = get_account!(conn, id)
     end
 
@@ -65,7 +66,7 @@ defmodule TigerBeetlex.IntegrationTest do
         id: id_1,
         ledger: 1,
         code: 1,
-        flags: %Account.Flags{linked: true}
+        flags: %AccountFlags{linked: true}
       }
 
       {:ok, batch} = AccountBatch.append(batch, account_1)
@@ -81,8 +82,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = AccountBatch.append(batch, account_2)
 
-      assert {:ok, stream} = Connection.create_accounts(conn, batch)
-      assert [] == Enum.to_list(stream)
+      assert {:ok, []} = Connection.create_accounts(conn, batch)
 
       assert %Account{
                id: ^id_1,
@@ -103,16 +103,16 @@ defmodule TigerBeetlex.IntegrationTest do
         id: <<0::128>>,
         ledger: 1,
         code: 1,
-        flags: %Account.Flags{credits_must_not_exceed_debits: true}
+        flags: %AccountFlags{credits_must_not_exceed_debits: true}
       }
 
       {:ok, batch} = AccountBatch.append(batch, account)
 
-      assert {:ok, stream} = Connection.create_accounts(conn, batch)
+      assert {:ok, results} = Connection.create_accounts(conn, batch)
 
       assert [
-               %CreateAccountError{index: 0, reason: :id_must_not_be_zero}
-             ] == Enum.to_list(stream)
+               %CreateAccountsResult{index: 0, result: :id_must_not_be_zero}
+             ] == results
     end
 
     test "failed linked account creation", %{conn: conn, batch: batch} do
@@ -122,7 +122,7 @@ defmodule TigerBeetlex.IntegrationTest do
         id: id_1,
         ledger: 1,
         code: 1,
-        flags: %Account.Flags{linked: true}
+        flags: %AccountFlags{linked: true}
       }
 
       {:ok, batch} = AccountBatch.append(batch, account_1)
@@ -138,12 +138,12 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = AccountBatch.append(batch, account_2)
 
-      assert {:ok, stream} = Connection.create_accounts(conn, batch)
+      assert {:ok, results} = Connection.create_accounts(conn, batch)
 
       assert [
-               %CreateAccountError{index: 0, reason: :linked_event_failed},
-               %CreateAccountError{index: 1, reason: :ledger_must_not_be_zero}
-             ] == Enum.to_list(stream)
+               %CreateAccountsResult{index: 0, result: :linked_event_failed},
+               %CreateAccountsResult{index: 1, result: :ledger_must_not_be_zero}
+             ] == results
 
       assert_account_not_existing(conn, id_1)
       assert_account_not_existing(conn, id_2)
@@ -156,7 +156,7 @@ defmodule TigerBeetlex.IntegrationTest do
         id: id_1,
         ledger: 42,
         code: 42,
-        flags: %Account.Flags{debits_must_not_exceed_credits: true}
+        flags: %AccountFlags{debits_must_not_exceed_credits: true}
       }
 
       {:ok, batch} = AccountBatch.append(batch, account_1)
@@ -167,7 +167,7 @@ defmodule TigerBeetlex.IntegrationTest do
         id: id_2,
         ledger: 2,
         code: 2,
-        flags: %Account.Flags{
+        flags: %AccountFlags{
           credits_must_not_exceed_debits: true,
           debits_must_not_exceed_credits: true
         }
@@ -175,17 +175,17 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = AccountBatch.append(batch, account_2)
 
-      assert {:ok, stream} = Connection.create_accounts(conn, batch)
+      assert {:ok, results} = Connection.create_accounts(conn, batch)
 
       assert [
-               %CreateAccountError{index: 1, reason: :flags_are_mutually_exclusive}
-             ] == Enum.to_list(stream)
+               %CreateAccountsResult{index: 1, result: :flags_are_mutually_exclusive}
+             ] == results
 
       assert %Account{
                id: ^id_1,
                ledger: 42,
                code: 42,
-               flags: %Account.Flags{debits_must_not_exceed_credits: true}
+               flags: %AccountFlags{debits_must_not_exceed_credits: true}
              } = get_account!(conn, id_1)
 
       assert_account_not_existing(conn, id_2)
@@ -201,14 +201,13 @@ defmodule TigerBeetlex.IntegrationTest do
             id: random_id(),
             ledger: 1,
             code: 1,
-            flags: %Account.Flags{credits_must_not_exceed_debits: true}
+            flags: %AccountFlags{credits_must_not_exceed_debits: true}
           }
 
           AccountBatch.append!(batch, account)
         end)
 
-      assert {:ok, stream} = Connection.create_accounts(conn, batch)
-      assert [] == Enum.to_list(stream)
+      assert {:ok, []} = Connection.create_accounts(conn, batch)
     end
   end
 
@@ -249,8 +248,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = TransferBatch.append(batch, transfer)
 
-      assert {:ok, stream} = Connection.create_transfers(conn, batch)
-      assert [] == Enum.to_list(stream)
+      assert {:ok, []} = Connection.create_transfers(conn, batch)
 
       assert %Transfer{
                id: ^id,
@@ -294,7 +292,7 @@ defmodule TigerBeetlex.IntegrationTest do
         ledger: 1,
         code: 1,
         amount: 100,
-        flags: %Transfer.Flags{linked: true}
+        flags: %TransferFlags{linked: true}
       }
 
       {:ok, batch} = TransferBatch.append(batch, transfer_1)
@@ -312,8 +310,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = TransferBatch.append(batch, transfer_2)
 
-      assert {:ok, stream} = Connection.create_transfers(conn, batch)
-      assert [] == Enum.to_list(stream)
+      assert {:ok, []} = Connection.create_transfers(conn, batch)
 
       assert %Transfer{
                id: ^id_1,
@@ -365,13 +362,12 @@ defmodule TigerBeetlex.IntegrationTest do
         ledger: 1,
         code: 1,
         amount: 100,
-        flags: %Transfer.Flags{pending: true}
+        flags: %TransferFlags{pending: true}
       }
 
       {:ok, batch} = TransferBatch.append(batch, pending_transfer)
 
-      assert {:ok, stream} = Connection.create_transfers(conn, batch)
-      assert [] == Enum.to_list(stream)
+      assert {:ok, []} = Connection.create_transfers(conn, batch)
 
       assert %Transfer{
                id: ^pending_id,
@@ -380,7 +376,7 @@ defmodule TigerBeetlex.IntegrationTest do
                ledger: 1,
                code: 1,
                amount: 100,
-               flags: %Transfer.Flags{pending: true}
+               flags: %TransferFlags{pending: true}
              } = get_transfer!(conn, pending_id)
 
       assert %Account{
@@ -403,16 +399,18 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = TransferBatch.new(1)
 
+      amount_max = 2 ** 128 - 1
+
       post_pending_transfer = %Transfer{
         id: post_pending_id,
+        amount: amount_max,
         pending_id: pending_id,
-        flags: %Transfer.Flags{post_pending_transfer: true}
+        flags: %TransferFlags{post_pending_transfer: true}
       }
 
       {:ok, batch} = TransferBatch.append(batch, post_pending_transfer)
 
-      assert {:ok, stream} = Connection.create_transfers(conn, batch)
-      assert [] == Enum.to_list(stream)
+      assert {:ok, []} = Connection.create_transfers(conn, batch)
 
       assert %Transfer{
                id: ^post_pending_id,
@@ -422,7 +420,7 @@ defmodule TigerBeetlex.IntegrationTest do
                code: 1,
                amount: 100,
                pending_id: ^pending_id,
-               flags: %Transfer.Flags{post_pending_transfer: true}
+               flags: %TransferFlags{post_pending_transfer: true}
              } = get_transfer!(conn, post_pending_id)
 
       assert %Account{
@@ -459,13 +457,12 @@ defmodule TigerBeetlex.IntegrationTest do
         ledger: 1,
         code: 1,
         amount: 100,
-        flags: %Transfer.Flags{pending: true}
+        flags: %TransferFlags{pending: true}
       }
 
       {:ok, batch} = TransferBatch.append(batch, pending_transfer)
 
-      assert {:ok, stream} = Connection.create_transfers(conn, batch)
-      assert [] == Enum.to_list(stream)
+      assert {:ok, []} = Connection.create_transfers(conn, batch)
 
       assert %Transfer{
                id: ^pending_id,
@@ -474,7 +471,7 @@ defmodule TigerBeetlex.IntegrationTest do
                ledger: 1,
                code: 1,
                amount: 100,
-               flags: %Transfer.Flags{pending: true}
+               flags: %TransferFlags{pending: true}
              } = get_transfer!(conn, pending_id)
 
       assert %Account{
@@ -500,13 +497,12 @@ defmodule TigerBeetlex.IntegrationTest do
       void_pending_transfer = %Transfer{
         id: void_pending_id,
         pending_id: pending_id,
-        flags: %Transfer.Flags{void_pending_transfer: true}
+        flags: %TransferFlags{void_pending_transfer: true}
       }
 
       {:ok, batch} = TransferBatch.append(batch, void_pending_transfer)
 
-      assert {:ok, stream} = Connection.create_transfers(conn, batch)
-      assert [] == Enum.to_list(stream)
+      assert {:ok, []} = Connection.create_transfers(conn, batch)
 
       assert %Transfer{
                id: ^void_pending_id,
@@ -516,7 +512,7 @@ defmodule TigerBeetlex.IntegrationTest do
                code: 1,
                amount: 100,
                pending_id: ^pending_id,
-               flags: %Transfer.Flags{void_pending_transfer: true}
+               flags: %TransferFlags{void_pending_transfer: true}
              } = get_transfer!(conn, void_pending_id)
 
       assert %Account{
@@ -556,11 +552,11 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = TransferBatch.append(batch, transfer)
 
-      assert {:ok, stream} = Connection.create_transfers(conn, batch)
+      assert {:ok, results} = Connection.create_transfers(conn, batch)
 
       assert [
-               %CreateTransferError{index: 0, reason: :accounts_must_be_different}
-             ] == Enum.to_list(stream)
+               %CreateTransfersResult{index: 0, result: :accounts_must_be_different}
+             ] == results
 
       assert_transfer_not_existing(conn, id)
     end
@@ -582,7 +578,7 @@ defmodule TigerBeetlex.IntegrationTest do
         ledger: 1,
         code: 1,
         amount: 100,
-        flags: %Transfer.Flags{linked: true}
+        flags: %TransferFlags{linked: true}
       }
 
       {:ok, batch} = TransferBatch.append(batch, transfer_1)
@@ -600,15 +596,15 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = TransferBatch.append(batch, transfer_2)
 
-      assert {:ok, stream} = Connection.create_transfers(conn, batch)
+      assert {:ok, results} = Connection.create_transfers(conn, batch)
 
       assert [
-               %CreateTransferError{index: 0, reason: :linked_event_failed},
-               %CreateTransferError{
+               %CreateTransfersResult{index: 0, result: :linked_event_failed},
+               %CreateTransfersResult{
                  index: 1,
-                 reason: :transfer_must_have_the_same_ledger_as_accounts
+                 result: :transfer_must_have_the_same_ledger_as_accounts
                }
-             ] == Enum.to_list(stream)
+             ] == results
 
       assert_transfer_not_existing(conn, id_1)
       assert_transfer_not_existing(conn, id_2)
@@ -648,14 +644,14 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = TransferBatch.append(batch, transfer_2)
 
-      assert {:ok, stream} = Connection.create_transfers(conn, batch)
+      assert {:ok, results} = Connection.create_transfers(conn, batch)
 
       assert [
-               %CreateTransferError{
+               %CreateTransfersResult{
                  index: 1,
-                 reason: :code_must_not_be_zero
+                 result: :code_must_not_be_zero
                }
-             ] == Enum.to_list(stream)
+             ] == results
 
       assert %Transfer{
                id: ^id_1,
@@ -701,8 +697,8 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = IDBatch.append(batch, account_id)
 
-      assert {:ok, stream} = Connection.lookup_accounts(conn, batch)
-      assert [%Account{id: ^account_id}] = Enum.to_list(stream)
+      assert {:ok, results} = Connection.lookup_accounts(conn, batch)
+      assert [%Account{id: ^account_id}] = results
     end
 
     test "returns multiple existing accounts", ctx do
@@ -717,8 +713,8 @@ defmodule TigerBeetlex.IntegrationTest do
       {:ok, batch} = IDBatch.append(batch, account_id_1)
       {:ok, batch} = IDBatch.append(batch, account_id_2)
 
-      assert {:ok, stream} = Connection.lookup_accounts(conn, batch)
-      assert [%Account{id: ^account_id_1}, %Account{id: ^account_id_2}] = Enum.to_list(stream)
+      assert {:ok, results} = Connection.lookup_accounts(conn, batch)
+      assert [%Account{id: ^account_id_1}, %Account{id: ^account_id_2}] = results
     end
 
     test "returns empty result for non-existing account", ctx do
@@ -729,8 +725,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = IDBatch.append(batch, <<42::128>>)
 
-      assert {:ok, stream} = Connection.lookup_accounts(conn, batch)
-      assert [] == Enum.to_list(stream)
+      assert {:ok, []} = Connection.lookup_accounts(conn, batch)
     end
 
     test "returns partial result for mixed existing and non-existing accounts", ctx do
@@ -743,8 +738,8 @@ defmodule TigerBeetlex.IntegrationTest do
       {:ok, batch} = IDBatch.append(batch, <<42::128>>)
       {:ok, batch} = IDBatch.append(batch, account_id)
 
-      assert {:ok, stream} = Connection.lookup_accounts(conn, batch)
-      assert [%Account{id: ^account_id}] = Enum.to_list(stream)
+      assert {:ok, results} = Connection.lookup_accounts(conn, batch)
+      assert [%Account{id: ^account_id}] = results
     end
   end
 
@@ -765,8 +760,8 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = IDBatch.append(batch, transfer_id)
 
-      assert {:ok, stream} = Connection.lookup_transfers(conn, batch)
-      assert [%Transfer{id: ^transfer_id}] = Enum.to_list(stream)
+      assert {:ok, results} = Connection.lookup_transfers(conn, batch)
+      assert [%Transfer{id: ^transfer_id}] = results
     end
 
     test "returns multiple existing transfers", ctx do
@@ -781,8 +776,8 @@ defmodule TigerBeetlex.IntegrationTest do
       {:ok, batch} = IDBatch.append(batch, transfer_id_1)
       {:ok, batch} = IDBatch.append(batch, transfer_id_2)
 
-      assert {:ok, stream} = Connection.lookup_transfers(conn, batch)
-      assert [%Transfer{id: ^transfer_id_1}, %Transfer{id: ^transfer_id_2}] = Enum.to_list(stream)
+      assert {:ok, results} = Connection.lookup_transfers(conn, batch)
+      assert [%Transfer{id: ^transfer_id_1}, %Transfer{id: ^transfer_id_2}] = results
     end
 
     test "returns empty result for non-existing transfer", ctx do
@@ -793,8 +788,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       {:ok, batch} = IDBatch.append(batch, <<42::128>>)
 
-      assert {:ok, stream} = Connection.lookup_transfers(conn, batch)
-      assert [] == Enum.to_list(stream)
+      assert {:ok, []} = Connection.lookup_transfers(conn, batch)
     end
 
     test "returns partial result for mixed existing and non-existing transfers", ctx do
@@ -807,8 +801,8 @@ defmodule TigerBeetlex.IntegrationTest do
       {:ok, batch} = IDBatch.append(batch, <<42::128>>)
       {:ok, batch} = IDBatch.append(batch, transfer_id)
 
-      assert {:ok, stream} = Connection.lookup_transfers(conn, batch)
-      assert [%Transfer{id: ^transfer_id}] = Enum.to_list(stream)
+      assert {:ok, results} = Connection.lookup_transfers(conn, batch)
+      assert [%Transfer{id: ^transfer_id}] = results
     end
   end
 
@@ -829,8 +823,8 @@ defmodule TigerBeetlex.IntegrationTest do
 
     {:ok, batch} = AccountBatch.append(batch, account)
 
-    {:ok, stream} = Connection.create_accounts(conn, batch)
-    assert [] = Enum.to_list(stream)
+    {:ok, results} = Connection.create_accounts(conn, batch)
+    assert [] = results
 
     id
   end
@@ -854,8 +848,8 @@ defmodule TigerBeetlex.IntegrationTest do
 
     {:ok, batch} = TransferBatch.append(batch, transfer)
 
-    {:ok, stream} = Connection.create_transfers(conn, batch)
-    assert [] = Enum.to_list(stream)
+    {:ok, results} = Connection.create_transfers(conn, batch)
+    assert [] = results
 
     id
   end
@@ -864,8 +858,8 @@ defmodule TigerBeetlex.IntegrationTest do
     {:ok, batch} = IDBatch.new(1)
     {:ok, batch} = IDBatch.append(batch, id)
 
-    {:ok, stream} = Connection.lookup_accounts(conn, batch)
-    assert [%Account{} = account] = Enum.to_list(stream)
+    {:ok, results} = Connection.lookup_accounts(conn, batch)
+    assert [%Account{} = account] = results
 
     account
   end
@@ -874,8 +868,8 @@ defmodule TigerBeetlex.IntegrationTest do
     {:ok, batch} = IDBatch.new(1)
     {:ok, batch} = IDBatch.append(batch, id)
 
-    {:ok, stream} = Connection.lookup_transfers(conn, batch)
-    assert [%Transfer{} = transfer] = Enum.to_list(stream)
+    {:ok, results} = Connection.lookup_transfers(conn, batch)
+    assert [%Transfer{} = transfer] = results
 
     transfer
   end
@@ -884,15 +878,15 @@ defmodule TigerBeetlex.IntegrationTest do
     {:ok, batch} = IDBatch.new(1)
     {:ok, batch} = IDBatch.append(batch, id)
 
-    {:ok, stream} = Connection.lookup_accounts(conn, batch)
-    assert [] = Enum.to_list(stream)
+    {:ok, results} = Connection.lookup_accounts(conn, batch)
+    assert [] = results
   end
 
   defp assert_transfer_not_existing(conn, id) do
     {:ok, batch} = IDBatch.new(1)
     {:ok, batch} = IDBatch.append(batch, id)
 
-    {:ok, stream} = Connection.lookup_accounts(conn, batch)
-    assert [] = Enum.to_list(stream)
+    {:ok, results} = Connection.lookup_accounts(conn, batch)
+    assert [] = results
   end
 end

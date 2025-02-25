@@ -279,14 +279,50 @@ defmodule TigerBeetlex.Connection do
     |> GenServer.call({:lookup_transfers, id_batch})
   end
 
-  def get_account_balances(name, %AccountFilterBatch{} = batch) do
+  @doc """
+  Fetch a list of historical `%TigerBeetlex.AccountBalance{}` for a given `%TigerBeetlex.Account{}`.
+
+  Only accounts created with the `history` flag set retain historical balances. This is off by default.
+
+  `name` is the same atom that was passed in the `:name` option in `start_link/1`.
+
+  `account_filter_batch` is a `TigerBeetlex.AccountFilterBatch` struct.
+
+  If successful, the function returns `{:ok, results}` where `results` is a list of
+  `%TigerBeetlex.AccountBalance{}` structs.
+
+  ## Examples
+
+  batch = TigerBeetlex.AccountFilterBatch.new!(%AccountFilter{id: <<42::128>>})
+
+  TigerBeetlex.Connection.get_account_balances(:tb, batch)
+  #=> {:ok, [%TigerBeetlex.AccountBalance{}]}
+  """
+  def get_account_balances(name, %AccountFilterBatch{} = account_filter_batch) do
     via_tuple(name)
-    |> GenServer.call({:get_account_balances, batch})
+    |> GenServer.call({:get_account_balances, account_filter_batch})
   end
 
-  def get_account_transfers(name, %AccountFilterBatch{} = batch) do
+  @doc """
+  Fetch a list of `%TigerBeetlex.Transfer{}` involving a `%TigerBeetlex.Account{}`.
+
+  `name` is the same atom that was passed in the `:name` option in `start_link/1`.
+
+  `account_filter_batch` is a `TigerBeetlex.AccountFilterBatch` struct.
+
+  If successful, the function returns `{:ok, results}` where `results` is a list of
+  `%TigerBeetlex.Transfer{}` structs.
+
+  ## Examples
+
+      batch = TigerBeetlex.AccountFilterBatch.new!(%AccountFilter{id: <<42::128>>})
+
+      TigerBeetlex.Connection.get_account_transfers(:tb, batch)
+      #=> {:ok, [%TigerBeetlex.Transfer{}]}
+  """
+  def get_account_transfers(name, %AccountFilterBatch{} = account_filter_batch) do
     via_tuple(name)
-    |> GenServer.call({:get_account_transfers, batch})
+    |> GenServer.call({:get_account_transfers, account_filter_batch})
   end
 
   defp via_tuple(name) do

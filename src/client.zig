@@ -26,42 +26,44 @@ const RequestContext = struct {
     client_raw_obj: *anyopaque,
 };
 
+const InitClientError = error{
+    AddressInvalid,
+    AddressLimitExceeded,
+    NetworkSubsystemFailed,
+    OutOfMemory,
+    SystemResources,
+    Unexpected,
+};
+
 pub fn init(env: beam.Env, cluster_id: u128, addresses: []const u8) beam.Term {
-    const client = beam.general_purpose_allocator.create(tb_client.ClientInterface) catch {
-        return beam.make_error_atom(env, "out_of_memory");
+    return init_client(env, cluster_id, addresses) catch |err| switch (err) {
+        error.AddressInvalid => beam.make_error_atom(env, "invalid_address"),
+        error.AddressLimitExceeded => beam.make_error_atom(env, "address_limit_exceeded"),
+        error.NetworkSubsystemFailed => beam.make_error_atom(env, "network_subsystem"),
+        error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
+        error.SystemResources => beam.make_error_atom(env, "system_resources"),
+        error.Unexpected => beam.make_error_atom(env, "unexpected"),
     };
-    tb_client.init(
+}
+
+fn init_client(env: beam.Env, cluster_id: u128, addresses: []const u8) InitClientError!beam.Term {
+    const client = try beam.general_purpose_allocator.create(tb_client.ClientInterface);
+    errdefer beam.general_purpose_allocator.destroy(client);
+
+    try tb_client.init(
         beam.general_purpose_allocator,
         client,
         cluster_id,
         addresses,
         @intFromPtr(beam.alloc_env()),
         on_completion,
-    ) catch |err| {
-        // TODO: do some refactoring to allow using errdefer
-        beam.general_purpose_allocator.destroy(client);
-        switch (err) {
-            error.Unexpected => return beam.make_error_atom(env, "unexpected"),
-            error.OutOfMemory => return beam.make_error_atom(env, "out_of_memory"),
-            error.AddressInvalid => return beam.make_error_atom(env, "invalid_address"),
-            error.AddressLimitExceeded => return beam.make_error_atom(env, "address_limit_exceeded"),
-            error.SystemResources => return beam.make_error_atom(env, "system_resources"),
-            error.NetworkSubsystemFailed => return beam.make_error_atom(env, "network_subsystem"),
-        }
-    };
+    );
+    errdefer client.deinit() catch unreachable;
 
-    const client_resource = ClientResource.init(client) catch |err|
-        switch (err) {
-        error.OutOfMemory => {
-            // Deinit the client
-            // TODO: do some refactoring to allow using errdefer
-            client.deinit() catch unreachable;
-            beam.general_purpose_allocator.destroy(client);
-            return beam.make_error_atom(env, "out_of_memory");
-        },
-    };
+    const client_resource = try ClientResource.init(client);
+    defer client_resource.release();
+
     const term_handle = client_resource.term_handle(env);
-    client_resource.release();
 
     return beam.make_ok_term(env, term_handle);
 }

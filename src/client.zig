@@ -81,6 +81,7 @@ const SubmitError = error{
     TooManyRequests,
     Shutdown,
     OutOfMemory,
+    ClientInvalid,
 };
 
 // These are all comptime generated functions
@@ -114,6 +115,7 @@ fn get_submit_fn(comptime operation: tb_client.Operation) (fn (
                 error.TooManyRequests => beam.make_error_atom(env, "too_many_requests"),
                 error.Shutdown => beam.make_error_atom(env, "shutdown"),
                 error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
+                error.ClientInvalid => beam.make_error_atom(env, "client_closed"),
             };
         }
     }.submit_fn;
@@ -168,9 +170,7 @@ fn submit(
         .status = undefined,
     };
 
-    client.submit(packet) catch |err| switch (err) {
-        error.ClientInvalid => return beam.make_error_atom(env, "client_closed"),
-    };
+    try client.submit(packet);
 
     return beam.make_ok_term(env, ref);
 }

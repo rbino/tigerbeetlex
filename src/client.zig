@@ -21,7 +21,7 @@ pub const ClientResource = Resource(*ClientInterface, client_resource_deinit_fn)
 
 const RequestContext = struct {
     caller_pid: beam.Pid,
-    request_ref_binary: beam.Binary,
+    request_ref: beam.Term,
     payload_raw_obj: *anyopaque,
     client_raw_obj: *anyopaque,
 };
@@ -133,35 +133,34 @@ fn submit(
     const client = client_resource.value();
     const payload = payload_resource.ptr_const();
 
-    const packet = beam.general_purpose_allocator.create(tb_client.Packet) catch {
-        return error.OutOfMemory;
-    };
-    errdefer beam.general_purpose_allocator.destroy(packet);
-
-    var ctx: *RequestContext = try beam.general_purpose_allocator.create(RequestContext);
+    const ctx = try beam.general_purpose_allocator.create(RequestContext);
     errdefer beam.general_purpose_allocator.destroy(ctx);
 
+    const packet = try beam.general_purpose_allocator.create(tb_client.Packet);
+    errdefer beam.general_purpose_allocator.destroy(packet);
+
     // We're calling this from a process bound env so we expect not to fail
-    ctx.caller_pid = process.self(env) catch unreachable;
+    const caller_pid = process.self(env) catch unreachable;
 
     const ref = beam.make_ref(env);
-    // We serialize the reference to binary since we would need an env created in
-    // TigerBeetle's thread to copy the ref into, but we don't have it and don't
-    // have any way to create it from this side, pass it to the completion function
-    // and free it
-    ctx.request_ref_binary = try beam.term_to_binary(env, ref);
-
-    // We increase the reference count on the payload resource so it doesn't get garbage
-    // collected until we release it
-    payload_resource.keep();
+    const completion_ctx = try client.completion_context();
+    const tigerbeetle_env: beam.Env = @ptrFromInt(completion_ctx);
+    const tigerbeetle_owned_ref = beam.make_copy(tigerbeetle_env, ref);
 
     // We do the same with the client to make sure we don't deinit it until all requests
     // have been handled
     client_resource.keep();
 
-    // We save the raw pointers in the context so we can release it later
-    ctx.payload_raw_obj = payload_resource.raw_ptr;
-    ctx.client_raw_obj = client_resource.raw_ptr;
+    // We increase the reference count on the payload resource so it doesn't get garbage
+    // collected until we release it
+    payload_resource.keep();
+
+    ctx.* = .{
+        .caller_pid = caller_pid,
+        .request_ref = tigerbeetle_owned_ref,
+        .client_raw_obj = client_resource.raw_ptr,
+        .payload_raw_obj = payload_resource.raw_ptr,
+    };
 
     packet.* = .{
         .user_data = ctx,
@@ -196,10 +195,7 @@ fn on_completion(
     const env: beam.Env = @ptrFromInt(context);
     defer beam.clear_env(env);
 
-    var ref_binary = ctx.request_ref_binary;
-    defer ref_binary.release();
-    const ref = ref_binary.to_term(env) catch unreachable;
-
+    const ref = ctx.request_ref;
     const caller_pid = ctx.caller_pid;
 
     const status = beam.make_u8(env, @intFromEnum(packet.status));

@@ -7,19 +7,11 @@ defmodule TigerBeetlex.Types do
 
   @type client :: reference()
 
-  @type account_batch :: reference()
-
   @type account_binary :: <<_::1024>>
-
-  @type account_filter_batch :: reference()
 
   @type account_filter_binary :: <<_::1024>>
 
-  @type transfer_batch :: reference()
-
   @type transfer_binary :: <<_::1024>>
-
-  @type id_batch :: reference()
 
   @type id_128 :: <<_::128>>
 
@@ -37,43 +29,12 @@ defmodule TigerBeetlex.Types do
           | :system_resources
           | :network_subsystem
 
-  @type create_batch_error :: :out_of_memory
-
-  @type create_accounts_error ::
-          :invalid_client
-          | :invalid_batch
-          | :out_of_memory
+  @type request_error ::
+          :invalid_client_resource
           | :too_many_requests
-
-  @type append_error ::
-          :invalid_batch
-          | :batch_full
-
-  @type fetch_error ::
-          :invalid_batch
-          | :out_of_bounds
-
-  @type replace_error ::
-          :invalid_batch
-          | :out_of_bounds
-
-  @type create_transfers_error ::
-          :invalid_client
-          | :invalid_batch
+          | :shutdown
           | :out_of_memory
-          | :too_many_requests
-
-  @type lookup_accounts_error ::
-          :invalid_client
-          | :invalid_batch
-          | :out_of_memory
-          | :too_many_requests
-
-  @type lookup_transfers_error ::
-          :invalid_client
-          | :invalid_batch
-          | :out_of_memory
-          | :too_many_requests
+          | :client_closed
 
   @type tigerbeetlex_connection_start_option ::
           {:cluster_id, non_neg_integer()}

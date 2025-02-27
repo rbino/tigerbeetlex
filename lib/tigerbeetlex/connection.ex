@@ -9,14 +9,14 @@ defmodule TigerBeetlex.Connection do
   If you already have a wrapping process, you can use `TigerBeetlex` directly instead.
   """
 
-  alias TigerBeetlex.{
-    AccountBatch,
-    AccountFilterBatch,
-    IDBatch,
-    Receiver,
-    TransferBatch,
-    Types
-  }
+  alias TigerBeetlex.Account
+  alias TigerBeetlex.AccountBalance
+  alias TigerBeetlex.AccountFilter
+  alias TigerBeetlex.CreateAccountsResult
+  alias TigerBeetlex.CreateTransfersResult
+  alias TigerBeetlex.Receiver
+  alias TigerBeetlex.Transfer
+  alias TigerBeetlex.Types
 
   @start_link_opts_schema [
     name: [
@@ -116,42 +116,40 @@ defmodule TigerBeetlex.Connection do
 
   `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
-  `account_batch` is a `%TigerBeetlex.AccountBatch{}`, see `TigerBeetlex.AccountBatch` for
-  the functions to create and manipulate it.
+  `accounts` is a list of `TigerBeetlex.Account` structs.
 
   If successful, the function returns `{:ok, results}` where `results` is a list of
-  `%TigerBeetlex.CreateAccountsResult{}` structs which contain the index
-  of the account batch and the reason of the failure. An account has a corresponding
-  `%TigerBeetlex.CreateAccountsResult{}` only if it fails to be created, otherwise the account
+  `TigerBeetlex.CreateAccountsResult` structs which contain the index
+  of the account list and the reason of the failure. An account has a corresponding
+  `TigerBeetlex.CreateAccountsResult` only if it fails to be created, otherwise the account
   has been created succesfully (so a successful request returns an empty list).
 
+  See [`create_accounts`](https://docs.tigerbeetle.com/reference/requests/create_accounts/).
+
   ## Examples
+      alias TigerBeetlex.Account
 
       # Successful request
-      batch =
-        TigerBeetlex.AccountBatch.new!(10)
-        |> TigerBeetlex.AccountBatch.append!(%Account{id: <<42::128>>, ledger: 3, code: 4})
+      accounts = [%Account{id: <<42::128>>, ledger: 3, code: 4}]
 
-      TigerBeetlex.Connection.create_accounts(:tb, batch)
+      TigerBeetlex.Connection.create_accounts(:tb, accounts)
       #=> {:ok, []}
 
       # Creation error
-      batch =
-        TigerBeetlex.AccountBatch.new!(10)
-        |> TigerBeetlex.AccountBatch.append!(%Account{id: <<0::128>>, ledger: 3, code: 4})
+      accounts = [%Account{id: <<0::128>>, ledger: 3, code: 4}]
 
-      TigerBeetlex.Connection.create_accounts(:tb, batch)
+      TigerBeetlex.Connection.create_accounts(:tb, accounts)
 
-      #=> {:ok, [%TigerBeetlex.CreateAccountError{index: 0, reason: :id_must_not_be_zero}]}
+      #=> {:ok, [%TigerBeetlex.CreateAccountsResult{index: 0, reason: :id_must_not_be_zero}]}
   """
   @spec create_accounts(
           name :: PartitionSupervisor.name(),
-          account_batch :: TigerBeetlex.AccountBatch.t()
+          accounts :: [Account.t()]
         ) ::
-          {:ok, Enumerable.t()} | {:error, Types.create_accounts_error()}
-  def create_accounts(name, %AccountBatch{} = account_batch) do
+          {:ok, [CreateAccountsResult.t()]} | {:error, Types.request_error()}
+  def create_accounts(name, accounts) when is_list(accounts) do
     via_tuple(name)
-    |> GenServer.call({:create_accounts, account_batch})
+    |> GenServer.call({:create_accounts, accounts})
   end
 
   @doc """
@@ -159,59 +157,57 @@ defmodule TigerBeetlex.Connection do
 
   `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
-  `transfer_batch` is a `%TigerBeetlex.TransferBatch{}`, see `TigerBeetlex.TransferBatch` for
-  the functions to create and manipulate it.
+  `transfers` is a list of `TigerBeetlex.Transfer` structs.
 
   If successful, the function returns `{:ok, results}` where `results` is a list of
-  `%TigerBeetlex.CreateTransfersResult{}` structs which contain the index
-  of the transfer batch and the reason of the failure. An transfer has a corresponding
-  `%TigerBeetlex.CreateTransfersResult{}` only if it fails to be created, otherwise the transfer
+  `TigerBeetlex.CreateTransfersResult` structs which contain the index
+  of the transfer list and the reason of the failure. A transfer has a corresponding
+  `TigerBeetlex.CreateTransfersResult` only if it fails to be created, otherwise the transfer
   has been created succesfully (so a successful request returns an empty list).
 
+  See [`create_transfers`](https://docs.tigerbeetle.com/reference/requests/create_transfers/).
+
   ## Examples
+      alias TigerBeetlex.Transfer
 
       # Successful request
-      batch =
-        TigerBeetlex.TransferBatch.new!(10)
-        |> TigerBeetlex.TransferBatch.append!(
-          %Transfer{
-            id: <<42::128>>,
-            debit_account_id: <<42::128>>,
-            credit_account_id: <<43::128>>,
-            ledger: 3,
-            code: 4
-            amount: 100
-          }
-        )
+      transfers = [
+        %Transfer{
+          id: <<42::128>>,
+          debit_account_id: <<42::128>>,
+          credit_account_id: <<43::128>>,
+          ledger: 3,
+          code: 4
+          amount: 100
+        }
+      ]
 
-      TigerBeetlex.Connection.create_transfers(:tb, batch)
+      TigerBeetlex.Connection.create_transfers(:tb, transfers)
       #=> {:ok, []}
 
       # Creation error
-      batch =
-        TigerBeetlex.TransferBatch.new!(10)
-        |> TigerBeetlex.TransferBatch.append!(
-          %Transfer{
-            id: <<0::128>>,
-            debit_account_id: <<42::128>>,
-            credit_account_id: <<43::128>>,
-            ledger: 3,
-            code: 4
-            amount: 100
-          }
-        )
+      transfers = [
+        %Transfer{
+          id: <<0::128>>,
+          debit_account_id: <<42::128>>,
+          credit_account_id: <<43::128>>,
+          ledger: 3,
+          code: 4
+          amount: 100
+        }
+      ]
 
-      TigerBeetlex.Connection.create_transfers(:tb, batch)
+      TigerBeetlex.Connection.create_transfers(:tb, transfers)
       #=> {:ok, [%TigerBeetlex.CreateTransferError{index: 0, reason: :id_must_not_be_zero}]}
   """
   @spec create_transfers(
           name :: PartitionSupervisor.name(),
-          transfer_batch :: TigerBeetlex.TransferBatch.t()
+          transfers :: [Transfer.t()]
         ) ::
-          {:ok, Enumerable.t()} | {:error, Types.create_transfers_error()}
-  def create_transfers(name, %TransferBatch{} = transfer_batch) do
+          {:ok, [CreateTransfersResult.t()]} | {:error, Types.request_error()}
+  def create_transfers(name, transfers) when is_list(transfers) do
     via_tuple(name)
-    |> GenServer.call({:create_transfers, transfer_batch})
+    |> GenServer.call({:create_transfers, transfers})
   end
 
   @doc """
@@ -219,32 +215,30 @@ defmodule TigerBeetlex.Connection do
 
   `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
-  `id_batch` is a `%TigerBeetlex.IDBatch{}`, see `TigerBeetlex.IDBatch` for the functions to
-  create and manipulate it.
+  `ids` is a list of 128-bit binaries.
 
   If successful, the function returns `{:ok, results}` where `results` is a list of
-  `%TigerBeetlex.Account{}` structs. If an id in the batch does not correspond to an existing
+  `TigerBeetlex.Account` structs. If an id in the list does not correspond to an existing
   account, it will simply be skipped, so the result can have less accounts then the provided
-  ids in the id batch.
+  ids.
+
+  See [`lookup_accounts`](https://docs.tigerbeetle.com/reference/requests/lookup_accounts/).
 
   ## Examples
 
-      batch =
-        TigerBeetlex.IDBatch.new!(10)
-        |> TigerBeetlex.IDBatch.append!(<<42::128>>)
+      ids = [<<42::128>>]
 
-      TigerBeetlex.Connection.lookup_accounts(:tb, batch)
-
+      TigerBeetlex.Connection.lookup_accounts(:tb, ids)
       #=> {:ok, [%TigerBeetlex.Account{}]}
   """
   @spec lookup_accounts(
           name :: PartitionSupervisor.name(),
-          id_batch :: TigerBeetlex.IDBatch.t()
+          ids :: [Types.id_128()]
         ) ::
-          {:ok, Enumerable.t()} | {:error, Types.lookup_accounts_error()}
-  def lookup_accounts(name, %IDBatch{} = id_batch) do
+          {:ok, [Account.t()]} | {:error, Types.request_error()}
+  def lookup_accounts(name, ids) when is_list(ids) do
     via_tuple(name)
-    |> GenServer.call({:lookup_accounts, id_batch})
+    |> GenServer.call({:lookup_accounts, ids})
   end
 
   @doc """
@@ -252,77 +246,92 @@ defmodule TigerBeetlex.Connection do
 
   `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
-  `id_batch` is a `%TigerBeetlex.IDBatch{}`, see `TigerBeetlex.IDBatch` for the functions to
-  create and manipulate it.
+  `ids` is a list of 128-bit binaries.
 
   If successful, the function returns `{:ok, results}` where `results` is a list of
-  `%TigerBeetlex.Transfer{}` structs. If an id in the batch does not correspond to an existing
+  `TigerBeetlex.Transfer` structs. If an id in the list does not correspond to an existing
   transfer, it will simply be skipped, so the result could have less transfers then the provided
-  ids in the id batch.
+  ids.
+
+  See [`lookup_transfers`](https://docs.tigerbeetle.com/reference/requests/lookup_transfers/).
 
   ## Examples
 
-      batch =
-        TigerBeetlex.IDBatch.new!(10)
-        |> TigerBeetlex.IDBatch.append!(<<42::128>>)
+      ids = [<<42::128>>]
 
-      TigerBeetlex.Connection.lookup_transfers(:tb, batch)
+      TigerBeetlex.Connection.lookup_transfers(:tb, ids)
       #=> {:ok, [%TigerBeetlex.Transfer{}]}
   """
   @spec lookup_transfers(
           name :: PartitionSupervisor.name(),
-          id_batch :: TigerBeetlex.IDBatch.t()
+          ids :: [Types.id_128()]
         ) ::
-          {:ok, Enumerable.t()} | {:error, Types.lookup_transfers_error()}
-  def lookup_transfers(name, %IDBatch{} = id_batch) do
+          {:ok, [Transfer.t()]} | {:error, Types.request_error()}
+  def lookup_transfers(name, ids) when is_list(ids) do
     via_tuple(name)
-    |> GenServer.call({:lookup_transfers, id_batch})
+    |> GenServer.call({:lookup_transfers, ids})
   end
 
   @doc """
-  Fetch a list of historical `%TigerBeetlex.AccountBalance{}` for a given `%TigerBeetlex.Account{}`.
+  Fetch a list of historical `TigerBeetlex.AccountBalance` for a given `TigerBeetlex.Account`.
 
   Only accounts created with the `history` flag set retain historical balances. This is off by default.
 
   `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
-  `account_filter_batch` is a `TigerBeetlex.AccountFilterBatch` struct.
+  `account_filter` is a `TigerBeetlex.AccountFilter` struct.
 
   If successful, the function returns `{:ok, results}` where `results` is a list of
-  `%TigerBeetlex.AccountBalance{}` structs.
+  `TigerBeetlex.AccountBalance` structs.
+
+  See [`get_account_balances`](https://docs.tigerbeetle.com/reference/requests/get_account_balances/).
 
   ## Examples
+      alias TigerBeetlex.AccountFilter
 
-  batch = TigerBeetlex.AccountFilterBatch.new!(%AccountFilter{id: <<42::128>>})
+      account_filter = %AccountFilter{id: <<42::128>>}
 
-  TigerBeetlex.Connection.get_account_balances(:tb, batch)
-  #=> {:ok, [%TigerBeetlex.AccountBalance{}]}
+      TigerBeetlex.Connection.get_account_balances(:tb, account_filter)
+      #=> {:ok, [%TigerBeetlex.AccountBalance{}]}
   """
-  def get_account_balances(name, %AccountFilterBatch{} = account_filter_batch) do
+  @spec get_account_balances(
+          name :: PartitionSupervisor.name(),
+          account_filter :: AccountFilter.t()
+        ) ::
+          {:ok, [AccountBalance.t()]} | {:error, Types.request_error()}
+  def get_account_balances(name, %AccountFilter{} = account_filter) do
     via_tuple(name)
-    |> GenServer.call({:get_account_balances, account_filter_batch})
+    |> GenServer.call({:get_account_balances, account_filter})
   end
 
   @doc """
-  Fetch a list of `%TigerBeetlex.Transfer{}` involving a `%TigerBeetlex.Account{}`.
+  Fetch a list of `TigerBeetlex.Transfer` involving a `TigerBeetlex.Account`.
 
   `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
-  `account_filter_batch` is a `TigerBeetlex.AccountFilterBatch` struct.
+  `account_filter` is a `TigerBeetlex.AccountFilter` struct.
 
   If successful, the function returns `{:ok, results}` where `results` is a list of
-  `%TigerBeetlex.Transfer{}` structs.
+  `TigerBeetlex.Transfer` structs.
+
+  See [`get_account_transfers`](https://docs.tigerbeetle.com/reference/requests/get_account_transfers/).
 
   ## Examples
+      alias TigerBeetlex.AccountFilter
 
-      batch = TigerBeetlex.AccountFilterBatch.new!(%AccountFilter{id: <<42::128>>})
+      account_filter = %AccountFilter{id: <<42::128>>}
 
-      TigerBeetlex.Connection.get_account_transfers(:tb, batch)
+      TigerBeetlex.Connection.get_account_transfers(:tb, account_filter)
       #=> {:ok, [%TigerBeetlex.Transfer{}]}
   """
-  def get_account_transfers(name, %AccountFilterBatch{} = account_filter_batch) do
+  @spec get_account_transfers(
+          name :: PartitionSupervisor.name(),
+          account_filter :: AccountFilter.t()
+        ) ::
+          {:ok, [Transfer.t()]} | {:error, Types.request_error()}
+  def get_account_transfers(name, %AccountFilter{} = account_filter) do
     via_tuple(name)
-    |> GenServer.call({:get_account_transfers, account_filter_batch})
+    |> GenServer.call({:get_account_transfers, account_filter})
   end
 
   defp via_tuple(name) do

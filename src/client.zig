@@ -12,17 +12,12 @@ const AccountFilter = tb.AccountFilter;
 const Account = tb.Account;
 const Transfer = tb.Transfer;
 
-const batch = @import("batch.zig");
-const Batch = batch.Batch;
-const BatchResource = batch.BatchResource;
-
 const ClientInterface = tb_client.ClientInterface;
 pub const ClientResource = Resource(*ClientInterface, client_resource_deinit_fn);
 
 const RequestContext = struct {
     caller_pid: beam.Pid,
     request_ref: beam.Term,
-    payload_raw_obj: *anyopaque,
     client_raw_obj: *anyopaque,
 };
 
@@ -68,22 +63,12 @@ fn init_client(env: beam.Env, cluster_id: u128, addresses: []const u8) InitClien
     return beam.make_ok_term(env, term_handle);
 }
 
-fn OperationBatchItemType(comptime operation: tb_client.Operation) type {
-    return switch (operation) {
-        .create_accounts => Account,
-        .create_transfers => Transfer,
-        .lookup_accounts, .lookup_transfers => u128,
-        .get_account_transfers, .get_account_balances => AccountFilter,
-        .query_accounts, .query_transfers => @panic("TODO"),
-        .pulse, .get_events => unreachable,
-    };
-}
-
 const SubmitError = error{
     TooManyRequests,
     Shutdown,
     OutOfMemory,
     ClientInvalid,
+    ArgumentError,
 };
 
 // These are all comptime generated functions
@@ -99,8 +84,6 @@ fn get_submit_fn(comptime operation: tb_client.Operation) (fn (
     client_resource: beam.Term,
     payload_term: beam.Term,
 ) beam.Term) {
-    const Item = OperationBatchItemType(operation);
-
     return struct {
         fn submit_fn(
             env: beam.Env,
@@ -110,14 +93,12 @@ fn get_submit_fn(comptime operation: tb_client.Operation) (fn (
             const client_resource = ClientResource.from_term_handle(env, client_term) catch
                 return beam.make_error_atom(env, "invalid_client_resource");
 
-            const payload_resource = BatchResource(Item).from_term_handle(env, payload_term) catch
-                return beam.make_error_atom(env, "invalid_batch_resource");
-
-            return submit(operation, env, client_resource, payload_resource) catch |err| switch (err) {
+            return submit(operation, env, client_resource, payload_term) catch |err| switch (err) {
                 error.TooManyRequests => beam.make_error_atom(env, "too_many_requests"),
                 error.Shutdown => beam.make_error_atom(env, "shutdown"),
                 error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
                 error.ClientInvalid => beam.make_error_atom(env, "client_closed"),
+                error.ArgumentError => beam.raise_badarg(env),
             };
         }
     }.submit_fn;
@@ -127,11 +108,9 @@ fn submit(
     comptime operation: tb_client.Operation,
     env: beam.Env,
     client_resource: ClientResource,
-    payload_resource: BatchResource(OperationBatchItemType(operation)),
+    payload_term: beam.Term,
 ) SubmitError!beam.Term {
-    const Item = OperationBatchItemType(operation);
     const client = client_resource.value();
-    const payload = payload_resource.ptr_const();
 
     const ctx = try beam.general_purpose_allocator.create(RequestContext);
     errdefer beam.general_purpose_allocator.destroy(ctx);
@@ -146,27 +125,25 @@ fn submit(
     const completion_ctx = try client.completion_context();
     const tigerbeetle_env: beam.Env = @ptrFromInt(completion_ctx);
     const tigerbeetle_owned_ref = beam.make_copy(tigerbeetle_env, ref);
+    const tigerbeetle_owned_payload_term = beam.make_copy(tigerbeetle_env, payload_term);
+
+    const payload = try beam.get_char_slice(tigerbeetle_env, tigerbeetle_owned_payload_term);
 
     // We do the same with the client to make sure we don't deinit it until all requests
     // have been handled
     client_resource.keep();
 
-    // We increase the reference count on the payload resource so it doesn't get garbage
-    // collected until we release it
-    payload_resource.keep();
-
     ctx.* = .{
         .caller_pid = caller_pid,
         .request_ref = tigerbeetle_owned_ref,
         .client_raw_obj = client_resource.raw_ptr,
-        .payload_raw_obj = payload_resource.raw_ptr,
     };
 
     packet.* = .{
         .user_data = ctx,
         .operation = @intFromEnum(operation),
-        .data = payload.items.ptr,
-        .data_size = @sizeOf(Item) * payload.len,
+        .data = payload.ptr,
+        .data_size = @intCast(payload.len),
         .user_tag = 0,
         .status = undefined,
     };
@@ -187,8 +164,6 @@ fn on_completion(
     const ctx: *RequestContext = @ptrCast(@alignCast(packet.user_data.?));
     defer beam.general_purpose_allocator.destroy(ctx);
 
-    // We don't need the payload anymore, let the garbage collector take care of it
-    resource.raw_release(ctx.payload_raw_obj);
     // Same for the client
     resource.raw_release(ctx.client_raw_obj);
 

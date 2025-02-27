@@ -1,6 +1,5 @@
 alias TigerBeetlex.Connection
 alias TigerBeetlex.Transfer
-alias TigerBeetlex.TransferBatch
 
 {:ok, _pid} =
   Connection.start_link(
@@ -24,9 +23,9 @@ bench = fn ->
 
   {total, max} =
     Enum.reduce(chunks, {0, 0}, fn chunk, {time_total_us, max_batch_us} ->
-      batch =
-        Enum.reduce(chunk, TransferBatch.new!(batch_size), fn _idx, acc ->
-          dummy_transfer = %Transfer{
+      transfers =
+        for _idx <- chunk do
+          %Transfer{
             id: <<0::unsigned-little-size(128)>>,
             debit_account_id: <<0::unsigned-little-size(128)>>,
             credit_account_id: <<0::unsigned-little-size(128)>>,
@@ -34,11 +33,9 @@ bench = fn ->
             code: 1,
             amount: 10
           }
+        end
 
-          TransferBatch.append!(acc, dummy_transfer)
-        end)
-
-      {elapsed, response} = :timer.tc(fn -> Connection.create_transfers(:tb, batch) end)
+      {elapsed, response} = :timer.tc(fn -> Connection.create_transfers(:tb, transfers) end)
 
       {:ok, results} = response
 

@@ -12,17 +12,12 @@ const AccountFilter = tb.AccountFilter;
 const Account = tb.Account;
 const Transfer = tb.Transfer;
 
-const batch = @import("batch.zig");
-const Batch = batch.Batch;
-const BatchResource = batch.BatchResource;
-
 const ClientInterface = tb_client.ClientInterface;
 pub const ClientResource = Resource(*ClientInterface, client_resource_deinit_fn);
 
 const RequestContext = struct {
     caller_pid: beam.Pid,
-    request_ref_binary: beam.Binary,
-    payload_raw_obj: *anyopaque,
+    request_ref: beam.Term,
     client_raw_obj: *anyopaque,
 };
 
@@ -68,22 +63,12 @@ fn init_client(env: beam.Env, cluster_id: u128, addresses: []const u8) InitClien
     return beam.make_ok_term(env, term_handle);
 }
 
-fn OperationBatchItemType(comptime operation: tb_client.Operation) type {
-    return switch (operation) {
-        .create_accounts => Account,
-        .create_transfers => Transfer,
-        .lookup_accounts, .lookup_transfers => u128,
-        .get_account_transfers, .get_account_balances => AccountFilter,
-        .query_accounts, .query_transfers => @panic("TODO"),
-        .pulse, .get_events => unreachable,
-    };
-}
-
 const SubmitError = error{
     TooManyRequests,
     Shutdown,
     OutOfMemory,
     ClientInvalid,
+    ArgumentError,
 };
 
 // These are all comptime generated functions
@@ -99,8 +84,6 @@ fn get_submit_fn(comptime operation: tb_client.Operation) (fn (
     client_resource: beam.Term,
     payload_term: beam.Term,
 ) beam.Term) {
-    const Item = OperationBatchItemType(operation);
-
     return struct {
         fn submit_fn(
             env: beam.Env,
@@ -110,14 +93,12 @@ fn get_submit_fn(comptime operation: tb_client.Operation) (fn (
             const client_resource = ClientResource.from_term_handle(env, client_term) catch
                 return beam.make_error_atom(env, "invalid_client_resource");
 
-            const payload_resource = BatchResource(Item).from_term_handle(env, payload_term) catch
-                return beam.make_error_atom(env, "invalid_batch_resource");
-
-            return submit(operation, env, client_resource, payload_resource) catch |err| switch (err) {
+            return submit(operation, env, client_resource, payload_term) catch |err| switch (err) {
                 error.TooManyRequests => beam.make_error_atom(env, "too_many_requests"),
                 error.Shutdown => beam.make_error_atom(env, "shutdown"),
                 error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
                 error.ClientInvalid => beam.make_error_atom(env, "client_closed"),
+                error.ArgumentError => beam.raise_badarg(env),
             };
         }
     }.submit_fn;
@@ -127,47 +108,42 @@ fn submit(
     comptime operation: tb_client.Operation,
     env: beam.Env,
     client_resource: ClientResource,
-    payload_resource: BatchResource(OperationBatchItemType(operation)),
+    payload_term: beam.Term,
 ) SubmitError!beam.Term {
-    const Item = OperationBatchItemType(operation);
     const client = client_resource.value();
-    const payload = payload_resource.ptr_const();
 
-    const packet = beam.general_purpose_allocator.create(tb_client.Packet) catch {
-        return error.OutOfMemory;
-    };
-    errdefer beam.general_purpose_allocator.destroy(packet);
-
-    var ctx: *RequestContext = try beam.general_purpose_allocator.create(RequestContext);
+    const ctx = try beam.general_purpose_allocator.create(RequestContext);
     errdefer beam.general_purpose_allocator.destroy(ctx);
 
+    const packet = try beam.general_purpose_allocator.create(tb_client.Packet);
+    errdefer beam.general_purpose_allocator.destroy(packet);
+
     // We're calling this from a process bound env so we expect not to fail
-    ctx.caller_pid = process.self(env) catch unreachable;
+    const caller_pid = process.self(env) catch unreachable;
 
     const ref = beam.make_ref(env);
-    // We serialize the reference to binary since we would need an env created in
-    // TigerBeetle's thread to copy the ref into, but we don't have it and don't
-    // have any way to create it from this side, pass it to the completion function
-    // and free it
-    ctx.request_ref_binary = try beam.term_to_binary(env, ref);
+    const completion_ctx = try client.completion_context();
+    const tigerbeetle_env: beam.Env = @ptrFromInt(completion_ctx);
+    const tigerbeetle_owned_ref = beam.make_copy(tigerbeetle_env, ref);
+    const tigerbeetle_owned_payload_term = beam.make_copy(tigerbeetle_env, payload_term);
 
-    // We increase the reference count on the payload resource so it doesn't get garbage
-    // collected until we release it
-    payload_resource.keep();
+    const payload = try beam.get_char_slice(tigerbeetle_env, tigerbeetle_owned_payload_term);
 
     // We do the same with the client to make sure we don't deinit it until all requests
     // have been handled
     client_resource.keep();
 
-    // We save the raw pointers in the context so we can release it later
-    ctx.payload_raw_obj = payload_resource.raw_ptr;
-    ctx.client_raw_obj = client_resource.raw_ptr;
+    ctx.* = .{
+        .caller_pid = caller_pid,
+        .request_ref = tigerbeetle_owned_ref,
+        .client_raw_obj = client_resource.raw_ptr,
+    };
 
     packet.* = .{
         .user_data = ctx,
         .operation = @intFromEnum(operation),
-        .data = payload.items.ptr,
-        .data_size = @sizeOf(Item) * payload.len,
+        .data = payload.ptr,
+        .data_size = @intCast(payload.len),
         .user_tag = 0,
         .status = undefined,
     };
@@ -188,18 +164,13 @@ fn on_completion(
     const ctx: *RequestContext = @ptrCast(@alignCast(packet.user_data.?));
     defer beam.general_purpose_allocator.destroy(ctx);
 
-    // We don't need the payload anymore, let the garbage collector take care of it
-    resource.raw_release(ctx.payload_raw_obj);
     // Same for the client
     resource.raw_release(ctx.client_raw_obj);
 
     const env: beam.Env = @ptrFromInt(context);
     defer beam.clear_env(env);
 
-    var ref_binary = ctx.request_ref_binary;
-    defer ref_binary.release();
-    const ref = ref_binary.to_term(env) catch unreachable;
-
+    const ref = ctx.request_ref;
     const caller_pid = ctx.caller_pid;
 
     const status = beam.make_u8(env, @intFromEnum(packet.status));

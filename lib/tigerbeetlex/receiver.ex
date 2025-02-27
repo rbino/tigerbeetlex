@@ -21,28 +21,28 @@ defmodule TigerBeetlex.Receiver do
   end
 
   @impl true
-  def handle_call({:create_accounts, account_batch}, from, state) do
-    send_request(from, :create_accounts, [state.client, account_batch], state)
+  def handle_call({:create_accounts, accounts}, from, state) do
+    send_request(from, :create_accounts, [state.client, accounts], state)
   end
 
-  def handle_call({:create_transfers, transfer_batch}, from, state) do
-    send_request(from, :create_transfers, [state.client, transfer_batch], state)
+  def handle_call({:create_transfers, transfers}, from, state) do
+    send_request(from, :create_transfers, [state.client, transfers], state)
   end
 
-  def handle_call({:lookup_accounts, id_batch}, from, state) do
-    send_request(from, :lookup_accounts, [state.client, id_batch], state)
+  def handle_call({:lookup_accounts, ids}, from, state) do
+    send_request(from, :lookup_accounts, [state.client, ids], state)
   end
 
-  def handle_call({:lookup_transfers, id_batch}, from, state) do
-    send_request(from, :lookup_transfers, [state.client, id_batch], state)
+  def handle_call({:lookup_transfers, ids}, from, state) do
+    send_request(from, :lookup_transfers, [state.client, ids], state)
   end
 
-  def handle_call({:get_account_balances, id_batch}, from, state) do
-    send_request(from, :get_account_balances, [state.client, id_batch], state)
+  def handle_call({:get_account_balances, account_filter}, from, state) do
+    send_request(from, :get_account_balances, [state.client, account_filter], state)
   end
 
-  def handle_call({:get_account_transfers, id_batch}, from, state) do
-    send_request(from, :get_account_transfers, [state.client, id_batch], state)
+  def handle_call({:get_account_transfers, account_filter}, from, state) do
+    send_request(from, :get_account_transfers, [state.client, account_filter], state)
   end
 
   defp send_request(from, function, arguments, state) do

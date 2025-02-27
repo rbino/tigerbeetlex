@@ -96,6 +96,10 @@ pub fn make_slice(env: Env, val: []const u8) Term {
     return result;
 }
 
+pub fn make_copy(destination_env: Env, source_term: Term) Term {
+    return e.enif_make_copy(destination_env, source_term);
+}
+
 /// Creates a u8 value term.
 pub fn make_u8(env: Env, val: u8) Term {
     return e.enif_make_uint(env, val);

@@ -1,8 +1,9 @@
 const std = @import("std");
+const assert = std.debug.assert;
+
 const e = @import("erl_nif.zig");
 const beam = @import("../beam.zig");
 const resource = @import("resource.zig");
-const scheduler = @import("scheduler.zig");
 
 pub const Nif = *const fn (beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term;
 pub const NifLoadFn = *const fn (beam.Env, [*c]?*anyopaque, beam.Term) callconv(.C) c_int;
@@ -41,11 +42,11 @@ pub fn entrypoint(
 }
 
 pub fn wrap(comptime nif_name: [:0]const u8, fun: anytype) FunctionEntry {
-    const nif = MakeWrappedNif(nif_name, fun);
+    const nif = MakeWrappedNif(fun);
     return function_entry(nif_name, nif.arity, nif.wrapper);
 }
 
-fn MakeWrappedNif(comptime nif_name: [:0]const u8, comptime fun: anytype) type {
+fn MakeWrappedNif(comptime fun: anytype) type {
     const Function = @TypeOf(fun);
 
     const function_info = switch (@typeInfo(Function)) {
@@ -56,6 +57,7 @@ fn MakeWrappedNif(comptime nif_name: [:0]const u8, comptime fun: anytype) type {
     const params = function_info.params;
     const with_env = params.len > 1 and params[0].type == beam.Env;
     const ReturnType = function_info.return_type.?;
+    comptime assert(ReturnType == beam.Term);
 
     return struct {
         // Env is not counted towards the effective arity, subtract 1 if env is the first parameter
@@ -66,7 +68,7 @@ fn MakeWrappedNif(comptime nif_name: [:0]const u8, comptime fun: anytype) type {
             argc: c_int,
             argv_ptr: [*c]const beam.Term,
         ) callconv(.C) beam.Term {
-            if (argc != arity) @panic(nif_name ++ " called with the wrong number of arguments");
+            assert(argc == arity);
 
             const argv = @as([*]const beam.Term, @ptrCast(argv_ptr))[0..@intCast(argc)];
             // If the first argument is env, we must adjust the offset between the input argv and
@@ -87,14 +89,7 @@ fn MakeWrappedNif(comptime nif_name: [:0]const u8, comptime fun: anytype) type {
                 }
             }
 
-            // TODO: this currently assumes that if it's not an error union it's beam.Term, make
-            // this a little better
-            return switch (@typeInfo(ReturnType)) {
-                .ErrorUnion => @call(.auto, fun, args) catch |err| switch (err) {
-                    error.Yield => scheduler.reschedule(env, nif_name.ptr, wrapper, argc, argv_ptr),
-                },
-                else => @call(.auto, fun, args),
-            };
+            return @call(.auto, fun, args);
         }
     };
 }
@@ -107,9 +102,6 @@ fn get_arg_from_term(comptime T: type, env: beam.Env, term: beam.Term) !T {
     // by the compileError below
     return switch (T) {
         beam.Term => term,
-        u16 => try beam.get_u16(env, term),
-        u32 => try beam.get_u32(env, term),
-        u64 => try beam.get_u64(env, term),
         u128 => try beam.get_u128(env, term),
         []const u8 => try beam.get_char_slice(env, term),
         else => @compileError("Type " ++ @typeName(T) ++ " is not handled by get_arg_from_term"),

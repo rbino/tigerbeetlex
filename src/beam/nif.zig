@@ -25,8 +25,8 @@ pub fn entrypoint(
     comptime load_fn: NifLoadFn,
 ) Entrypoint {
     return .{
-        .major = 2,
-        .minor = 16,
+        .major = e.ERL_NIF_MAJOR_VERSION,
+        .minor = e.ERL_NIF_MINOR_VERSION,
         .name = name.ptr,
         .num_of_funcs = exported_nifs.len,
         .funcs = exported_nifs.ptr,
@@ -34,10 +34,10 @@ pub fn entrypoint(
         .reload = null, // currently unsupported
         .upgrade = null, // currently unsupported
         .unload = null, // currently unsupported
-        .vm_variant = "beam.vanilla",
+        .vm_variant = e.ERL_NIF_VM_VARIANT,
         .options = 1,
         .sizeof_ErlNifResourceTypeInit = @sizeOf(e.ErlNifResourceTypeInit),
-        .min_erts = "erts-13.1.2",
+        .min_erts = e.ERL_NIF_MIN_ERTS_VERSION,
     };
 }
 

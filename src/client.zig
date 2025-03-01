@@ -2,7 +2,6 @@ const std = @import("std");
 const assert = std.debug.assert;
 
 const beam = @import("beam.zig");
-const process = beam.process;
 const resource = beam.resource;
 const Resource = resource.Resource;
 
@@ -119,7 +118,7 @@ fn submit(
     errdefer beam.general_purpose_allocator.destroy(packet);
 
     // We're calling this from a process bound env so we expect not to fail
-    const caller_pid = process.self(env) catch unreachable;
+    const caller_pid = beam.self(env) catch unreachable;
 
     const ref = beam.make_ref(env);
     const completion_ctx = try client.completion_context();
@@ -186,7 +185,10 @@ fn on_completion(
     const msg = beam.make_tuple(env, .{ tag, ref, response });
 
     // Send the result to the caller
-    process.send(caller_pid, env, msg) catch unreachable;
+    // If it fails, it means that `caller_pid` is not alive anymore.
+    // This is a possibly normal condition (all process can possibly crash)
+    // so we should handle this gracefully.
+    beam.send(caller_pid, env, msg) catch {};
 }
 
 fn client_resource_deinit_fn(_: beam.Env, ptr: ?*anyopaque) callconv(.C) void {

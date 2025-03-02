@@ -14,6 +14,7 @@ defmodule TigerBeetlex.Connection do
   alias TigerBeetlex.AccountFilter
   alias TigerBeetlex.CreateAccountsResult
   alias TigerBeetlex.CreateTransfersResult
+  alias TigerBeetlex.QueryFilter
   alias TigerBeetlex.Receiver
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.Types
@@ -279,7 +280,7 @@ defmodule TigerBeetlex.Connection do
 
   `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
-  `account_filter` is a `TigerBeetlex.AccountFilter` struct.
+  `account_filter` is a `TigerBeetlex.AccountFilter` struct. The `limit` field must be set.
 
   If successful, the function returns `{:ok, results}` where `results` is a list of
   `TigerBeetlex.AccountBalance` structs.
@@ -289,7 +290,7 @@ defmodule TigerBeetlex.Connection do
   ## Examples
       alias TigerBeetlex.AccountFilter
 
-      account_filter = %AccountFilter{id: <<42::128>>}
+      account_filter = %AccountFilter{id: <<42::128>>, limit: 10}
 
       TigerBeetlex.Connection.get_account_balances(:tb, account_filter)
       #=> {:ok, [%TigerBeetlex.AccountBalance{}]}
@@ -309,7 +310,7 @@ defmodule TigerBeetlex.Connection do
 
   `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
-  `account_filter` is a `TigerBeetlex.AccountFilter` struct.
+  `account_filter` is a `TigerBeetlex.AccountFilter` struct. The `limit` field must be set.
 
   If successful, the function returns `{:ok, results}` where `results` is a list of
   `TigerBeetlex.Transfer` structs.
@@ -319,7 +320,7 @@ defmodule TigerBeetlex.Connection do
   ## Examples
       alias TigerBeetlex.AccountFilter
 
-      account_filter = %AccountFilter{id: <<42::128>>}
+      account_filter = %AccountFilter{id: <<42::128>>, limit: 10}
 
       TigerBeetlex.Connection.get_account_transfers(:tb, account_filter)
       #=> {:ok, [%TigerBeetlex.Transfer{}]}
@@ -332,6 +333,66 @@ defmodule TigerBeetlex.Connection do
   def get_account_transfers(name, %AccountFilter{} = account_filter) do
     via_tuple(name)
     |> GenServer.call({:get_account_transfers, account_filter})
+  end
+
+  @doc """
+  Query accounts by the intersection of some fields and by timestamp range.
+
+  `name` is the same atom that was passed in the `:name` option in `start_link/1`.
+
+  `query_filter` is a `TigerBeetlex.QueryFilter` struct. The `limit` field must be set.
+
+  If successful, the function returns `{:ok, results}` where `results` is a list of
+  `TigerBeetlex.Account` structs.
+
+  See [`query_accounts`](https://docs.tigerbeetle.com/reference/requests/query_accounts/).
+
+  ## Examples
+      alias TigerBeetlex.QueryFilter
+
+      query_filter = %QueryFilter{id: <<42::128>>, limit: 10}
+
+      TigerBeetlex.Connection.query_accounts(:tb, query_filter)
+      #=> {:ok, [%TigerBeetlex.Account{}]}
+  """
+  @spec query_accounts(
+          name :: PartitionSupervisor.name(),
+          query_filter :: QueryFilter.t()
+        ) ::
+          {:ok, [Account.t()]} | {:error, Types.request_error()}
+  def query_accounts(name, %QueryFilter{} = query_filter) do
+    via_tuple(name)
+    |> GenServer.call({:query_accounts, query_filter})
+  end
+
+  @doc """
+  Query transfers by the intersection of some fields and by timestamp range.
+
+  `name` is the same atom that was passed in the `:name` option in `start_link/1`.
+
+  `query_filter` is a `TigerBeetlex.QueryFilter` struct. The `limit` field must be set.
+
+  If successful, the function returns `{:ok, results}` where `results` is a list of
+  `TigerBeetlex.Transfer` structs.
+
+  See [`query_transfers`](https://docs.tigerbeetle.com/reference/requests/query_transfers/).
+
+  ## Examples
+      alias TigerBeetlex.QueryFilter
+
+      query_filter = %QueryFilter{id: <<42::128>>, limit: 10}
+
+      TigerBeetlex.Connection.query_transfers(:tb, query_filter)
+      #=> {:ok, [%TigerBeetlex.Transfer{}]}
+  """
+  @spec query_transfers(
+          name :: PartitionSupervisor.name(),
+          query_filter :: QueryFilter.t()
+        ) ::
+          {:ok, [Account.t()]} | {:error, Types.request_error()}
+  def query_transfers(name, %QueryFilter{} = query_filter) do
+    via_tuple(name)
+    |> GenServer.call({:query_transfers, query_filter})
   end
 
   defp via_tuple(name) do

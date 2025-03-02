@@ -10,6 +10,8 @@ defmodule TigerBeetlex.IntegrationTest do
   alias TigerBeetlex.Connection
   alias TigerBeetlex.CreateAccountsResult
   alias TigerBeetlex.CreateTransfersResult
+  alias TigerBeetlex.QueryFilter
+  alias TigerBeetlex.QueryFilterFlags
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.TransferFlags
 
@@ -910,6 +912,182 @@ defmodule TigerBeetlex.IntegrationTest do
                  amount: 3000
                }
              ] = get_account_transfers!(conn, credit_account_id)
+    end
+  end
+
+  describe "query_accounts/2" do
+    test "retrieves account using a query_filter", %{conn: conn} do
+      target_code = Enum.random(1..65_535)
+      matched_account_id = random_id()
+
+      matched_account = %Account{
+        id: matched_account_id,
+        ledger: 1,
+        code: target_code,
+        user_data_128: <<42::128>>
+      }
+
+      other_code_account = %Account{
+        id: random_id(),
+        ledger: 1,
+        code: 1,
+        user_data_128: <<42::128>>
+      }
+
+      other_user_data_account = %Account{
+        id: random_id(),
+        ledger: 1,
+        code: target_code,
+        user_data_128: <<1::128>>
+      }
+
+      accounts = [
+        matched_account,
+        other_code_account,
+        other_user_data_account
+      ]
+
+      assert {:ok, []} = Connection.create_accounts(conn, accounts)
+
+      query_filter = %QueryFilter{user_data_128: <<42::128>>, code: target_code, limit: 10}
+
+      assert {:ok, [%Account{id: ^matched_account_id}]} =
+               Connection.query_accounts(conn, query_filter)
+    end
+
+    test "reverses order when using the reversed flag", %{conn: conn} do
+      target_code = Enum.random(1..65_535)
+      account_id_1 = random_id()
+
+      account_1 = %Account{
+        id: account_id_1,
+        ledger: 1,
+        code: target_code
+      }
+
+      account_id_2 = random_id()
+
+      account_2 = %Account{
+        id: account_id_2,
+        ledger: 1,
+        code: target_code
+      }
+
+      assert {:ok, []} = Connection.create_accounts(conn, [account_1, account_2])
+
+      query_filter = %QueryFilter{
+        code: target_code,
+        limit: 10,
+        flags: %QueryFilterFlags{reversed: true}
+      }
+
+      assert {:ok, [%Account{id: ^account_id_2}, %Account{id: ^account_id_1}]} =
+               Connection.query_accounts(conn, query_filter)
+    end
+  end
+
+  describe "query_transfers/2" do
+    setup %{conn: conn} do
+      credit_account_id = create_account!(conn)
+      debit_account_id = create_account!(conn)
+
+      ctx = [
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id
+      ]
+
+      {:ok, ctx}
+    end
+
+    test "retrieves transfer using a query_filter", ctx do
+      %{
+        conn: conn,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id
+      } = ctx
+
+      target_code = Enum.random(1..65_535)
+      matched_transfer_id = random_id()
+
+      matched_transfer = %Transfer{
+        id: matched_transfer_id,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: target_code,
+        user_data_128: <<42::128>>
+      }
+
+      other_code_transfer = %Transfer{
+        id: random_id(),
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: 1,
+        user_data_128: <<42::128>>
+      }
+
+      other_user_data_transfer = %Transfer{
+        id: random_id(),
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: target_code,
+        user_data_128: <<1::128>>
+      }
+
+      transfers = [
+        matched_transfer,
+        other_code_transfer,
+        other_user_data_transfer
+      ]
+
+      assert {:ok, []} = Connection.create_transfers(conn, transfers)
+
+      query_filter = %QueryFilter{user_data_128: <<42::128>>, code: target_code, limit: 10}
+
+      assert {:ok, [%Transfer{id: ^matched_transfer_id}]} =
+               Connection.query_transfers(conn, query_filter)
+    end
+
+    test "reverses order when using the reversed flag", ctx do
+      %{
+        conn: conn,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id
+      } = ctx
+
+      target_code = Enum.random(1..65_535)
+      transfer_id_1 = random_id()
+
+      transfer_1 = %Transfer{
+        id: transfer_id_1,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: target_code
+      }
+
+      transfer_id_2 = random_id()
+
+      transfer_2 = %Transfer{
+        id: transfer_id_2,
+        credit_account_id: credit_account_id,
+        debit_account_id: debit_account_id,
+        ledger: 1,
+        code: target_code
+      }
+
+      assert {:ok, []} = Connection.create_transfers(conn, [transfer_1, transfer_2])
+
+      query_filter = %QueryFilter{
+        code: target_code,
+        limit: 10,
+        flags: %QueryFilterFlags{reversed: true}
+      }
+
+      assert {:ok, [%Transfer{id: ^transfer_id_2}, %Transfer{id: ^transfer_id_1}]} =
+               Connection.query_transfers(conn, query_filter)
     end
   end
 

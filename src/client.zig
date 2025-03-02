@@ -130,6 +130,24 @@ pub fn get_account_balances(env: beam.Env, client_resource: beam.Term, payload_t
     ) catch |err| handle_submit_error(env, err);
 }
 
+pub fn query_accounts(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+    return submit(
+        env,
+        client_resource,
+        .query_accounts,
+        payload_term,
+    ) catch |err| handle_submit_error(env, err);
+}
+
+pub fn query_transfers(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+    return submit(
+        env,
+        client_resource,
+        .query_transfers,
+        payload_term,
+    ) catch |err| handle_submit_error(env, err);
+}
+
 fn submit(
     env: beam.Env,
     client_term: beam.Term,

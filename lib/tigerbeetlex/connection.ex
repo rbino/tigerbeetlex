@@ -279,7 +279,7 @@ defmodule TigerBeetlex.Connection do
 
   `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
-  `account_filter` is a `TigerBeetlex.AccountFilter` struct.
+  `account_filter` is a `TigerBeetlex.AccountFilter` struct. The `limit` field must be set.
 
   If successful, the function returns `{:ok, results}` where `results` is a list of
   `TigerBeetlex.AccountBalance` structs.
@@ -289,7 +289,7 @@ defmodule TigerBeetlex.Connection do
   ## Examples
       alias TigerBeetlex.AccountFilter
 
-      account_filter = %AccountFilter{id: <<42::128>>}
+      account_filter = %AccountFilter{id: <<42::128>>, limit: 10}
 
       TigerBeetlex.Connection.get_account_balances(:tb, account_filter)
       #=> {:ok, [%TigerBeetlex.AccountBalance{}]}
@@ -309,7 +309,7 @@ defmodule TigerBeetlex.Connection do
 
   `name` is the same atom that was passed in the `:name` option in `start_link/1`.
 
-  `account_filter` is a `TigerBeetlex.AccountFilter` struct.
+  `account_filter` is a `TigerBeetlex.AccountFilter` struct. The `limit` field must be set.
 
   If successful, the function returns `{:ok, results}` where `results` is a list of
   `TigerBeetlex.Transfer` structs.
@@ -319,7 +319,7 @@ defmodule TigerBeetlex.Connection do
   ## Examples
       alias TigerBeetlex.AccountFilter
 
-      account_filter = %AccountFilter{id: <<42::128>>}
+      account_filter = %AccountFilter{id: <<42::128>>, limit: 10}
 
       TigerBeetlex.Connection.get_account_transfers(:tb, account_filter)
       #=> {:ok, [%TigerBeetlex.Transfer{}]}

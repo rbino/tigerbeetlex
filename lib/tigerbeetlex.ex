@@ -193,7 +193,7 @@ defmodule TigerBeetlex do
 
   `client` is a `%TigerBeetlex{}` client.
 
-  `account_filter` is a `TigerBeetlex.AccountFilter` struct.
+  `account_filter` is a `TigerBeetlex.AccountFilter` struct. The `limit` field must be set.
 
   The function returns a ref which can be used to match the received response message.
 
@@ -213,7 +213,7 @@ defmodule TigerBeetlex do
   ## Examples
       alias TigerBeetlex.AccountFilter
 
-      account_filter = %AccountFilter{id: <<42::128>>}
+      account_filter = %AccountFilter{id: <<42::128>>, limit: 10}
 
       {:ok, ref} = TigerBeetlex.get_account_balances(client, account_filter)
 
@@ -236,7 +236,7 @@ defmodule TigerBeetlex do
 
   `client` is a `%TigerBeetlex{}` client.
 
-  `account_filter` is a `TigerBeetlex.AccountFilter` struct.
+  `account_filter` is a `TigerBeetlex.AccountFilter` struct. The `limit` field must be set.
 
   The function returns a ref which can be used to match the received response message.
 
@@ -256,7 +256,7 @@ defmodule TigerBeetlex do
   ## Examples
       alias TigerBeetlex.AccountFilter
 
-      account_filter = %AccountFilter{id: <<42::128>>}
+      account_filter = %AccountFilter{id: <<42::128>>, limit: 10}
 
       {:ok, ref} = TigerBeetlex.get_account_balances(client, account_filter)
 

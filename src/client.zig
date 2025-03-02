@@ -63,6 +63,7 @@ fn init_client(env: beam.Env, cluster_id: u128, addresses: []const u8) InitClien
 }
 
 const SubmitError = error{
+    InvalidResourceTerm,
     TooManyRequests,
     Shutdown,
     OutOfMemory,
@@ -70,45 +71,69 @@ const SubmitError = error{
     ArgumentError,
 };
 
-// These are all comptime generated functions
-pub const create_accounts = get_submit_fn(.create_accounts);
-pub const create_transfers = get_submit_fn(.create_transfers);
-pub const lookup_accounts = get_submit_fn(.lookup_accounts);
-pub const lookup_transfers = get_submit_fn(.lookup_transfers);
-pub const get_account_transfers = get_submit_fn(.get_account_transfers);
-pub const get_account_balances = get_submit_fn(.get_account_balances);
+pub fn create_accounts(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+    return submit(
+        env,
+        client_resource,
+        .create_accounts,
+        payload_term,
+    ) catch |err| handle_submit_error(env, err);
+}
 
-fn get_submit_fn(comptime operation: tb_client.Operation) (fn (
-    env: beam.Env,
-    client_resource: beam.Term,
-    payload_term: beam.Term,
-) beam.Term) {
-    return struct {
-        fn submit_fn(
-            env: beam.Env,
-            client_term: beam.Term,
-            payload_term: beam.Term,
-        ) beam.Term {
-            const client_resource = ClientResource.from_term_handle(env, client_term) catch
-                return beam.make_error_atom(env, "invalid_client_resource");
+pub fn create_transfers(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+    return submit(
+        env,
+        client_resource,
+        .create_transfers,
+        payload_term,
+    ) catch |err| handle_submit_error(env, err);
+}
 
-            return submit(operation, env, client_resource, payload_term) catch |err| switch (err) {
-                error.TooManyRequests => beam.make_error_atom(env, "too_many_requests"),
-                error.Shutdown => beam.make_error_atom(env, "shutdown"),
-                error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
-                error.ClientInvalid => beam.make_error_atom(env, "client_closed"),
-                error.ArgumentError => beam.raise_badarg(env),
-            };
-        }
-    }.submit_fn;
+pub fn lookup_accounts(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+    return submit(
+        env,
+        client_resource,
+        .lookup_accounts,
+        payload_term,
+    ) catch |err| handle_submit_error(env, err);
+}
+
+pub fn lookup_transfers(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+    return submit(
+        env,
+        client_resource,
+        .lookup_transfers,
+        payload_term,
+    ) catch |err| handle_submit_error(env, err);
+}
+
+pub fn get_account_transfers(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+    return submit(
+        env,
+        client_resource,
+        .get_account_transfers,
+        payload_term,
+    ) catch |err| handle_submit_error(env, err);
+}
+
+pub fn get_account_balances(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+    return submit(
+        env,
+        client_resource,
+        .get_account_balances,
+        payload_term,
+    ) catch |err| handle_submit_error(env, err);
 }
 
 fn submit(
-    comptime operation: tb_client.Operation,
     env: beam.Env,
-    client_resource: ClientResource,
+    client_term: beam.Term,
+    operation: tb_client.Operation,
     payload_term: beam.Term,
 ) SubmitError!beam.Term {
+    assert(operation != .pulse);
+
+    const client_resource = try ClientResource.from_term_handle(env, client_term);
     const client = client_resource.value();
 
     const ctx = try beam.general_purpose_allocator.create(RequestContext);
@@ -120,15 +145,26 @@ fn submit(
     // We're calling this from a process bound env so we expect not to fail
     const caller_pid = beam.self(env) catch unreachable;
 
+    // Create a unique ref that will identify this specific request
     const ref = beam.make_ref(env);
+
+    // Retrieve the process independent environment that is stored in the completion context
     const completion_ctx = try client.completion_context();
     const tigerbeetle_env: beam.Env = @ptrFromInt(completion_ctx);
+
+    // Copy over the ref and the payload term in the process independent environment
+    // Those need to be accessible in the on_completion callback, so we must copy them over
+    // because the terms bound to the process bound environment (env) are not valid anymore
+    // once the NIF returns.
     const tigerbeetle_owned_ref = beam.make_copy(tigerbeetle_env, ref);
+    // Note that copying the payload term _does not_ copy the whole binary, since it's a
+    // refcounted binary. It just copies a new reference to it.
     const tigerbeetle_owned_payload_term = beam.make_copy(tigerbeetle_env, payload_term);
 
+    // Get a pointer to the actual binary data from the payload term
     const payload = try beam.get_char_slice(tigerbeetle_env, tigerbeetle_owned_payload_term);
 
-    // We do the same with the client to make sure we don't deinit it until all requests
+    // We increase the client refcount to make sure we don't deinit it until all requests
     // have been handled
     client_resource.keep();
 
@@ -149,7 +185,19 @@ fn submit(
 
     try client.submit(packet);
 
+    // Return the ref to the caller
     return beam.make_ok_term(env, ref);
+}
+
+fn handle_submit_error(env: beam.Env, err: SubmitError) beam.Term {
+    return switch (err) {
+        error.InvalidResourceTerm => beam.make_error_atom(env, "invalid_client_resource"),
+        error.TooManyRequests => beam.make_error_atom(env, "too_many_requests"),
+        error.Shutdown => beam.make_error_atom(env, "shutdown"),
+        error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
+        error.ClientInvalid => beam.make_error_atom(env, "client_closed"),
+        error.ArgumentError => beam.raise_badarg(env),
+    };
 }
 
 fn on_completion(

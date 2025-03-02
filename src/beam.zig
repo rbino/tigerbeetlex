@@ -3,6 +3,7 @@
 // from API changes (and to experiment ourselves with alternative APIs)
 
 const std = @import("std");
+const assert = std.debug.assert;
 const e = @import("beam/erl_nif.zig");
 
 pub const allocator = @import("beam/allocator.zig");
@@ -109,7 +110,7 @@ pub fn get_char_slice(env: Env, src_term: Term) GetError![]u8 {
     if (e.enif_inspect_binary(env, src_term, &bin) == 0) {
         return GetError.ArgumentError;
     }
-
+    assert(bin.data != null);
     return bin.data[0..bin.size];
 }
 
@@ -126,7 +127,9 @@ pub fn get_u128(env: Env, src_term: Term) GetError!u128 {
 
 /// Allocates a process independent environment
 pub fn alloc_env() Env {
-    return e.enif_alloc_env();
+    const env = e.enif_alloc_env();
+    assert(env != null);
+    return env;
 }
 
 /// Clears a process independent environment

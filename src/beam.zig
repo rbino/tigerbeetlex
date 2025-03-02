@@ -1,17 +1,15 @@
-// The code contained here is mostly taken from https://github.com/E-xyza/zigler. Since we're using a
-// subset of all its features, we removed the dependency to be independent from API changes (and
-// possibly to experiment ourselves with alternative APIs)
+// The code contained here is taken and/or heavily inspired from https://github.com/E-xyza/zigler.
+// Since we're using a subset of all its features, we removed the dependency to be independent
+// from API changes (and to experiment ourselves with alternative APIs)
 
 const std = @import("std");
+const assert = std.debug.assert;
 const e = @import("beam/erl_nif.zig");
 
 pub const allocator = @import("beam/allocator.zig");
 pub const nif = @import("beam/nif.zig");
 pub const resource = @import("beam/resource.zig");
-pub const process = @import("beam/process.zig");
-pub const scheduler = @import("beam/scheduler.zig");
 
-pub const Binary = @import("beam/Binary.zig");
 pub const Env = ?*e.ErlNifEnv;
 pub const Pid = e.ErlNifPid;
 pub const ResourceType = ?*e.ErlNifResourceType;
@@ -27,19 +25,9 @@ pub const large_allocator = allocator.large_allocator;
 /// A General Purpose Allocator backed by beam.large_allocator.
 pub const general_purpose_allocator = allocator.general_purpose_allocator;
 
-/// Raises a generic exception
-pub fn raise(env: Env, reason: []const u8) Term {
-    return e.enif_raise_exception(env, make_atom(env, reason));
-}
-
 /// Raises a `:badarg` exception
 pub fn raise_badarg(env: Env) Term {
     return e.enif_make_badarg(env);
-}
-
-/// Raises a `:function_clause` exception
-pub fn raise_function_clause_error(env: Env) Term {
-    return raise(env, "function_clause");
 }
 
 /// Creates a ref
@@ -65,11 +53,6 @@ pub fn make_ok(env: Env) Term {
 /// Helper to create an `{:ok, term}` tuple
 pub fn make_ok_term(env: Env, val: Term) Term {
     return e.enif_make_tuple(env, 2, make_ok(env), val);
-}
-
-/// Helper to create an `{:ok, atom}` tuple, taking the atom value from a slice
-pub fn make_ok_atom(env: Env, atom_str: []const u8) Term {
-    return make_ok_term(env, make_atom(env, atom_str));
 }
 
 /// Creates a beam `:error` atom.
@@ -105,11 +88,6 @@ pub fn make_u8(env: Env, val: u8) Term {
     return e.enif_make_uint(env, val);
 }
 
-/// Creates a u32 value term.
-pub fn make_u32(env: Env, val: u32) Term {
-    return e.enif_make_uint(env, val);
-}
-
 /// Creates an BEAM tuple from a Zig tuple of terms
 pub fn make_tuple(env: Env, tuple: anytype) Term {
     const type_info = @typeInfo(@TypeOf(tuple));
@@ -132,7 +110,7 @@ pub fn get_char_slice(env: Env, src_term: Term) GetError![]u8 {
     if (e.enif_inspect_binary(env, src_term, &bin) == 0) {
         return GetError.ArgumentError;
     }
-
+    assert(bin.data != null);
     return bin.data[0..bin.size];
 }
 
@@ -147,55 +125,11 @@ pub fn get_u128(env: Env, src_term: Term) GetError!u128 {
     return std.mem.readInt(u128, bin[0..required_length], .little);
 }
 
-/// Extract a u64 from a term
-pub fn get_u64(env: Env, src_term: Term) GetError!u64 {
-    var result: c_ulong = undefined;
-    if (e.enif_get_ulong(env, src_term, &result) == 0) {
-        return GetError.ArgumentError;
-    }
-
-    return @intCast(result);
-}
-
-/// Extract a u32 from a term
-pub fn get_u32(env: Env, src_term: Term) GetError!u32 {
-    var result: c_uint = undefined;
-    if (e.enif_get_uint(env, src_term, &result) == 0) {
-        return GetError.ArgumentError;
-    }
-
-    return @intCast(result);
-}
-
-/// Extract a u16 from a term, checking it does not go outside the boundaries
-pub fn get_u16(env: Env, src_term: Term) GetError!u16 {
-    var result: c_uint = undefined;
-    if (e.enif_get_uint(env, src_term, &result) == 0) {
-        return GetError.ArgumentError;
-    }
-
-    if (result > std.math.maxInt(u16)) {
-        return GetError.ArgumentError;
-    }
-
-    return @intCast(result);
-}
-
-pub const TermToBinaryError = error{OutOfMemory};
-
-/// Serializes a term to a beam.Binary
-pub fn term_to_binary(env: Env, src_term: Term) TermToBinaryError!Binary {
-    var bin: e.ErlNifBinary = undefined;
-    if (e.enif_term_to_binary(env, src_term, &bin) == 0) {
-        return error.OutOfMemory;
-    }
-
-    return Binary{ .binary = bin };
-}
-
 /// Allocates a process independent environment
 pub fn alloc_env() Env {
-    return e.enif_alloc_env();
+    const env = e.enif_alloc_env();
+    assert(env != null);
+    return env;
 }
 
 /// Clears a process independent environment
@@ -206,4 +140,30 @@ pub fn clear_env(env: Env) void {
 /// Frees a process independent environment
 pub fn free_env(env: Env) void {
     e.enif_free_env(env);
+}
+
+pub const SelfError = error{NotProcessBound};
+
+pub fn self(env: Env) SelfError!Pid {
+    var result: Pid = undefined;
+    if (e.enif_self(env, &result) == null) {
+        return error.NotProcessBound;
+    }
+
+    return result;
+}
+
+pub const SendError = error{NotDelivered};
+
+pub fn send(dest: Pid, msg_env: Env, msg: Term) SendError!void {
+    // Needed since enif_send is not const-correct
+    var to_pid = dest;
+
+    // Given our (only) use of the function, we make some assumptions, namely:
+    // - We're using a process independent env, so `caller_env` is null
+    // - We're clearing the env after the message is sent, so we pass `msg_env` instead of passing
+    //   null to copy `msg`
+    if (e.enif_send(null, &to_pid, msg_env, msg) == 0) {
+        return error.NotDelivered;
+    }
 }

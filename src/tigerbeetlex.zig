@@ -22,6 +22,8 @@ var exported_nifs = [_]nif.FunctionEntry{
     nif.wrap("lookup_transfers", client.lookup_transfers),
     nif.wrap("get_account_balances", client.get_account_balances),
     nif.wrap("get_account_transfers", client.get_account_transfers),
+    nif.wrap("query_accounts", client.query_accounts),
+    nif.wrap("query_transfers", client.query_transfers),
 };
 
 fn nif_load(env: beam.Env, _: [*c]?*anyopaque, _: beam.Term) callconv(.C) c_int {

@@ -45,6 +45,14 @@ defmodule TigerBeetlex.Receiver do
     send_request(from, :get_account_transfers, [state.client, account_filter], state)
   end
 
+  def handle_call({:query_accounts, query_filter}, from, state) do
+    send_request(from, :query_accounts, [state.client, query_filter], state)
+  end
+
+  def handle_call({:query_transfers, query_filter}, from, state) do
+    send_request(from, :query_transfers, [state.client, query_filter], state)
+  end
+
   defp send_request(from, function, arguments, state) do
     case apply(TigerBeetlex, function, arguments) do
       {:ok, ref} ->

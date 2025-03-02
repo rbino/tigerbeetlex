@@ -16,6 +16,7 @@ defmodule TigerBeetlex do
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountFilter
   alias TigerBeetlex.NifAdapter
+  alias TigerBeetlex.QueryFilter
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.Types
 
@@ -362,6 +363,94 @@ defmodule TigerBeetlex do
     ids
     |> join_ids()
     |> then(&NifAdapter.lookup_transfers(client.ref, &1))
+  end
+
+  @doc """
+  Query accounts by the intersection of some fields and by timestamp range.
+
+  `client` is a `%TigerBeetlex{}` client.
+
+  `query_filter` is a `TigerBeetlex.QueryFilter` struct. The `limit` field must be set.
+
+  The function returns a ref which can be used to match the received response message.
+
+  The response message has this format:
+
+      {:tigerbeetlex_response, request_ref, response}
+
+  Where `request_ref` is the same `ref` returned when this function was called and `response` is
+  a response that can be decoded using `TigerBeetlex.Response.decode/1`.
+
+  The value returned from `TigerBeetlex.Response.decode(response)` will either be
+  `{:error, reason}` or `{:ok, results}`.
+
+  `results` is a list of `TigerBeetlex.Account` structs that match `query_filter`.
+
+  See [`query_accounts`](https://docs.tigerbeetle.com/reference/requests/query_accounts/).
+
+  ## Examples
+      alias TigerBeetlex.QueryFilter
+
+      query_filter = %QueryFilter{user_data_128: <<42::128>>, limit: 10}
+
+      {:ok, ref} = TigerBeetlex.query_accounts(client, query_filter)
+
+      receive do
+        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
+      end
+
+      #=> {:ok, [%TigerBeetlex.Account{}]}
+  """
+  @spec query_accounts(client :: t(), query_filter :: QueryFilter.t()) ::
+          {:ok, reference()} | {:error, Types.request_error()}
+  def query_accounts(%__MODULE__{} = client, %QueryFilter{} = query_filter) do
+    query_filter
+    |> QueryFilter.to_binary()
+    |> then(&NifAdapter.query_accounts(client.ref, &1))
+  end
+
+  @doc """
+  Query transfers by the intersection of some fields and by timestamp range.
+
+  `client` is a `%TigerBeetlex{}` client.
+
+  `query_filter` is a `TigerBeetlex.QueryFilter` struct. The `limit` field must be set.
+
+  The function returns a ref which can be used to match the received response message.
+
+  The response message has this format:
+
+      {:tigerbeetlex_response, request_ref, response}
+
+  Where `request_ref` is the same `ref` returned when this function was called and `response` is
+  a response that can be decoded using `TigerBeetlex.Response.decode/1`.
+
+  The value returned from `TigerBeetlex.Response.decode(response)` will either be
+  `{:error, reason}` or `{:ok, results}`.
+
+  `results` is a list of `TigerBeetlex.Transfer` structs that match `query_filter`.
+
+  See [`query_transfers`](https://docs.tigerbeetle.com/reference/requests/query_transfers/).
+
+  ## Examples
+      alias TigerBeetlex.QueryFilter
+
+      query_filter = %QueryFilter{user_data_128: <<42::128>>, limit: 10}
+
+      {:ok, ref} = TigerBeetlex.query_transfers(client, ids)
+
+      receive do
+        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
+      end
+
+      #=> {:ok, [%TigerBeetlex.Transfer{}]}
+  """
+  @spec query_transfers(client :: t(), query_filter :: QueryFilter.t()) ::
+          {:ok, reference()} | {:error, Types.request_error()}
+  def query_transfers(%__MODULE__{} = client, %QueryFilter{} = query_filter) do
+    query_filter
+    |> QueryFilter.to_binary()
+    |> then(&NifAdapter.query_transfers(client.ref, &1))
   end
 
   defp join_ids(ids) do

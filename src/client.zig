@@ -207,12 +207,12 @@ fn on_completion(
     result_ptr: ?[*]const u8,
     result_len: u32,
 ) callconv(.C) void {
-    _ = timestamp;
-    const ctx: *RequestContext = @ptrCast(@alignCast(packet.user_data.?));
+    assert(packet.user_data != null);
+    const ctx: *RequestContext = @ptrCast(@alignCast(packet.user_data));
     defer beam.general_purpose_allocator.destroy(ctx);
 
-    // Same for the client
-    resource.raw_release(ctx.client_raw_obj);
+    // Decrease client refcount after we exit
+    defer resource.raw_release(ctx.client_raw_obj);
 
     const env: beam.Env = @ptrFromInt(context);
     defer beam.clear_env(env);
@@ -220,9 +220,19 @@ fn on_completion(
     const ref = ctx.request_ref;
     const caller_pid = ctx.caller_pid;
 
-    const status = beam.make_u8(env, @intFromEnum(packet.status));
-    const operation = beam.make_u8(env, packet.operation);
+    // Extract the packet details before freeing it.
+    const packet_operation = packet.operation;
+    const packet_status = packet.status;
     beam.general_purpose_allocator.destroy(packet);
+
+    if (packet_status != .ok) {
+        assert(timestamp == 0);
+        assert(result_ptr == null);
+        assert(result_len == 0);
+    }
+
+    const status = beam.make_u8(env, @intFromEnum(packet_status));
+    const operation = beam.make_u8(env, packet_operation);
     const result = if (result_ptr) |p|
         beam.make_slice(env, p[0..result_len])
     else

@@ -54,56 +54,48 @@ fn MakeWrappedNif(comptime fun: anytype) type {
         else => @compileError("Only functions can be wrapped"),
     };
 
-    const params = function_info.params;
-    const with_env = params.len > 1 and params[0].type == beam.Env;
+    // Currently all our NIFs return a beam.Term
     const ReturnType = function_info.return_type.?;
     comptime assert(ReturnType == beam.Term);
 
+    // And since we need to construct a beam.Term, we always accept a beam.Env as first parameter
+    const params = function_info.params;
+    comptime assert(params[0].type == beam.Env);
+
     return struct {
-        // Env is not counted towards the effective arity, subtract 1 if env is the first parameter
-        pub const arity = if (with_env) params.len - 1 else params.len;
+        // Env is not counted towards the effective arity, subtract 1 since env is the first parameter
+        pub const arity = params.len - 1;
 
         pub fn wrapper(
             env: beam.Env,
             argc: c_int,
             argv_ptr: [*c]const beam.Term,
         ) callconv(.C) beam.Term {
+            assert(env != null);
             assert(argc == arity);
 
             const argv = @as([*]const beam.Term, @ptrCast(argv_ptr))[0..@intCast(argc)];
-            // If the first argument is env, we must adjust the offset between the input argv and
+            // The first argument is env, so we must adjust the offset between the input argv and
             // the actual args of the function
-            const argv_offset = if (with_env) 1 else 0;
+            const argv_offset = 1;
 
             var args: std.meta.ArgsTuple(Function) = undefined;
             inline for (&args, 0..) |*arg, i| {
-                if (with_env and i == 0) {
-                    // Put the env as first argument if the function accepts it
+                if (i == 0) {
+                    // Put the env as first argument
                     arg.* = env;
                 } else {
-                    // For all the other arguments, extract them based on their type
-                    const argv_idx = i - argv_offset;
+                    // Check that the function accepts only beam.Term arguments
                     const ArgType = @TypeOf(arg.*);
-                    arg.* = get_arg_from_term(ArgType, env, argv[argv_idx]) catch
-                        return beam.raise_badarg(env);
+                    comptime assert(ArgType == beam.Term);
+                    // Copy over input argv to the function call arguments, shifting by one
+                    // due to env being the first argument
+                    const argv_idx = i - argv_offset;
+                    arg.* = argv[argv_idx];
                 }
             }
 
             return @call(.auto, fun, args);
         }
-    };
-}
-
-fn get_arg_from_term(comptime T: type, env: beam.Env, term: beam.Term) !T {
-    // Special case: check if it's a resource
-    if (comptime resource.is_resource(T)) return try T.from_term_handle(env, term);
-
-    // These are what we currently need, the need to add new types to the switch should be caught
-    // by the compileError below
-    return switch (T) {
-        beam.Term => term,
-        u128 => try beam.get_u128(env, term),
-        []const u8 => try beam.get_char_slice(env, term),
-        else => @compileError("Type " ++ @typeName(T) ++ " is not handled by get_arg_from_term"),
     };
 }

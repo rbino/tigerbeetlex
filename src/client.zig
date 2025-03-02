@@ -23,16 +23,18 @@ const RequestContext = struct {
 const InitClientError = error{
     AddressInvalid,
     AddressLimitExceeded,
+    ArgumentError,
     NetworkSubsystemFailed,
     OutOfMemory,
     SystemResources,
     Unexpected,
 };
 
-pub fn init(env: beam.Env, cluster_id: u128, addresses: []const u8) beam.Term {
-    return init_client(env, cluster_id, addresses) catch |err| switch (err) {
+pub fn init(env: beam.Env, cluster_id_term: beam.Term, addresses_term: beam.Term) beam.Term {
+    return init_client(env, cluster_id_term, addresses_term) catch |err| switch (err) {
         error.AddressInvalid => beam.make_error_atom(env, "invalid_address"),
         error.AddressLimitExceeded => beam.make_error_atom(env, "address_limit_exceeded"),
+        error.ArgumentError => beam.raise_badarg(env),
         error.NetworkSubsystemFailed => beam.make_error_atom(env, "network_subsystem"),
         error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
         error.SystemResources => beam.make_error_atom(env, "system_resources"),
@@ -40,7 +42,10 @@ pub fn init(env: beam.Env, cluster_id: u128, addresses: []const u8) beam.Term {
     };
 }
 
-fn init_client(env: beam.Env, cluster_id: u128, addresses: []const u8) InitClientError!beam.Term {
+fn init_client(env: beam.Env, cluster_id_term: beam.Term, addresses_term: beam.Term) InitClientError!beam.Term {
+    const cluster_id = try beam.get_u128(env, cluster_id_term);
+    const addresses = try beam.get_char_slice(env, addresses_term);
+
     const client = try beam.general_purpose_allocator.create(tb_client.ClientInterface);
     errdefer beam.general_purpose_allocator.destroy(client);
 

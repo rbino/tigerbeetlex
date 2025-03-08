@@ -5,8 +5,8 @@ const e = @import("erl_nif.zig");
 const beam = @import("../beam.zig");
 const resource = @import("resource.zig");
 
-pub const Nif = *const fn (beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term;
-pub const NifLoadFn = *const fn (beam.Env, [*c]?*anyopaque, beam.Term) callconv(.C) c_int;
+pub const Nif = *const fn (?*beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term;
+pub const NifLoadFn = *const fn (?*beam.Env, [*c]?*anyopaque, beam.Term) callconv(.C) c_int;
 
 pub const FunctionEntry = e.ErlNifFunc;
 pub const Entrypoint = e.ErlNifEntry;
@@ -58,16 +58,16 @@ fn MakeWrappedNif(comptime fun: anytype) type {
     const ReturnType = function_info.return_type.?;
     comptime assert(ReturnType == beam.Term);
 
-    // And since we need to construct a beam.Term, we always accept a beam.Env as first parameter
+    // And since we need to construct a beam.Term, we always accept a BEAM env as first parameter
     const params = function_info.params;
-    comptime assert(params[0].type == beam.Env);
+    comptime assert(params[0].type == *beam.Env);
 
     return struct {
         // Env is not counted towards the effective arity, subtract 1 since env is the first parameter
         pub const arity = params.len - 1;
 
         pub fn wrapper(
-            env: beam.Env,
+            env: ?*beam.Env,
             argc: c_int,
             argv_ptr: [*c]const beam.Term,
         ) callconv(.C) beam.Term {
@@ -82,8 +82,9 @@ fn MakeWrappedNif(comptime fun: anytype) type {
             var args: std.meta.ArgsTuple(Function) = undefined;
             inline for (&args, 0..) |*arg, i| {
                 if (i == 0) {
-                    // Put the env as first argument
-                    arg.* = env;
+                    // Put the env as first argument, asserting it's not null so we change
+                    // the type from ?*beam.Env to *beam.Env
+                    arg.* = env.?;
                 } else {
                     // Check that the function accepts only beam.Term arguments
                     const ArgType = @TypeOf(arg.*);

@@ -26,8 +26,8 @@ var exported_nifs = [_]nif.FunctionEntry{
     nif.wrap("query_transfers", client.query_transfers),
 };
 
-fn nif_load(env: beam.Env, _: [*c]?*anyopaque, _: beam.Term) callconv(.C) c_int {
-    ClientResource.create_type(env, "TigerBeetlex.Client");
+fn nif_load(env: ?*beam.Env, _: [*c]?*anyopaque, _: beam.Term) callconv(.C) c_int {
+    ClientResource.create_type(env.?, "TigerBeetlex.Client");
     return 0;
 }
 

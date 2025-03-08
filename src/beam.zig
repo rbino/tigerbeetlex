@@ -10,7 +10,7 @@ pub const allocator = @import("beam/allocator.zig");
 pub const nif = @import("beam/nif.zig");
 pub const resource = @import("beam/resource.zig");
 
-pub const Env = ?*e.ErlNifEnv;
+pub const Env = e.ErlNifEnv;
 pub const Pid = e.ErlNifPid;
 pub const ResourceType = ?*e.ErlNifResourceType;
 pub const Term = e.ERL_NIF_TERM;
@@ -26,52 +26,52 @@ pub const large_allocator = allocator.large_allocator;
 pub const general_purpose_allocator = allocator.general_purpose_allocator;
 
 /// Raises a `:badarg` exception
-pub fn raise_badarg(env: Env) Term {
+pub fn raise_badarg(env: *Env) Term {
     return e.enif_make_badarg(env);
 }
 
 /// Creates a ref
-pub fn make_ref(env: Env) Term {
+pub fn make_ref(env: *Env) Term {
     return e.enif_make_ref(env);
 }
 
 /// Creates an atom from a Zig char slice
-pub fn make_atom(env: Env, atom_str: []const u8) Term {
+pub fn make_atom(env: *Env, atom_str: []const u8) Term {
     return e.enif_make_atom_len(env, atom_str.ptr, atom_str.len);
 }
 
 /// Creates a beam `nil` atom
-pub fn make_nil(env: Env) Term {
+pub fn make_nil(env: *Env) Term {
     return e.enif_make_atom(env, "nil");
 }
 
 /// Creates a beam `:ok` atom
-pub fn make_ok(env: Env) Term {
+pub fn make_ok(env: *Env) Term {
     return e.enif_make_atom(env, "ok");
 }
 
 /// Helper to create an `{:ok, term}` tuple
-pub fn make_ok_term(env: Env, val: Term) Term {
+pub fn make_ok_term(env: *Env, val: Term) Term {
     return e.enif_make_tuple(env, 2, make_ok(env), val);
 }
 
 /// Creates a beam `:error` atom.
-pub fn make_error(env: Env) Term {
+pub fn make_error(env: *Env) Term {
     return e.enif_make_atom(env, "error");
 }
 
 /// Helper to create an `{:error, term}` tuple
-pub fn make_error_term(env: Env, val: Term) Term {
+pub fn make_error_term(env: *Env, val: Term) Term {
     return e.enif_make_tuple(env, 2, make_error(env), val);
 }
 
 /// Helper to create an `{:error, atom}` tuple, taking the atom value from a slice
-pub fn make_error_atom(env: Env, atom_str: []const u8) Term {
+pub fn make_error_atom(env: *Env, atom_str: []const u8) Term {
     return make_error_term(env, make_atom(env, atom_str));
 }
 
 /// Creates a binary term from a Zig slice
-pub fn make_slice(env: Env, val: []const u8) Term {
+pub fn make_slice(env: *Env, val: []const u8) Term {
     var result: Term = undefined;
     var bin: [*]u8 = @ptrCast(e.enif_make_new_binary(env, val.len, &result));
     @memcpy(bin[0..val.len], val);
@@ -79,17 +79,17 @@ pub fn make_slice(env: Env, val: []const u8) Term {
     return result;
 }
 
-pub fn make_copy(destination_env: Env, source_term: Term) Term {
+pub fn make_copy(destination_env: *Env, source_term: Term) Term {
     return e.enif_make_copy(destination_env, source_term);
 }
 
 /// Creates a u8 value term.
-pub fn make_u8(env: Env, val: u8) Term {
+pub fn make_u8(env: *Env, val: u8) Term {
     return e.enif_make_uint(env, val);
 }
 
 /// Creates an BEAM tuple from a Zig tuple of terms
-pub fn make_tuple(env: Env, tuple: anytype) Term {
+pub fn make_tuple(env: *Env, tuple: anytype) Term {
     const type_info = @typeInfo(@TypeOf(tuple));
     if (type_info != .Struct or !type_info.Struct.is_tuple)
         @compileError("invalid argument to make_tuple: not a tuple");
@@ -105,7 +105,7 @@ pub fn make_tuple(env: Env, tuple: anytype) Term {
 pub const GetError = error{ArgumentError};
 
 /// Extract a binary from a term, returning it as a slice
-pub fn get_char_slice(env: Env, src_term: Term) GetError![]u8 {
+pub fn get_char_slice(env: *Env, src_term: Term) GetError![]u8 {
     var bin: e.ErlNifBinary = undefined;
     if (e.enif_inspect_binary(env, src_term, &bin) == 0) {
         return GetError.ArgumentError;
@@ -115,7 +115,7 @@ pub fn get_char_slice(env: Env, src_term: Term) GetError![]u8 {
 }
 
 /// Extract a u128 from a binary (little endian) term
-pub fn get_u128(env: Env, src_term: Term) GetError!u128 {
+pub fn get_u128(env: *Env, src_term: Term) GetError!u128 {
     const bin = try get_char_slice(env, src_term);
     const required_length = @sizeOf(u128) / @sizeOf(u8);
 
@@ -126,25 +126,25 @@ pub fn get_u128(env: Env, src_term: Term) GetError!u128 {
 }
 
 /// Allocates a process independent environment
-pub fn alloc_env() Env {
+pub fn alloc_env() *Env {
     const env = e.enif_alloc_env();
-    assert(env != null);
-    return env;
+    // Assert that the allocated environment is not null
+    return env.?;
 }
 
 /// Clears a process independent environment
-pub fn clear_env(env: Env) void {
+pub fn clear_env(env: *Env) void {
     e.enif_clear_env(env);
 }
 
 /// Frees a process independent environment
-pub fn free_env(env: Env) void {
+pub fn free_env(env: *Env) void {
     e.enif_free_env(env);
 }
 
 pub const SelfError = error{NotProcessBound};
 
-pub fn self(env: Env) SelfError!Pid {
+pub fn self(env: *Env) SelfError!Pid {
     var result: Pid = undefined;
     if (e.enif_self(env, &result) == null) {
         return error.NotProcessBound;
@@ -155,7 +155,7 @@ pub fn self(env: Env) SelfError!Pid {
 
 pub const SendError = error{NotDelivered};
 
-pub fn send(dest: Pid, msg_env: Env, msg: Term) SendError!void {
+pub fn send(dest: Pid, msg_env: *Env, msg: Term) SendError!void {
     // Needed since enif_send is not const-correct
     var to_pid = dest;
 

@@ -30,7 +30,7 @@ const InitClientError = error{
     Unexpected,
 };
 
-pub fn init(env: beam.Env, cluster_id_term: beam.Term, addresses_term: beam.Term) beam.Term {
+pub fn init(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.Term) beam.Term {
     return init_client(env, cluster_id_term, addresses_term) catch |err| switch (err) {
         error.AddressInvalid => beam.make_error_atom(env, "invalid_address"),
         error.AddressLimitExceeded => beam.make_error_atom(env, "address_limit_exceeded"),
@@ -42,7 +42,7 @@ pub fn init(env: beam.Env, cluster_id_term: beam.Term, addresses_term: beam.Term
     };
 }
 
-fn init_client(env: beam.Env, cluster_id_term: beam.Term, addresses_term: beam.Term) InitClientError!beam.Term {
+fn init_client(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.Term) InitClientError!beam.Term {
     const cluster_id = try beam.get_u128(env, cluster_id_term);
     const addresses = try beam.get_char_slice(env, addresses_term);
 
@@ -76,7 +76,7 @@ const SubmitError = error{
     ArgumentError,
 };
 
-pub fn create_accounts(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+pub fn create_accounts(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
     return submit(
         env,
         client_resource,
@@ -85,7 +85,7 @@ pub fn create_accounts(env: beam.Env, client_resource: beam.Term, payload_term: 
     ) catch |err| handle_submit_error(env, err);
 }
 
-pub fn create_transfers(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+pub fn create_transfers(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
     return submit(
         env,
         client_resource,
@@ -94,7 +94,7 @@ pub fn create_transfers(env: beam.Env, client_resource: beam.Term, payload_term:
     ) catch |err| handle_submit_error(env, err);
 }
 
-pub fn lookup_accounts(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+pub fn lookup_accounts(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
     return submit(
         env,
         client_resource,
@@ -103,7 +103,7 @@ pub fn lookup_accounts(env: beam.Env, client_resource: beam.Term, payload_term: 
     ) catch |err| handle_submit_error(env, err);
 }
 
-pub fn lookup_transfers(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+pub fn lookup_transfers(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
     return submit(
         env,
         client_resource,
@@ -112,7 +112,7 @@ pub fn lookup_transfers(env: beam.Env, client_resource: beam.Term, payload_term:
     ) catch |err| handle_submit_error(env, err);
 }
 
-pub fn get_account_transfers(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+pub fn get_account_transfers(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
     return submit(
         env,
         client_resource,
@@ -121,7 +121,7 @@ pub fn get_account_transfers(env: beam.Env, client_resource: beam.Term, payload_
     ) catch |err| handle_submit_error(env, err);
 }
 
-pub fn get_account_balances(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+pub fn get_account_balances(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
     return submit(
         env,
         client_resource,
@@ -130,7 +130,7 @@ pub fn get_account_balances(env: beam.Env, client_resource: beam.Term, payload_t
     ) catch |err| handle_submit_error(env, err);
 }
 
-pub fn query_accounts(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+pub fn query_accounts(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
     return submit(
         env,
         client_resource,
@@ -139,7 +139,7 @@ pub fn query_accounts(env: beam.Env, client_resource: beam.Term, payload_term: b
     ) catch |err| handle_submit_error(env, err);
 }
 
-pub fn query_transfers(env: beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+pub fn query_transfers(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
     return submit(
         env,
         client_resource,
@@ -149,7 +149,7 @@ pub fn query_transfers(env: beam.Env, client_resource: beam.Term, payload_term: 
 }
 
 fn submit(
-    env: beam.Env,
+    env: *beam.Env,
     client_term: beam.Term,
     operation: tb_client.Operation,
     payload_term: beam.Term,
@@ -173,7 +173,7 @@ fn submit(
 
     // Retrieve the process independent environment that is stored in the completion context
     const completion_ctx = try client.completion_context();
-    const tigerbeetle_env: beam.Env = @ptrFromInt(completion_ctx);
+    const tigerbeetle_env: *beam.Env = @ptrFromInt(completion_ctx);
 
     // Copy over the ref and the payload term in the process independent environment
     // Those need to be accessible in the on_completion callback, so we must copy them over
@@ -212,7 +212,7 @@ fn submit(
     return beam.make_ok_term(env, ref);
 }
 
-fn handle_submit_error(env: beam.Env, err: SubmitError) beam.Term {
+fn handle_submit_error(env: *beam.Env, err: SubmitError) beam.Term {
     return switch (err) {
         error.InvalidResourceTerm => beam.make_error_atom(env, "invalid_client_resource"),
         error.TooManyRequests => beam.make_error_atom(env, "too_many_requests"),
@@ -237,7 +237,7 @@ fn on_completion(
     // Decrease client refcount after we exit
     defer resource.raw_release(ctx.client_raw_obj);
 
-    const env: beam.Env = @ptrFromInt(context);
+    const env: *beam.Env = @ptrFromInt(context);
     defer beam.clear_env(env);
 
     const ref = ctx.request_ref;
@@ -272,7 +272,7 @@ fn on_completion(
     beam.send(caller_pid, env, msg) catch {};
 }
 
-fn client_resource_deinit_fn(_: beam.Env, ptr: ?*anyopaque) callconv(.C) void {
+fn client_resource_deinit_fn(_: ?*beam.Env, ptr: ?*anyopaque) callconv(.C) void {
     if (ptr) |p| {
         const client: *ClientInterface = @ptrCast(@alignCast(p));
         // The client was already closed, we just return
@@ -282,7 +282,7 @@ fn client_resource_deinit_fn(_: beam.Env, ptr: ?*anyopaque) callconv(.C) void {
             // The client was already closed, we just return
             error.ClientInvalid => return,
         };
-        const env: beam.Env = @ptrFromInt(completion_ctx);
+        const env: *beam.Env = @ptrFromInt(completion_ctx);
         beam.free_env(env);
     } else unreachable;
 }

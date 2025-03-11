@@ -79,6 +79,7 @@ pub fn make_slice(env: *Env, val: []const u8) Term {
     return result;
 }
 
+/// Copies a term to destination_env, creating a new term valid in that env
 pub fn make_copy(destination_env: *Env, source_term: Term) Term {
     return e.enif_make_copy(destination_env, source_term);
 }
@@ -144,6 +145,7 @@ pub fn free_env(env: *Env) void {
 
 pub const SelfError = error{NotProcessBound};
 
+/// Returns the self pid of the env. Needs to be called with a process-bound env.
 pub fn self(env: *Env) SelfError!Pid {
     var result: Pid = undefined;
     if (e.enif_self(env, &result) == null) {

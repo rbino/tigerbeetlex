@@ -108,7 +108,7 @@ pub const GetError = error{ArgumentError};
 pub fn get_char_slice(env: *Env, src_term: Term) GetError![]u8 {
     var bin: e.ErlNifBinary = undefined;
     if (e.enif_inspect_binary(env, src_term, &bin) == 0) {
-        return GetError.ArgumentError;
+        return error.ArgumentError;
     }
     assert(bin.data != null);
     return bin.data[0..bin.size];
@@ -120,7 +120,7 @@ pub fn get_u128(env: *Env, src_term: Term) GetError!u128 {
     const required_length = @sizeOf(u128) / @sizeOf(u8);
 
     // We represent the u128 as a 16 byte binary, little endian (required by TigerBeetle)
-    if (bin.len != required_length) return GetError.ArgumentError;
+    if (bin.len != required_length) return error.ArgumentError;
 
     return std.mem.readInt(u128, bin[0..required_length], .little);
 }
@@ -215,7 +215,7 @@ pub fn Resource(
             var raw_ptr: ?*anyopaque = undefined;
 
             if (e.enif_get_resource(env, term, resource_type, &raw_ptr) == 0) {
-                return GetError.ArgumentError;
+                return error.ArgumentError;
             }
 
             return Self{ .raw_ptr = raw_ptr.? };

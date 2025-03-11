@@ -8,11 +8,11 @@ const e = @import("beam/erl_nif.zig");
 
 pub const allocator = @import("beam/allocator.zig");
 pub const nif = @import("beam/nif.zig");
-pub const resource = @import("beam/resource.zig");
 
 pub const Env = e.ErlNifEnv;
 pub const Pid = e.ErlNifPid;
-pub const ResourceType = ?*e.ErlNifResourceType;
+pub const ResourceDestructorFn = e.ErlNifResourceDtor;
+pub const ResourceType = e.ErlNifResourceType;
 pub const Term = e.ERL_NIF_TERM;
 
 /// The raw BEAM allocator with the standard Zig Allocator interface.
@@ -166,4 +166,90 @@ pub fn send(dest: Pid, msg_env: *Env, msg: Term) SendError!void {
     if (e.enif_send(null, &to_pid, msg_env, msg) == 0) {
         return error.NotDelivered;
     }
+}
+
+pub fn Resource(
+    comptime T: anytype,
+    comptime name: [:0]const u8,
+    comptime destructor: ResourceDestructorFn,
+) type {
+    return struct {
+        const Self = @This();
+
+        var resource_type: ?*ResourceType = null;
+
+        raw_ptr: *anyopaque,
+
+        const OpenResourceTypeError = error{CannotCreateType};
+
+        /// Initializes the type of the resource. This must be called exactly once
+        /// in the load callback of the NIF.
+        pub fn open_type(env: *Env) OpenResourceTypeError!void {
+            // For now, we assume we want to open type only once
+            assert(resource_type == null);
+
+            resource_type = e.enif_open_resource_type(
+                env,
+                null,
+                name.ptr,
+                destructor,
+                e.ERL_NIF_RT_CREATE | e.ERL_NIF_RT_TAKEOVER,
+                null,
+            ) orelse return error.CannotCreateType;
+        }
+
+        const InitError = error{OutOfMemory};
+
+        /// Allocates the memory of the resource and initializes it with a value
+        pub fn init(init_value: T) InitError!Self {
+            const raw_ptr = e.enif_alloc_resource(resource_type, @sizeOf(T)) orelse return error.OutOfMemory;
+            const resource: Self = .{ .raw_ptr = raw_ptr };
+
+            resource.ptr().* = init_value;
+
+            return resource;
+        }
+
+        /// Recreates the resource from the term handle obtained with `term_handle`
+        pub fn from_term_handle(env: *Env, term: Term) GetError!Self {
+            var raw_ptr: ?*anyopaque = undefined;
+
+            if (e.enif_get_resource(env, term, resource_type, &raw_ptr) == 0) {
+                return GetError.ArgumentError;
+            }
+
+            return Self{ .raw_ptr = raw_ptr.? };
+        }
+
+        /// Recreates the resource from its resource pointer
+        /// This is particularly useful in the destructor function
+        pub fn from_resource_pointer(raw_ptr: *anyopaque) Self {
+            return Self{ .raw_ptr = raw_ptr };
+        }
+
+        /// Obtains a term handle to the resource
+        pub fn term_handle(resource: Self, env: *Env) Term {
+            return e.enif_make_resource(env, resource.raw_ptr);
+        }
+
+        /// Decreases the refcount of a resource
+        pub fn release(resource: Self) void {
+            e.enif_release_resource(resource.raw_ptr);
+        }
+
+        /// Increases the refcount of a resource
+        pub fn keep(resource: Self) void {
+            e.enif_keep_resource(resource.raw_ptr);
+        }
+
+        /// Returns a copy of the resource value
+        pub fn value(resource: Self) T {
+            return resource.ptr().*;
+        }
+
+        /// Returns a pointer to the resource value
+        fn ptr(resource: Self) *T {
+            return @ptrCast(@alignCast(resource.raw_ptr));
+        }
+    };
 }

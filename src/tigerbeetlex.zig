@@ -1,10 +1,7 @@
-const std = @import("std");
 const beam = @import("beam.zig");
 const nif = beam.nif;
-const resource = beam.resource;
 
 const client = @import("client.zig");
-const ClientResource = client.ClientResource;
 
 // Needed to configure VSR
 pub const vsr_options = @import("config").vsr_options;
@@ -26,8 +23,12 @@ var exported_nifs = [_]nif.FunctionEntry{
     nif.wrap("query_transfers", client.query_transfers),
 };
 
-fn nif_load(env: ?*beam.Env, _: [*c]?*anyopaque, _: beam.Term) callconv(.C) c_int {
-    ClientResource.create_type(env.?, "TigerBeetlex.Client");
+fn nif_load(env: ?*beam.Env, priv_data: [*c]?*anyopaque, load_info: beam.Term) callconv(.C) c_int {
+    _ = priv_data;
+    _ = load_info;
+
+    client.initialize_resources(env.?) catch return -1;
+
     return 0;
 }
 

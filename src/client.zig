@@ -2,8 +2,6 @@ const std = @import("std");
 const assert = std.debug.assert;
 
 const beam = @import("beam.zig");
-const resource = beam.resource;
-const Resource = resource.Resource;
 
 const tb = @import("vsr").tigerbeetle;
 const tb_client = @import("vsr").tb_client;
@@ -12,12 +10,13 @@ const Account = tb.Account;
 const Transfer = tb.Transfer;
 
 const ClientInterface = tb_client.ClientInterface;
-pub const ClientResource = Resource(*ClientInterface, client_resource_deinit_fn);
+
+const ClientResource = beam.Resource(*ClientInterface, "TigerBeetlex.Client", client_resource_deinit_fn);
 
 const RequestContext = struct {
     caller_pid: beam.Pid,
+    client_resource: ClientResource,
     request_ref: beam.Term,
-    client_raw_obj: *anyopaque,
 };
 
 const InitClientError = error{
@@ -29,6 +28,10 @@ const InitClientError = error{
     SystemResources,
     Unexpected,
 };
+
+pub fn initialize_resources(env: *beam.Env) !void {
+    try ClientResource.open_type(env);
+}
 
 pub fn init(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.Term) beam.Term {
     return init_client(env, cluster_id_term, addresses_term) catch |err| switch (err) {
@@ -59,11 +62,18 @@ fn init_client(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.
     );
     errdefer client.deinit() catch unreachable;
 
+    // We create a NIF resource to store the pointer to our client
+    // We use the refcounting feature of resources to ensure we only deinit the client after
+    // everyone is done using it.
     const client_resource = try ClientResource.init(client);
-    defer client_resource.release();
 
+    // We create the resource term handle so we can retrieve the client pointer from it
     const term_handle = client_resource.term_handle(env);
 
+    // We release the resource since we're not holding a reference to the client
+    defer client_resource.release();
+
+    // We return the term handle
     return beam.make_ok_term(env, term_handle);
 }
 
@@ -187,14 +197,14 @@ fn submit(
     // Get a pointer to the actual binary data from the payload term
     const payload = try beam.get_char_slice(tigerbeetle_env, tigerbeetle_owned_payload_term);
 
-    // We increase the client refcount to make sure we don't deinit it until all requests
-    // have been handled
+    // We increase the refcount of the client resource so we can be sure the destructor is not
+    // called until all requests have been completed
     client_resource.keep();
 
     ctx.* = .{
         .caller_pid = caller_pid,
+        .client_resource = client_resource,
         .request_ref = tigerbeetle_owned_ref,
-        .client_raw_obj = client_resource.raw_ptr,
     };
 
     packet.* = .{
@@ -234,8 +244,8 @@ fn on_completion(
     const ctx: *RequestContext = @ptrCast(@alignCast(packet.user_data));
     defer beam.general_purpose_allocator.destroy(ctx);
 
-    // Decrease client refcount after we exit
-    defer resource.raw_release(ctx.client_raw_obj);
+    // Decrease client resource refcount after we exit
+    ctx.client_resource.release();
 
     const env: *beam.Env = @ptrFromInt(context);
     defer beam.clear_env(env);
@@ -272,17 +282,18 @@ fn on_completion(
     beam.send(caller_pid, env, msg) catch {};
 }
 
-fn client_resource_deinit_fn(_: ?*beam.Env, ptr: ?*anyopaque) callconv(.C) void {
-    if (ptr) |p| {
-        const client: *ClientInterface = @ptrCast(@alignCast(p));
-        // The client was already closed, we just return
-        defer client.deinit() catch {};
+fn client_resource_deinit_fn(env: ?*beam.Env, resource_pointer: ?*anyopaque) callconv(.C) void {
+    _ = env;
+    const client_resource = ClientResource.from_resource_pointer(resource_pointer.?);
+    const client = client_resource.value();
+    // If deinit fails, the client was already closed, so we just ignore it
+    defer client.deinit() catch {};
 
-        const completion_ctx = client.completion_context() catch |err| switch (err) {
-            // The client was already closed, we just return
-            error.ClientInvalid => return,
-        };
-        const env: *beam.Env = @ptrFromInt(completion_ctx);
-        beam.free_env(env);
-    } else unreachable;
+    const completion_ctx = client.completion_context() catch |err| switch (err) {
+        // The client was already closed, we just return
+        error.ClientInvalid => return,
+    };
+    // Free up the process independent env
+    const tigerbeetle_env: *beam.Env = @ptrFromInt(completion_ctx);
+    beam.free_env(tigerbeetle_env);
 }

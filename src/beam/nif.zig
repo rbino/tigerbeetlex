@@ -3,7 +3,6 @@ const assert = std.debug.assert;
 
 const e = @import("erl_nif.zig");
 const beam = @import("../beam.zig");
-const resource = @import("resource.zig");
 
 pub const Nif = *const fn (?*beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term;
 pub const NifLoadFn = *const fn (?*beam.Env, [*c]?*anyopaque, beam.Term) callconv(.C) c_int;

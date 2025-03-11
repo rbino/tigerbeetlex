@@ -247,7 +247,7 @@ fn on_completion(
     defer beam.general_purpose_allocator.destroy(ctx);
 
     // Decrease client resource refcount after we exit
-    ctx.client_resource.release();
+    defer ctx.client_resource.release();
 
     const env: *beam.Env = @ptrFromInt(context);
     defer beam.clear_env(env);

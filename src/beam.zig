@@ -157,6 +157,7 @@ pub fn self(env: *Env) SelfError!Pid {
 
 pub const SendError = error{NotDelivered};
 
+/// Sends a message containg the msg term to the dest Pid.
 pub fn send(dest: Pid, msg_env: *Env, msg: Term) SendError!void {
     // Needed since enif_send is not const-correct
     var to_pid = dest;

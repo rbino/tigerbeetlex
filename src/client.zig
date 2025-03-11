@@ -52,12 +52,14 @@ fn init_client(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.
     const client = try beam.general_purpose_allocator.create(tb_client.ClientInterface);
     errdefer beam.general_purpose_allocator.destroy(client);
 
+    const tigerbeetle_env = try beam.alloc_env();
+
     try tb_client.init(
         beam.general_purpose_allocator,
         client,
         cluster_id,
         addresses,
-        @intFromPtr(beam.alloc_env()),
+        @intFromPtr(tigerbeetle_env),
         on_completion,
     );
     errdefer client.deinit() catch unreachable;

@@ -125,11 +125,11 @@ pub fn get_u128(env: *Env, src_term: Term) GetError!u128 {
     return std.mem.readInt(u128, bin[0..required_length], .little);
 }
 
+const AllocEnvError = error{OutOfMemory};
+
 /// Allocates a process independent environment
-pub fn alloc_env() *Env {
-    const env = e.enif_alloc_env();
-    // Assert that the allocated environment is not null
-    return env.?;
+pub fn alloc_env() AllocEnvError!*Env {
+    return e.enif_alloc_env() orelse error.OutOfMemory;
 }
 
 /// Clears a process independent environment

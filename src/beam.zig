@@ -157,14 +157,14 @@ pub fn self(env: *Env) SelfError!Pid {
 
 pub const SendError = error{NotDelivered};
 
-/// Sends a message containg the msg term to the dest Pid.
+/// Sends a message containing the msg term to the dest Pid.
 pub fn send(dest: Pid, msg_env: *Env, msg: Term) SendError!void {
     // Needed since enif_send is not const-correct
     var to_pid = dest;
 
     // Given our (only) use of the function, we make some assumptions, namely:
     // - We're using a process independent env, so `caller_env` is null
-    // - We're clearing the env after the message is sent, so we pass `msg_env` instead of passing
+    // - We're freeing the env after the message is sent, so we pass `msg_env` instead of passing
     //   null to copy `msg`
     if (e.enif_send(null, &to_pid, msg_env, msg) == 0) {
         return error.NotDelivered;

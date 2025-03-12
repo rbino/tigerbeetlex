@@ -14,6 +14,7 @@ const ClientInterface = tb_client.ClientInterface;
 const ClientResource = beam.Resource(*ClientInterface, "TigerBeetlex.Client", client_resource_deinit_fn);
 
 const RequestContext = struct {
+    env: *beam.Env,
     caller_pid: beam.Pid,
     client_resource: ClientResource,
     request_ref: beam.Term,
@@ -52,14 +53,12 @@ fn init_client(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.
     const client = try beam.general_purpose_allocator.create(tb_client.ClientInterface);
     errdefer beam.general_purpose_allocator.destroy(client);
 
-    const tigerbeetle_env = try beam.alloc_env();
-
     try tb_client.init(
         beam.general_purpose_allocator,
         client,
         cluster_id,
         addresses,
-        @intFromPtr(tigerbeetle_env),
+        0,
         on_completion,
     );
     errdefer client.deinit() catch unreachable;
@@ -183,30 +182,30 @@ fn submit(
     // Create a unique ref that will identify this specific request
     const ref = beam.make_ref(env);
 
-    // Retrieve the process independent environment that is stored in the completion context
-    const completion_ctx = try client.completion_context();
-    const tigerbeetle_env: *beam.Env = @ptrFromInt(completion_ctx);
+    // Allocate a process independent environment for the request
+    const request_env: *beam.Env = try beam.alloc_env();
 
     // Copy over the ref and the payload term in the process independent environment
     // Those need to be accessible in the on_completion callback, so we must copy them over
     // because the terms bound to the process bound environment (env) are not valid anymore
     // once the NIF returns.
-    const tigerbeetle_owned_ref = beam.make_copy(tigerbeetle_env, ref);
+    const request_owned_ref = beam.make_copy(request_env, ref);
     // Note that copying the payload term _does not_ copy the whole binary, since it's a
     // refcounted binary. It just copies a new reference to it.
-    const tigerbeetle_owned_payload_term = beam.make_copy(tigerbeetle_env, payload_term);
+    const request_owned_payload_term = beam.make_copy(request_env, payload_term);
 
     // Get a pointer to the actual binary data from the payload term
-    const payload = try beam.get_char_slice(tigerbeetle_env, tigerbeetle_owned_payload_term);
+    const payload = try beam.get_char_slice(request_env, request_owned_payload_term);
 
     // We increase the refcount of the client resource so we can be sure the destructor is not
     // called until all requests have been completed
     client_resource.keep();
 
     ctx.* = .{
+        .env = request_env,
         .caller_pid = caller_pid,
         .client_resource = client_resource,
-        .request_ref = tigerbeetle_owned_ref,
+        .request_ref = request_owned_ref,
     };
 
     packet.* = .{
@@ -242,6 +241,7 @@ fn on_completion(
     result_ptr: ?[*]const u8,
     result_len: u32,
 ) callconv(.C) void {
+    _ = context;
     assert(packet.user_data != null);
     const ctx: *RequestContext = @ptrCast(@alignCast(packet.user_data));
     defer beam.general_purpose_allocator.destroy(ctx);
@@ -249,8 +249,9 @@ fn on_completion(
     // Decrease client resource refcount after we exit
     defer ctx.client_resource.release();
 
-    const env: *beam.Env = @ptrFromInt(context);
-    defer beam.clear_env(env);
+    const env: *beam.Env = ctx.env;
+    // Free the request env when we finish
+    defer beam.free_env(env);
 
     const ref = ctx.request_ref;
     const caller_pid = ctx.caller_pid;
@@ -290,12 +291,4 @@ fn client_resource_deinit_fn(env: ?*beam.Env, resource_pointer: ?*anyopaque) cal
     const client = client_resource.value();
     // If deinit fails, the client was already closed, so we just ignore it
     defer client.deinit() catch {};
-
-    const completion_ctx = client.completion_context() catch |err| switch (err) {
-        // The client was already closed, we just return
-        error.ClientInvalid => return,
-    };
-    // Free up the process independent env
-    const tigerbeetle_env: *beam.Env = @ptrFromInt(completion_ctx);
-    beam.free_env(tigerbeetle_env);
 }

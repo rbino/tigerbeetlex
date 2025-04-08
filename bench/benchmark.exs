@@ -10,7 +10,7 @@ alias TigerBeetlex.Transfer
   )
 
 samples = 1_000_000
-batch_size = 8190
+batch_size = 8189
 
 bench = fn ->
   chunks =

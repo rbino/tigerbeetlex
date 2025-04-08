@@ -54,49 +54,49 @@ defmodule TigerBeetlex.Response do
     {:error, :invalid_data_size}
   end
 
-  defp build_result_list(129, batch) when rem(bit_size(batch), 64) == 0 do
+  defp build_result_list(138, batch) when rem(bit_size(batch), 64) == 0 do
     for <<item::binary-size(8) <- batch>> do
       TigerBeetlex.CreateAccountsResult.from_binary(item)
     end
   end
 
-  defp build_result_list(130, batch) when rem(bit_size(batch), 64) == 0 do
+  defp build_result_list(139, batch) when rem(bit_size(batch), 64) == 0 do
     for <<item::binary-size(8) <- batch>> do
       TigerBeetlex.CreateTransfersResult.from_binary(item)
     end
   end
 
-  defp build_result_list(131, batch) when rem(bit_size(batch), 1024) == 0 do
+  defp build_result_list(140, batch) when rem(bit_size(batch), 1024) == 0 do
     for <<item::binary-size(128) <- batch>> do
       TigerBeetlex.Account.from_binary(item)
     end
   end
 
-  defp build_result_list(132, batch) when rem(bit_size(batch), 1024) == 0 do
+  defp build_result_list(141, batch) when rem(bit_size(batch), 1024) == 0 do
     for <<item::binary-size(128) <- batch>> do
       TigerBeetlex.Transfer.from_binary(item)
     end
   end
 
-  defp build_result_list(133, batch) when rem(bit_size(batch), 1024) == 0 do
+  defp build_result_list(142, batch) when rem(bit_size(batch), 1024) == 0 do
     for <<item::binary-size(128) <- batch>> do
       TigerBeetlex.Transfer.from_binary(item)
     end
   end
 
-  defp build_result_list(134, batch) when rem(bit_size(batch), 1024) == 0 do
+  defp build_result_list(143, batch) when rem(bit_size(batch), 1024) == 0 do
     for <<item::binary-size(128) <- batch>> do
       TigerBeetlex.AccountBalance.from_binary(item)
     end
   end
 
-  defp build_result_list(135, batch) when rem(bit_size(batch), 1024) == 0 do
+  defp build_result_list(144, batch) when rem(bit_size(batch), 1024) == 0 do
     for <<item::binary-size(128) <- batch>> do
       TigerBeetlex.Account.from_binary(item)
     end
   end
 
-  defp build_result_list(136, batch) when rem(bit_size(batch), 1024) == 0 do
+  defp build_result_list(145, batch) when rem(bit_size(batch), 1024) == 0 do
     for <<item::binary-size(128) <- batch>> do
       TigerBeetlex.Transfer.from_binary(item)
     end
@@ -119,14 +119,14 @@ defmodule TigerBeetlex.Response do
   @doc false
   def operation_map do
     %{
-      create_accounts: 129,
-      create_transfers: 130,
-      lookup_accounts: 131,
-      lookup_transfers: 132,
-      get_account_transfers: 133,
-      get_account_balances: 134,
-      query_accounts: 135,
-      query_transfers: 136
+      create_accounts: 138,
+      create_transfers: 139,
+      lookup_accounts: 140,
+      lookup_transfers: 141,
+      get_account_transfers: 142,
+      get_account_balances: 143,
+      query_accounts: 144,
+      query_transfers: 145
     }
   end
 end

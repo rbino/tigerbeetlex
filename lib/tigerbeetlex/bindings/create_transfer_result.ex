@@ -43,7 +43,6 @@ defmodule TigerBeetlex.CreateTransferResult do
   def to_atom(16), do: :pending_id_must_be_different
   def to_atom(17), do: :timeout_reserved_for_pending_transfer
   def to_atom(64), do: :closing_transfer_must_be_pending
-  def to_atom(18), do: :amount_must_not_be_zero
   def to_atom(19), do: :ledger_must_not_be_zero
   def to_atom(20), do: :code_must_not_be_zero
   def to_atom(21), do: :debit_account_not_found
@@ -113,7 +112,6 @@ defmodule TigerBeetlex.CreateTransferResult do
   def from_atom(:pending_id_must_be_different), do: 16
   def from_atom(:timeout_reserved_for_pending_transfer), do: 17
   def from_atom(:closing_transfer_must_be_pending), do: 64
-  def from_atom(:amount_must_not_be_zero), do: 18
   def from_atom(:ledger_must_not_be_zero), do: 19
   def from_atom(:code_must_not_be_zero), do: 20
   def from_atom(:debit_account_not_found), do: 21

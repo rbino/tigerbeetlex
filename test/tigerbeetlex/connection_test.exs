@@ -6,7 +6,7 @@ defmodule TigerBeetlex.ConnectionTest do
   describe "start_link/1" do
     setup do
       valid_opts = [
-        name: :tb,
+        name: :tb_connection_test,
         cluster_id: <<0::128>>,
         addresses: ["3000"]
       ]
@@ -39,16 +39,16 @@ defmodule TigerBeetlex.ConnectionTest do
     end
 
     test "returns {:ok, pid} with valid options", %{valid_opts: opts} do
-      assert {:ok, pid} = Connection.start_link(opts)
+      {:ok, pid} = start_supervised({Connection, opts})
       assert Process.alive?(pid)
     end
 
     test "relays additional options to PartitionSupervisor", %{valid_opts: opts} do
       opts = opts ++ [partitions: 3]
 
-      assert {:ok, _pid} = Connection.start_link(opts)
-      assert Process.whereis(:tb) != nil
-      assert PartitionSupervisor.partitions(:tb) == 3
+      _pid = start_supervised!({Connection, opts})
+      assert Process.whereis(:tb_connection_test) != nil
+      assert PartitionSupervisor.partitions(:tb_connection_test) == 3
     end
   end
 end

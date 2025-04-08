@@ -61,6 +61,10 @@ defmodule TigerBeetlex.Connection do
   This creates N receiver processes (where N can be controlled by
   passing options to the underlying `PartitionSupervisor`) under a `PartitionSupervisor`.
 
+  On success, the it returns the pid of the `PartitionSupervisor`. Note that this is not
+  what you have to pass to all the other functions in this module as first argument,
+  rather the `name` atom passed as option to `start_link/1` has to be passed.
+
   ## Options
 
   These are the TigerBeetlex-specific options supported by this function:
@@ -78,13 +82,6 @@ defmodule TigerBeetlex.Connection do
   ## Examples
 
       # Start the TigerBeetlex connection
-      {:ok, pid} =
-        TigerBeetlex.Connection.start_link(
-          cluster_id: <<0::128>>,
-          addresses: ["3000"],
-        )
-
-      # Start a named TigerBeetlex connection
       {:ok, pid} =
         TigerBeetlex.Connection.start_link(
           cluster_id: <<0::128>>,

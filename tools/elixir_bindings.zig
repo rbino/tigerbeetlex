@@ -4,8 +4,9 @@ const assert = std.debug.assert;
 const vsr = @import("vsr");
 const constants = vsr.constants;
 const IO = vsr.io.IO;
+const Tracer = vsr.trace.TracerType(vsr.time.Time);
 
-const Storage = vsr.storage.StorageType(IO);
+const Storage = vsr.storage.StorageType(IO, Tracer);
 const StateMachine = vsr.state_machine.StateMachineType(Storage, constants.state_machine_config);
 
 const tb = vsr.tigerbeetle;
@@ -634,6 +635,8 @@ fn emit_enum(
 
     const type_info = @typeInfo(Type).Enum;
     inline for (type_info.fields) |field| {
+        if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
+
         if (comptime mapping.hidden(field.name)) continue;
 
         try buffer.writer().print(
@@ -648,6 +651,8 @@ fn emit_enum(
     try buffer.writer().print("\n", .{});
 
     inline for (type_info.fields) |field| {
+        if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
+
         if (comptime mapping.hidden(field.name)) continue;
 
         try buffer.writer().print(
@@ -730,6 +735,8 @@ fn emit_response_module(
     {
         const operation_info = @typeInfo(tb_client.Operation).Enum;
         inline for (operation_info.fields) |field| {
+            if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
+
             const operation: tb_client.Operation = @enumFromInt(field.value);
             if (operation == .pulse or operation == .get_events) continue;
             const result_type = StateMachine.ResultType(operation);
@@ -781,6 +788,8 @@ fn emit_response_module(
     {
         const operation_info = @typeInfo(tb_client.Operation).Enum;
         inline for (operation_info.fields) |field| {
+            if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
+
             const operation: tb_client.Operation = @enumFromInt(field.value);
             if (operation == .pulse or operation == .get_events) continue;
             const result_type = StateMachine.ResultType(operation);
@@ -840,6 +849,8 @@ fn emit_response_module(
         , .{});
 
         inline for (operation_info.fields) |field| {
+            if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
+
             const operation: tb_client.Operation = @enumFromInt(field.value);
             if (operation == .pulse or operation == .get_events) continue;
 

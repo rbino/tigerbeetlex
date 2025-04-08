@@ -15,8 +15,8 @@ defmodule TigerBeetlex.IntegrationTest do
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.TransferFlags
 
-  # 254 since it runs against a --development instance
-  @max_batch_size 254
+  # 253 since it runs against a --development instance
+  @max_batch_size 253
 
   setup_all do
     name = :tb

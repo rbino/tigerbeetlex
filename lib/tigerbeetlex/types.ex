@@ -7,19 +7,7 @@ defmodule TigerBeetlex.Types do
 
   @type client :: reference()
 
-  @type account_binary :: <<_::1024>>
-
-  @type account_filter_binary :: <<_::1024>>
-
-  @type transfer_binary :: <<_::1024>>
-
   @type id_128 :: <<_::128>>
-
-  @type user_data_128 :: <<_::128>>
-
-  @type user_data_64 :: <<_::64>>
-
-  @type user_data_32 :: <<_::32>>
 
   @type client_init_error ::
           :unexpected

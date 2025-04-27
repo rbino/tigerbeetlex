@@ -105,9 +105,8 @@ defmodule TigerBeetlex do
   @spec create_accounts(client :: t(), accounts :: [Account.t()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def create_accounts(%__MODULE__{} = client, accounts) when is_list(accounts) do
-    accounts
-    |> structs_to_binary(Account)
-    |> then(&NifAdapter.create_accounts(client.ref, &1))
+    accounts_iolist = structs_to_iolist(accounts, Account, [])
+    NifAdapter.create_accounts(client.ref, accounts_iolist)
   end
 
   @doc """
@@ -182,9 +181,8 @@ defmodule TigerBeetlex do
   @spec create_transfers(client :: t(), transfers :: [Transfer.t()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def create_transfers(%__MODULE__{} = client, transfers) when is_list(transfers) do
-    transfers
-    |> structs_to_binary(Transfer)
-    |> then(&NifAdapter.create_transfers(client.ref, &1))
+    transfers_iolist = structs_to_iolist(transfers, Transfer, [])
+    NifAdapter.create_transfers(client.ref, transfers_iolist)
   end
 
   @doc """
@@ -227,9 +225,7 @@ defmodule TigerBeetlex do
   @spec get_account_balances(client :: t(), account_filter :: AccountFilter.t()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def get_account_balances(%__MODULE__{} = client, %AccountFilter{} = account_filter) do
-    account_filter
-    |> AccountFilter.to_binary()
-    |> then(&NifAdapter.get_account_balances(client.ref, &1))
+    NifAdapter.get_account_balances(client.ref, AccountFilter.to_binary(account_filter))
   end
 
   @doc """
@@ -270,9 +266,7 @@ defmodule TigerBeetlex do
   @spec get_account_transfers(client :: t(), account_filter :: AccountFilter.t()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def get_account_transfers(%__MODULE__{} = client, %AccountFilter{} = account_filter) do
-    account_filter
-    |> AccountFilter.to_binary()
-    |> then(&NifAdapter.get_account_transfers(client.ref, &1))
+    NifAdapter.get_account_transfers(client.ref, AccountFilter.to_binary(account_filter))
   end
 
   @doc """
@@ -315,9 +309,7 @@ defmodule TigerBeetlex do
   @spec lookup_accounts(client :: t(), ids :: [Types.id_128()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def lookup_accounts(%__MODULE__{} = client, ids) when is_list(ids) do
-    ids
-    |> join_ids()
-    |> then(&NifAdapter.lookup_accounts(client.ref, &1))
+    NifAdapter.lookup_accounts(client.ref, ids)
   end
 
   @doc """
@@ -360,9 +352,7 @@ defmodule TigerBeetlex do
   @spec lookup_transfers(client :: t(), ids :: [Types.id_128()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def lookup_transfers(%__MODULE__{} = client, ids) when is_list(ids) do
-    ids
-    |> join_ids()
-    |> then(&NifAdapter.lookup_transfers(client.ref, &1))
+    NifAdapter.lookup_transfers(client.ref, ids)
   end
 
   @doc """
@@ -404,9 +394,7 @@ defmodule TigerBeetlex do
   @spec query_accounts(client :: t(), query_filter :: QueryFilter.t()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def query_accounts(%__MODULE__{} = client, %QueryFilter{} = query_filter) do
-    query_filter
-    |> QueryFilter.to_binary()
-    |> then(&NifAdapter.query_accounts(client.ref, &1))
+    NifAdapter.query_accounts(client.ref, QueryFilter.to_binary(query_filter))
   end
 
   @doc """
@@ -448,18 +436,13 @@ defmodule TigerBeetlex do
   @spec query_transfers(client :: t(), query_filter :: QueryFilter.t()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def query_transfers(%__MODULE__{} = client, %QueryFilter{} = query_filter) do
-    query_filter
-    |> QueryFilter.to_binary()
-    |> then(&NifAdapter.query_transfers(client.ref, &1))
+    NifAdapter.query_transfers(client.ref, QueryFilter.to_binary(query_filter))
   end
 
-  defp join_ids(ids) do
-    for id <- ids, into: "", do: id
-  end
+  defp structs_to_iolist([], _struct_module, acc), do: acc
 
-  defp structs_to_binary(structs, struct_module) do
-    for struct <- structs, into: "" do
-      struct_module.to_binary(struct)
-    end
+  defp structs_to_iolist([struct | rest], struct_module, acc) do
+    struct_binary = struct_module.to_binary(struct)
+    structs_to_iolist(rest, struct_module, [acc | struct_binary])
   end
 end

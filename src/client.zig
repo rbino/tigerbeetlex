@@ -194,8 +194,8 @@ fn submit(
     // refcounted binary. It just copies a new reference to it.
     const request_owned_payload_term = beam.make_copy(request_env, payload_term);
 
-    // Get a pointer to the actual binary data from the payload term
-    const payload = try beam.get_char_slice(request_env, request_owned_payload_term);
+    // Get a pointer to the actual binary data from the iolist payload term
+    const payload = try beam.get_iolist_as_char_slice(request_env, request_owned_payload_term);
 
     // We increase the refcount of the client resource so we can be sure the destructor is not
     // called until all requests have been completed

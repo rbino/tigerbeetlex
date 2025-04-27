@@ -115,6 +115,16 @@ pub fn get_char_slice(env: *Env, src_term: Term) GetError![]u8 {
     return bin.data[0..bin.size];
 }
 
+/// Extract a iolist from a term, returning it as a slice of its binary flattening
+pub fn get_iolist_as_char_slice(env: *Env, src_term: Term) GetError![]u8 {
+    var bin: e.ErlNifBinary = undefined;
+    if (e.enif_inspect_iolist_as_binary(env, src_term, &bin) == 0) {
+        return error.ArgumentError;
+    }
+    assert(bin.data != null);
+    return bin.data[0..bin.size];
+}
+
 /// Extract a u128 from a binary (little endian) term
 pub fn get_u128(env: *Env, src_term: Term) GetError!u128 {
     const bin = try get_char_slice(env, src_term);

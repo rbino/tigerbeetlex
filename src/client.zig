@@ -105,6 +105,15 @@ pub fn create_transfers(env: *beam.Env, client_resource: beam.Term, payload_term
     ) catch |err| handle_submit_error(env, err);
 }
 
+pub fn create_transfers_iolist(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
+    return submit_iolist(
+        env,
+        client_resource,
+        .create_transfers,
+        payload_term,
+    ) catch |err| handle_submit_error(env, err);
+}
+
 pub fn lookup_accounts(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
     return submit(
         env,
@@ -196,6 +205,70 @@ fn submit(
 
     // Get a pointer to the actual binary data from the payload term
     const payload = try beam.get_char_slice(request_env, request_owned_payload_term);
+
+    // We increase the refcount of the client resource so we can be sure the destructor is not
+    // called until all requests have been completed
+    client_resource.keep();
+
+    ctx.* = .{
+        .env = request_env,
+        .caller_pid = caller_pid,
+        .client_resource = client_resource,
+        .request_ref = request_owned_ref,
+    };
+
+    packet.* = .{
+        .user_data = ctx,
+        .operation = @intFromEnum(operation),
+        .data = payload.ptr,
+        .data_size = @intCast(payload.len),
+        .user_tag = 0,
+        .status = undefined,
+    };
+
+    try client.submit(packet);
+
+    // Return the ref to the caller
+    return beam.make_ok_term(env, ref);
+}
+
+fn submit_iolist(
+    env: *beam.Env,
+    client_term: beam.Term,
+    operation: tb_client.Operation,
+    payload_term: beam.Term,
+) SubmitError!beam.Term {
+    assert(operation != .pulse);
+
+    const client_resource = try ClientResource.from_term_handle(env, client_term);
+    const client = client_resource.value();
+
+    const ctx = try beam.general_purpose_allocator.create(RequestContext);
+    errdefer beam.general_purpose_allocator.destroy(ctx);
+
+    const packet = try beam.general_purpose_allocator.create(tb_client.Packet);
+    errdefer beam.general_purpose_allocator.destroy(packet);
+
+    // We're calling this from a process bound env so we expect not to fail
+    const caller_pid = beam.self(env) catch unreachable;
+
+    // Create a unique ref that will identify this specific request
+    const ref = beam.make_ref(env);
+
+    // Allocate a process independent environment for the request
+    const request_env: *beam.Env = try beam.alloc_env();
+
+    // Copy over the ref and the payload term in the process independent environment
+    // Those need to be accessible in the on_completion callback, so we must copy them over
+    // because the terms bound to the process bound environment (env) are not valid anymore
+    // once the NIF returns.
+    const request_owned_ref = beam.make_copy(request_env, ref);
+    // Note that copying the payload term _does not_ copy the whole binary, since it's a
+    // refcounted binary. It just copies a new reference to it.
+    const request_owned_payload_term = beam.make_copy(request_env, payload_term);
+
+    // Get a pointer to the actual binary data from the iolist payload term
+    const payload = try beam.get_iolist_as_char_slice(request_env, request_owned_payload_term);
 
     // We increase the refcount of the client resource so we can be sure the destructor is not
     // called until all requests have been completed

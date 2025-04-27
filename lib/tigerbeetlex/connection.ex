@@ -208,6 +208,11 @@ defmodule TigerBeetlex.Connection do
     |> GenServer.call({:create_transfers, transfers})
   end
 
+  def create_transfers_iolist(name, transfers) when is_list(transfers) do
+    via_tuple(name)
+    |> GenServer.call({:create_transfers_iolist, transfers})
+  end
+
   @doc """
   Lookup a batch of accounts.
 

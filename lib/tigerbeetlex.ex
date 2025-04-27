@@ -187,6 +187,12 @@ defmodule TigerBeetlex do
     |> then(&NifAdapter.create_transfers(client.ref, &1))
   end
 
+  def create_transfers_iolist(%__MODULE__{} = client, transfers) when is_list(transfers) do
+    transfers
+    |> structs_to_iolist(Transfer, [])
+    |> then(&NifAdapter.create_transfers_iolist(client.ref, &1))
+  end
+
   @doc """
   Fetch a list of historical `TigerBeetlex.AccountBalance` for a given `TigerBeetlex.Account`.
 
@@ -461,5 +467,12 @@ defmodule TigerBeetlex do
     for struct <- structs, into: "" do
       struct_module.to_binary(struct)
     end
+  end
+
+  defp structs_to_iolist([], _struct_module, acc), do: acc
+
+  defp structs_to_iolist([struct | rest], struct_module, acc) do
+    struct_binary = struct_module.to_binary(struct)
+    structs_to_iolist(rest, struct_module, [acc | struct_binary])
   end
 end

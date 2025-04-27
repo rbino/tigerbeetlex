@@ -36,6 +36,8 @@ defmodule TigerBeetlex.NifAdapter do
           {:ok, reference()} | {:error, Types.request_error()}
   def create_transfers(_client, _transfer_batch), do: :erlang.nif_error(:nif_not_loaded)
 
+  def create_transfers_iolist(_client, _transfer_batch), do: :erlang.nif_error(:nif_not_loaded)
+
   @spec lookup_accounts(client :: Types.client(), payload :: binary()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def lookup_accounts(_client, _id_batch), do: :erlang.nif_error(:nif_not_loaded)

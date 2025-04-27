@@ -225,9 +225,7 @@ defmodule TigerBeetlex do
   @spec get_account_balances(client :: t(), account_filter :: AccountFilter.t()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def get_account_balances(%__MODULE__{} = client, %AccountFilter{} = account_filter) do
-    account_filter
-    |> AccountFilter.to_binary()
-    |> then(&NifAdapter.get_account_balances(client.ref, &1))
+    NifAdapter.get_account_balances(client.ref, AccountFilter.to_binary(account_filter))
   end
 
   @doc """
@@ -268,9 +266,7 @@ defmodule TigerBeetlex do
   @spec get_account_transfers(client :: t(), account_filter :: AccountFilter.t()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def get_account_transfers(%__MODULE__{} = client, %AccountFilter{} = account_filter) do
-    account_filter
-    |> AccountFilter.to_binary()
-    |> then(&NifAdapter.get_account_transfers(client.ref, &1))
+    NifAdapter.get_account_transfers(client.ref, AccountFilter.to_binary(account_filter))
   end
 
   @doc """
@@ -398,9 +394,7 @@ defmodule TigerBeetlex do
   @spec query_accounts(client :: t(), query_filter :: QueryFilter.t()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def query_accounts(%__MODULE__{} = client, %QueryFilter{} = query_filter) do
-    query_filter
-    |> QueryFilter.to_binary()
-    |> then(&NifAdapter.query_accounts(client.ref, &1))
+    NifAdapter.query_accounts(client.ref, QueryFilter.to_binary(query_filter))
   end
 
   @doc """
@@ -442,9 +436,7 @@ defmodule TigerBeetlex do
   @spec query_transfers(client :: t(), query_filter :: QueryFilter.t()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def query_transfers(%__MODULE__{} = client, %QueryFilter{} = query_filter) do
-    query_filter
-    |> QueryFilter.to_binary()
-    |> then(&NifAdapter.query_transfers(client.ref, &1))
+    NifAdapter.query_transfers(client.ref, QueryFilter.to_binary(query_filter))
   end
 
   defp structs_to_iolist([], _struct_module, acc), do: acc

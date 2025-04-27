@@ -105,9 +105,8 @@ defmodule TigerBeetlex do
   @spec create_accounts(client :: t(), accounts :: [Account.t()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def create_accounts(%__MODULE__{} = client, accounts) when is_list(accounts) do
-    accounts
-    |> structs_to_binary(Account)
-    |> then(&NifAdapter.create_accounts(client.ref, &1))
+    accounts_iolist = structs_to_iolist(accounts, Account, [])
+    NifAdapter.create_accounts(client.ref, accounts_iolist)
   end
 
   @doc """
@@ -182,15 +181,8 @@ defmodule TigerBeetlex do
   @spec create_transfers(client :: t(), transfers :: [Transfer.t()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def create_transfers(%__MODULE__{} = client, transfers) when is_list(transfers) do
-    transfers
-    |> structs_to_binary(Transfer)
-    |> then(&NifAdapter.create_transfers(client.ref, &1))
-  end
-
-  def create_transfers_iolist(%__MODULE__{} = client, transfers) when is_list(transfers) do
-    transfers
-    |> structs_to_iolist(Transfer, [])
-    |> then(&NifAdapter.create_transfers_iolist(client.ref, &1))
+    transfers_iolist = structs_to_iolist(transfers, Transfer, [])
+    NifAdapter.create_transfers(client.ref, transfers_iolist)
   end
 
   @doc """
@@ -321,9 +313,7 @@ defmodule TigerBeetlex do
   @spec lookup_accounts(client :: t(), ids :: [Types.id_128()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def lookup_accounts(%__MODULE__{} = client, ids) when is_list(ids) do
-    ids
-    |> join_ids()
-    |> then(&NifAdapter.lookup_accounts(client.ref, &1))
+    NifAdapter.lookup_accounts(client.ref, ids)
   end
 
   @doc """
@@ -366,9 +356,7 @@ defmodule TigerBeetlex do
   @spec lookup_transfers(client :: t(), ids :: [Types.id_128()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def lookup_transfers(%__MODULE__{} = client, ids) when is_list(ids) do
-    ids
-    |> join_ids()
-    |> then(&NifAdapter.lookup_transfers(client.ref, &1))
+    NifAdapter.lookup_transfers(client.ref, ids)
   end
 
   @doc """
@@ -457,16 +445,6 @@ defmodule TigerBeetlex do
     query_filter
     |> QueryFilter.to_binary()
     |> then(&NifAdapter.query_transfers(client.ref, &1))
-  end
-
-  defp join_ids(ids) do
-    for id <- ids, into: "", do: id
-  end
-
-  defp structs_to_binary(structs, struct_module) do
-    for struct <- structs, into: "" do
-      struct_module.to_binary(struct)
-    end
   end
 
   defp structs_to_iolist([], _struct_module, acc), do: acc

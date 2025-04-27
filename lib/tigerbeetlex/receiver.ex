@@ -29,10 +29,6 @@ defmodule TigerBeetlex.Receiver do
     send_request(from, :create_transfers, [state.client, transfers], state)
   end
 
-  def handle_call({:create_transfers_iolist, transfers}, from, state) do
-    send_request(from, :create_transfers_iolist, [state.client, transfers], state)
-  end
-
   def handle_call({:lookup_accounts, ids}, from, state) do
     send_request(from, :lookup_accounts, [state.client, ids], state)
   end

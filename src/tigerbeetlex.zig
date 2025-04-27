@@ -15,7 +15,6 @@ var exported_nifs = [_]nif.FunctionEntry{
     nif.wrap("client_init", client.init),
     nif.wrap("create_accounts", client.create_accounts),
     nif.wrap("create_transfers", client.create_transfers),
-    nif.wrap("create_transfers_iolist", client.create_transfers_iolist),
     nif.wrap("lookup_accounts", client.lookup_accounts),
     nif.wrap("lookup_transfers", client.lookup_transfers),
     nif.wrap("get_account_balances", client.get_account_balances),

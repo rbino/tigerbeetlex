@@ -96,7 +96,7 @@ defmodule TigerBeetlex do
 
       TigerBeetlex.receive_and_decode(ref)
 
-      #=> {:ok, [%TigerBeetlex.CreateAccountsResult{index: 0, reason: :id_must_not_be_zero}]}
+      #=> {:ok, [%TigerBeetlex.CreateAccountsResult{index: 0, result: :id_must_not_be_zero}]}
   """
   @spec create_accounts(client :: t(), accounts :: [Account.t()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
@@ -168,7 +168,7 @@ defmodule TigerBeetlex do
 
       TigerBeetlex.receive_and_decode(ref)
 
-      #=> {:ok, [%TigerBeetlex.CreateTransfersResult{index: 0, reason: :id_must_not_be_zero}]}
+      #=> {:ok, [%TigerBeetlex.CreateTransfersResult{index: 0, result: :id_must_not_be_zero}]}
   """
   @spec create_transfers(client :: t(), transfers :: [Transfer.t()]) ::
           {:ok, reference()} | {:error, Types.request_error()}

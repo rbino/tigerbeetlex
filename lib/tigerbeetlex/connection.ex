@@ -138,7 +138,7 @@ defmodule TigerBeetlex.Connection do
 
       TigerBeetlex.Connection.create_accounts(:tb, accounts)
 
-      #=> {:ok, [%TigerBeetlex.CreateAccountsResult{index: 0, reason: :id_must_not_be_zero}]}
+      #=> {:ok, [%TigerBeetlex.CreateAccountsResult{index: 0, result: :id_must_not_be_zero}]}
   """
   @spec create_accounts(
           name :: PartitionSupervisor.name(),
@@ -196,7 +196,7 @@ defmodule TigerBeetlex.Connection do
       ]
 
       TigerBeetlex.Connection.create_transfers(:tb, transfers)
-      #=> {:ok, [%TigerBeetlex.CreateTransferError{index: 0, reason: :id_must_not_be_zero}]}
+      #=> {:ok, [%TigerBeetlex.CreateTransferError{index: 0, result: :id_must_not_be_zero}]}
   """
   @spec create_transfers(
           name :: PartitionSupervisor.name(),

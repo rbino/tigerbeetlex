@@ -85,9 +85,7 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.create_accounts(client, accounts)
 
-      receive do
-        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
-      end
+      TigerBeetlex.receive_and_decode(ref)
 
       #=> {:ok, []}
 
@@ -96,9 +94,7 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.create_accounts(client, accounts)
 
-      receive do
-        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
-      end
+      TigerBeetlex.receive_and_decode(ref)
 
       #=> {:ok, [%TigerBeetlex.CreateAccountsResult{index: 0, reason: :id_must_not_be_zero}]}
   """
@@ -152,9 +148,7 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.create_transfers(client, transfers)
 
-      receive do
-        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
-      end
+      TigerBeetlex.receive_and_decode(ref)
 
       #=> {:ok, []}
 
@@ -172,9 +166,7 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.create_transfers(client, transfers)
 
-      receive do
-        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
-      end
+      TigerBeetlex.receive_and_decode(ref)
 
       #=> {:ok, [%TigerBeetlex.CreateTransfersResult{index: 0, reason: :id_must_not_be_zero}]}
   """
@@ -216,9 +208,7 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.get_account_balances(client, account_filter)
 
-      receive do
-        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
-      end
+      TigerBeetlex.receive_and_decode(ref)
 
       #=> {:ok, [%TigerBeetlex.AccountBalance{}]}
   """
@@ -257,9 +247,7 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.get_account_balances(client, account_filter)
 
-      receive do
-        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
-      end
+      TigerBeetlex.receive_and_decode(ref)
 
       #=> {:ok, [%TigerBeetlex.Transfer{}]}
   """
@@ -300,9 +288,7 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.lookup_accounts(client, ids)
 
-      receive do
-        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
-      end
+      TigerBeetlex.receive_and_decode(ref)
 
       #=> {:ok, [%TigerBeetlex.Account{}]}
   """
@@ -343,9 +329,7 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.lookup_transfers(client, ids)
 
-      receive do
-        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
-      end
+      TigerBeetlex.receive_and_decode(ref)
 
       #=> {:ok, [%TigerBeetlex.Transfer{}]}
   """
@@ -385,9 +369,7 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.query_accounts(client, query_filter)
 
-      receive do
-        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
-      end
+      TigerBeetlex.receive_and_decode(ref)
 
       #=> {:ok, [%TigerBeetlex.Account{}]}
   """
@@ -427,9 +409,7 @@ defmodule TigerBeetlex do
 
       {:ok, ref} = TigerBeetlex.query_transfers(client, ids)
 
-      receive do
-        {:tigerbeetlex_response, ^ref, response} -> TigerBeetlex.Response.decode(response)
-      end
+      TigerBeetlex.receive_and_decode(ref)
 
       #=> {:ok, [%TigerBeetlex.Transfer{}]}
   """
@@ -437,6 +417,25 @@ defmodule TigerBeetlex do
           {:ok, reference()} | {:error, Types.request_error()}
   def query_transfers(%__MODULE__{} = client, %QueryFilter{} = query_filter) do
     NifAdapter.query_transfers(client.ref, QueryFilter.to_binary(query_filter))
+  end
+
+  @doc """
+  Utility function to receive a message response and decode it.
+
+  This is useful to emulate blocking behavior if TigerBeetlex is the only process that
+  can send messages to your process.
+
+  Note that the function doesn't have a timeout and could block forever. This is expected
+  since the TigerBeetle client
+  [never times out](https://docs.tigerbeetle.com/reference/sessions/#retries).
+
+  See all the other functions in this module for example usage.
+  """
+  def receive_and_decode(request_ref) when is_reference(request_ref) do
+    receive do
+      {:tigerbeetlex_response, ^request_ref, response} ->
+        TigerBeetlex.Response.decode(response)
+    end
   end
 
   defp structs_to_iolist([], _struct_module, acc), do: acc

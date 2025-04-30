@@ -79,10 +79,14 @@ jobs:
           - os: ubuntu-24.04
             otp: "27.2.4"
             elixir: "1.18.2-otp-27"
-          # Use macos-13 since the macos-14 and macos-15 runners seemingly miss AES
-          # hardware acceleration support, which makes TigerBeetle fail at compile time
           - os: macos-13
             # These actually are not relevant since brew just pulls the latest version
+            otp: "latest"
+            elixir: "latest"
+          - os: macos-14
+            otp: "latest"
+            elixir: "latest"
+          - os: macos-15
             otp: "latest"
             elixir: "latest"
 

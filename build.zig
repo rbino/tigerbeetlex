@@ -1,14 +1,47 @@
 const std = @import("std");
+const builtin = @import("builtin");
+const CrossTarget = std.zig.CrossTarget;
+
+// TigerBeetle requires certain CPU feature and supports a closed set of CPUs.
+// This is taken from TigerBeetle's build.zig, but we also add the ABI to the
+// available triples since we link against libc in our library
+fn resolve_target(b: *std.Build, target_requested: ?[]const u8) !std.Build.ResolvedTarget {
+    const target_host = @tagName(builtin.target.cpu.arch) ++ "-" ++ @tagName(builtin.target.os.tag) ++ "-" ++ @tagName(builtin.target.abi);
+    const target = target_requested orelse target_host;
+    const triples = .{
+        "aarch64-linux-gnu",
+        "aarch64-macos-none",
+        "x86_64-linux-gnu",
+        "x86_64-macos-none",
+        "x86_64-windows-gnu",
+    };
+    const cpus = .{
+        "baseline+aes+neon",
+        "baseline+aes+neon",
+        "x86_64_v3+aes",
+        "x86_64_v3+aes",
+        "x86_64_v3+aes",
+    };
+
+    const arch_os, const cpu = inline for (triples, cpus) |triple, cpu| {
+        if (std.mem.eql(u8, target, triple)) break .{ triple, cpu };
+    } else {
+        std.log.err("unsupported target: '{s}'", .{target});
+        return error.UnsupportedTarget;
+    };
+    const query = try CrossTarget.parse(.{
+        .arch_os_abi = arch_os,
+        .cpu_features = cpu,
+    });
+    return b.resolveTargetQuery(query);
+}
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
 pub fn build(b: *std.Build) !void {
-    // Standard target options allows the person running `zig build` to choose
-    // what target to build for. Here we do not override the defaults, which
-    // means any target is allowed, and the default is native. Other options
-    // for restricting supported target set are available.
-    const target = b.standardTargetOptions(.{});
+    // We use TigerBeetle's mechanism to resolve the target, so we don't use b.standardTargetOptions
+    const target = b.option([]const u8, "target", "The CPU architecture, OS, and ABI to build for");
 
     // Standard optimization options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
@@ -61,7 +94,7 @@ pub fn build(b: *std.Build) !void {
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
         .root_source_file = .{ .src_path = .{ .owner = b, .sub_path = "src/tigerbeetlex.zig" } },
-        .target = target,
+        .target = resolve_target(b, target) catch @panic("unsupported host"),
         .optimize = optimize,
         .link_libc = true,
     });

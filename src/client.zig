@@ -3,12 +3,12 @@ const assert = std.debug.assert;
 
 const beam = @import("beam.zig");
 
-const tb = @import("vsr").tigerbeetle;
-const tb_client = @import("vsr").tb_client;
+const vsr = @import("vsr");
+const tb = vsr.tigerbeetle;
+const tb_client = vsr.tb_client;
 const AccountFilter = tb.AccountFilter;
 const Account = tb.Account;
 const Transfer = tb.Transfer;
-
 const ClientInterface = tb_client.ClientInterface;
 
 const ClientResource = beam.Resource(*ClientInterface, "TigerBeetlex.Client", client_resource_deinit_fn);

@@ -168,6 +168,13 @@ fn submit(
     assert(operation != .pulse);
 
     const client_resource = try ClientResource.from_term_handle(env, client_term);
+    // We increase the refcount of the client resource so we can be sure the destructor is not
+    // called until all requests have been completed
+    client_resource.keep();
+    // But we decrease it if the request is not submitted successfully
+    errdefer client_resource.release();
+
+    // Obtain back the ClientInterface from the resource
     const client = client_resource.value();
 
     const ctx = try beam.general_purpose_allocator.create(RequestContext);
@@ -183,7 +190,8 @@ fn submit(
     const ref = beam.make_ref(env);
 
     // Allocate a process independent environment for the request
-    const request_env: *beam.Env = try beam.alloc_env();
+    const request_env = try beam.alloc_env();
+    errdefer beam.free_env(request_env);
 
     // Copy over the ref and the payload term in the process independent environment
     // Those need to be accessible in the on_completion callback, so we must copy them over
@@ -196,10 +204,6 @@ fn submit(
 
     // Get a pointer to the actual binary data from the iolist payload term
     const payload = try beam.get_iolist_as_char_slice(request_env, request_owned_payload_term);
-
-    // We increase the refcount of the client resource so we can be sure the destructor is not
-    // called until all requests have been completed
-    client_resource.keep();
 
     ctx.* = .{
         .env = request_env,

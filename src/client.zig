@@ -50,7 +50,7 @@ fn init_client(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.
     const cluster_id = try beam.get_u128(env, cluster_id_term);
     const addresses = try beam.get_char_slice(env, addresses_term);
 
-    const client = try beam.general_purpose_allocator.create(tb_client.ClientInterface);
+    const client = try beam.general_purpose_allocator.create(ClientInterface);
     errdefer beam.general_purpose_allocator.destroy(client);
 
     try tb_client.init(

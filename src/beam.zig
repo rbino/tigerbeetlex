@@ -125,6 +125,20 @@ pub fn get_iolist_as_char_slice(env: *Env, src_term: Term) GetError![]u8 {
     return bin.data[0..bin.size];
 }
 
+/// Extract a u8 from a term
+pub fn get_u8(env: *Env, src_term: Term) GetError!u8 {
+    var result: c_uint = undefined;
+    if (e.enif_get_uint(env, src_term, &result) == 0) {
+        return error.ArgumentError;
+    }
+
+    if (result > std.math.maxInt(u8)) {
+        return error.ArgumentError;
+    }
+
+    return @intCast(result);
+}
+
 /// Extract a u128 from a binary (little endian) term
 pub fn get_u128(env: *Env, src_term: Term) GetError!u128 {
     const bin = try get_char_slice(env, src_term);

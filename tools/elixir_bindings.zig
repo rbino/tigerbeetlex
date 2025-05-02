@@ -838,13 +838,35 @@ fn emit_response_module(
         , .{});
     }
 
+    try buffer.writer().print(
+        \\end
+        \\
+    , .{});
+}
+
+fn emit_operation_module(
+    buffer: *std.ArrayList(u8),
+) !void {
+    try buffer.writer().print(
+        \\defmodule TigerBeetlex.Operation do
+        \\  @moduledoc """
+        \\  This module contains utility functions around tb_client Operation enum.
+        \\  It allows retrieving all available operations and convert between their
+        \\  atom and integer representation.
+        \\  """
+        \\
+        \\  @doc """
+        \\  Obtain the list of atoms with all available operations.
+        \\  """
+        \\
+    , .{});
+
     {
         const operation_info = @typeInfo(tb_client.Operation).Enum;
 
         try buffer.writer().print(
-            \\  @doc false
-            \\  def operation_map do
-            \\    %{{
+            \\  def available_operations do
+            \\    [
             \\
         , .{});
 
@@ -855,19 +877,42 @@ fn emit_response_module(
             if (operation == .pulse or operation == .get_events) continue;
 
             try buffer.writer().print(
-                \\      {[error_name]s}: {[error_value]},
+                \\      :{[operation_name]s},
                 \\
-            , .{
-                .error_name = field.name,
-                .error_value = field.value,
-            });
+            , .{ .operation_name = field.name });
         }
 
         try buffer.writer().print(
-            \\    }}
+            \\    ]
             \\  end
             \\
         , .{});
+    }
+
+    try buffer.writer().print(
+        \\
+        \\  @doc """
+        \\  Obtains the integer representation of an operation from its atom value.
+        \\  """
+        \\
+    , .{});
+
+    {
+        const operation_info = @typeInfo(tb_client.Operation).Enum;
+        inline for (operation_info.fields) |field| {
+            if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
+
+            const operation: tb_client.Operation = @enumFromInt(field.value);
+            if (operation == .pulse or operation == .get_events) continue;
+
+            try buffer.writer().print(
+                \\  def from_atom(:{[operation_name]s}), do: {[operation_value]}
+                \\
+            , .{
+                .operation_name = field.name,
+                .operation_value = field.value,
+            });
+        }
     }
 
     try buffer.writer().print(
@@ -908,6 +953,16 @@ pub fn main() !void {
 
         try target_dir.writeFile(.{
             .sub_path = "response.ex",
+            .data = buffer.items,
+        });
+    }
+
+    {
+        var buffer = std.ArrayList(u8).init(allocator);
+        try emit_operation_module(&buffer);
+
+        try target_dir.writeFile(.{
+            .sub_path = "operation.ex",
             .data = buffer.items,
         });
     }

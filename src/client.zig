@@ -78,7 +78,8 @@ fn init_client(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.
     return beam.make_ok_term(env, term_handle);
 }
 
-const SubmitError = error{
+const SubmitOperationError = error{
+    InvalidEnumTag,
     InvalidResourceTerm,
     TooManyRequests,
     Shutdown,
@@ -87,85 +88,38 @@ const SubmitError = error{
     ArgumentError,
 };
 
-pub fn create_accounts(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
-    return submit(
+pub fn submit(
+    env: *beam.Env,
+    client_resource: beam.Term,
+    operation_term: beam.Term,
+    payload_term: beam.Term,
+) beam.Term {
+    return submit_operation(
         env,
         client_resource,
-        .create_accounts,
+        operation_term,
         payload_term,
-    ) catch |err| handle_submit_error(env, err);
+    ) catch |err| switch (err) {
+        error.InvalidResourceTerm => beam.make_error_atom(env, "invalid_client_resource"),
+        error.TooManyRequests => beam.make_error_atom(env, "too_many_requests"),
+        error.Shutdown => beam.make_error_atom(env, "shutdown"),
+        error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
+        error.ClientInvalid => beam.make_error_atom(env, "client_closed"),
+        error.ArgumentError, error.InvalidEnumTag => beam.raise_badarg(env),
+    };
 }
 
-pub fn create_transfers(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
-    return submit(
-        env,
-        client_resource,
-        .create_transfers,
-        payload_term,
-    ) catch |err| handle_submit_error(env, err);
-}
-
-pub fn lookup_accounts(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
-    return submit(
-        env,
-        client_resource,
-        .lookup_accounts,
-        payload_term,
-    ) catch |err| handle_submit_error(env, err);
-}
-
-pub fn lookup_transfers(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
-    return submit(
-        env,
-        client_resource,
-        .lookup_transfers,
-        payload_term,
-    ) catch |err| handle_submit_error(env, err);
-}
-
-pub fn get_account_transfers(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
-    return submit(
-        env,
-        client_resource,
-        .get_account_transfers,
-        payload_term,
-    ) catch |err| handle_submit_error(env, err);
-}
-
-pub fn get_account_balances(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
-    return submit(
-        env,
-        client_resource,
-        .get_account_balances,
-        payload_term,
-    ) catch |err| handle_submit_error(env, err);
-}
-
-pub fn query_accounts(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
-    return submit(
-        env,
-        client_resource,
-        .query_accounts,
-        payload_term,
-    ) catch |err| handle_submit_error(env, err);
-}
-
-pub fn query_transfers(env: *beam.Env, client_resource: beam.Term, payload_term: beam.Term) beam.Term {
-    return submit(
-        env,
-        client_resource,
-        .query_transfers,
-        payload_term,
-    ) catch |err| handle_submit_error(env, err);
-}
-
-fn submit(
+fn submit_operation(
     env: *beam.Env,
     client_term: beam.Term,
-    operation: tb_client.Operation,
+    operation_term: beam.Term,
     payload_term: beam.Term,
-) SubmitError!beam.Term {
+) SubmitOperationError!beam.Term {
+    const operation_int = try beam.get_u8(env, operation_term);
+    const operation = try std.meta.intToEnum(tb_client.Operation, operation_int);
+
     assert(operation != .pulse);
+    assert(operation != .get_events);
 
     const client_resource = try ClientResource.from_term_handle(env, client_term);
     // We increase the refcount of the client resource so we can be sure the destructor is not
@@ -225,17 +179,6 @@ fn submit(
 
     // Return the ref to the caller
     return beam.make_ok_term(env, ref);
-}
-
-fn handle_submit_error(env: *beam.Env, err: SubmitError) beam.Term {
-    return switch (err) {
-        error.InvalidResourceTerm => beam.make_error_atom(env, "invalid_client_resource"),
-        error.TooManyRequests => beam.make_error_atom(env, "too_many_requests"),
-        error.Shutdown => beam.make_error_atom(env, "shutdown"),
-        error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
-        error.ClientInvalid => beam.make_error_atom(env, "client_closed"),
-        error.ArgumentError => beam.raise_badarg(env),
-    };
 }
 
 fn on_completion(

@@ -16,6 +16,7 @@ defmodule TigerBeetlex do
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountFilter
   alias TigerBeetlex.NifAdapter
+  alias TigerBeetlex.Operation
   alias TigerBeetlex.QueryFilter
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.Types
@@ -101,8 +102,9 @@ defmodule TigerBeetlex do
   @spec create_accounts(client :: t(), accounts :: [Account.t()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def create_accounts(%__MODULE__{} = client, accounts) when is_list(accounts) do
-    accounts_iolist = structs_to_iolist(accounts, Account, [])
-    NifAdapter.create_accounts(client.ref, accounts_iolist)
+    operation = Operation.from_atom(:create_accounts)
+    payload = structs_to_iolist(accounts, Account, [])
+    NifAdapter.submit(client.ref, operation, payload)
   end
 
   @doc """
@@ -173,8 +175,9 @@ defmodule TigerBeetlex do
   @spec create_transfers(client :: t(), transfers :: [Transfer.t()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def create_transfers(%__MODULE__{} = client, transfers) when is_list(transfers) do
-    transfers_iolist = structs_to_iolist(transfers, Transfer, [])
-    NifAdapter.create_transfers(client.ref, transfers_iolist)
+    operation = Operation.from_atom(:create_transfers)
+    payload = structs_to_iolist(transfers, Transfer, [])
+    NifAdapter.submit(client.ref, operation, payload)
   end
 
   @doc """
@@ -215,7 +218,9 @@ defmodule TigerBeetlex do
   @spec get_account_balances(client :: t(), account_filter :: AccountFilter.t()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def get_account_balances(%__MODULE__{} = client, %AccountFilter{} = account_filter) do
-    NifAdapter.get_account_balances(client.ref, AccountFilter.to_binary(account_filter))
+    operation = Operation.from_atom(:get_account_balances)
+    payload = AccountFilter.to_binary(account_filter)
+    NifAdapter.submit(client.ref, operation, payload)
   end
 
   @doc """
@@ -254,7 +259,9 @@ defmodule TigerBeetlex do
   @spec get_account_transfers(client :: t(), account_filter :: AccountFilter.t()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def get_account_transfers(%__MODULE__{} = client, %AccountFilter{} = account_filter) do
-    NifAdapter.get_account_transfers(client.ref, AccountFilter.to_binary(account_filter))
+    operation = Operation.from_atom(:get_account_transfers)
+    payload = AccountFilter.to_binary(account_filter)
+    NifAdapter.submit(client.ref, operation, payload)
   end
 
   @doc """
@@ -295,7 +302,8 @@ defmodule TigerBeetlex do
   @spec lookup_accounts(client :: t(), ids :: [Types.id_128()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def lookup_accounts(%__MODULE__{} = client, ids) when is_list(ids) do
-    NifAdapter.lookup_accounts(client.ref, ids)
+    operation = Operation.from_atom(:lookup_accounts)
+    NifAdapter.submit(client.ref, operation, ids)
   end
 
   @doc """
@@ -336,7 +344,8 @@ defmodule TigerBeetlex do
   @spec lookup_transfers(client :: t(), ids :: [Types.id_128()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def lookup_transfers(%__MODULE__{} = client, ids) when is_list(ids) do
-    NifAdapter.lookup_transfers(client.ref, ids)
+    operation = Operation.from_atom(:lookup_transfers)
+    NifAdapter.submit(client.ref, operation, ids)
   end
 
   @doc """
@@ -376,7 +385,9 @@ defmodule TigerBeetlex do
   @spec query_accounts(client :: t(), query_filter :: QueryFilter.t()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def query_accounts(%__MODULE__{} = client, %QueryFilter{} = query_filter) do
-    NifAdapter.query_accounts(client.ref, QueryFilter.to_binary(query_filter))
+    operation = Operation.from_atom(:query_accounts)
+    payload = QueryFilter.to_binary(query_filter)
+    NifAdapter.submit(client.ref, operation, payload)
   end
 
   @doc """
@@ -416,7 +427,9 @@ defmodule TigerBeetlex do
   @spec query_transfers(client :: t(), query_filter :: QueryFilter.t()) ::
           {:ok, reference()} | {:error, Types.request_error()}
   def query_transfers(%__MODULE__{} = client, %QueryFilter{} = query_filter) do
-    NifAdapter.query_transfers(client.ref, QueryFilter.to_binary(query_filter))
+    operation = Operation.from_atom(:query_transfers)
+    payload = QueryFilter.to_binary(query_filter)
+    NifAdapter.submit(client.ref, operation, payload)
   end
 
   @doc """

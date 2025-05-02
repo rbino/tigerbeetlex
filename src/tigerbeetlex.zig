@@ -13,14 +13,7 @@ pub const std_options = .{
 
 var exported_nifs = [_]nif.FunctionEntry{
     nif.wrap("client_init", client.init),
-    nif.wrap("create_accounts", client.create_accounts),
-    nif.wrap("create_transfers", client.create_transfers),
-    nif.wrap("lookup_accounts", client.lookup_accounts),
-    nif.wrap("lookup_transfers", client.lookup_transfers),
-    nif.wrap("get_account_balances", client.get_account_balances),
-    nif.wrap("get_account_transfers", client.get_account_transfers),
-    nif.wrap("query_accounts", client.query_accounts),
-    nif.wrap("query_transfers", client.query_transfers),
+    nif.wrap("submit", client.submit),
 };
 
 fn nif_load(env: ?*beam.Env, priv_data: [*c]?*anyopaque, load_info: beam.Term) callconv(.C) c_int {

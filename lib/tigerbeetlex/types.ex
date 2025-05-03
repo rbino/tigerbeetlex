@@ -18,11 +18,8 @@ defmodule TigerBeetlex.Types do
           | :network_subsystem
 
   @type request_error ::
-          :invalid_client_resource
-          | :too_many_requests
-          | :shutdown
+          :client_closed
           | :out_of_memory
-          | :client_closed
 
   @type tigerbeetlex_connection_start_option ::
           {:cluster_id, non_neg_integer()}

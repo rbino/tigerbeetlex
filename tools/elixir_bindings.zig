@@ -73,7 +73,7 @@ const type_mappings = .{
         .file_name = "account_balance",
         .module_name = "AccountBalance",
         .hidden_fields = &.{"reserved"},
-        .docs_link = "reference/account-balances#",
+        .docs_link = "reference/account-balance#",
     } },
     .{ tb.Transfer, TypeMapping{
         .file_name = "transfer",

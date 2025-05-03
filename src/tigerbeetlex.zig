@@ -95,23 +95,21 @@ pub fn submit_nif(env_: ?*beam.Env, argc: c_int, argv: [*c]const beam.Term) call
         operation_term,
         payload_term,
     ) catch |err| switch (err) {
-        error.InvalidResourceTerm => beam.make_error_atom(env, "invalid_client_resource"),
-        error.TooManyRequests => beam.make_error_atom(env, "too_many_requests"),
-        error.Shutdown => beam.make_error_atom(env, "shutdown"),
-        error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
         error.ClientInvalid => beam.make_error_atom(env, "client_closed"),
-        error.ArgumentError, error.InvalidEnumTag => beam.raise_badarg(env),
+        error.OutOfMemory => beam.make_error_atom(env, "out_of_memory"),
+        error.ArgumentError,
+        error.InvalidEnumTag,
+        error.InvalidResourceTerm,
+        => beam.raise_badarg(env),
     };
 }
 
 const SubmitError = error{
+    ArgumentError,
+    ClientInvalid,
     InvalidEnumTag,
     InvalidResourceTerm,
-    TooManyRequests,
-    Shutdown,
     OutOfMemory,
-    ClientInvalid,
-    ArgumentError,
 };
 
 const RequestContext = struct {

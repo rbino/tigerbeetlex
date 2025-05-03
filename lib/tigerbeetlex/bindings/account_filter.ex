@@ -22,6 +22,10 @@ defmodule TigerBeetlex.AccountFilter do
     field :flags, AccountFilterFlags.t(), default: %AccountFilterFlags{}
   end
 
+  @doc """
+  Creates a `TigerBeetlex.AccountFilter` struct from its binary representation.
+  """
+  @spec from_binary(binary :: <<_::1024>>) :: t()
   def from_binary(<<_::binary-size(128)>> = bin) do
     <<
       account_id::binary-size(16),
@@ -49,6 +53,10 @@ defmodule TigerBeetlex.AccountFilter do
     }
   end
 
+  @doc """
+  Converts a `TigerBeetlex.AccountFilter` struct to its binary representation.
+  """
+  @spec to_binary(struct :: t()) :: <<_::1024>>
   def to_binary(struct) do
     %__MODULE__{
       account_id: account_id,

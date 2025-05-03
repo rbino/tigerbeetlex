@@ -20,9 +20,10 @@ defmodule TigerBeetlex.AccountFlags do
   end
 
   @doc """
-  Given a binary flags value, returns the corresponding struct.
+  Creates a `TigerBeetlex.AccountFlags` struct from its binary representation.
   """
-  def from_binary(<<n::unsigned-little-16>>) do
+  @spec from_binary(binary :: <<_::16>>) :: t()
+  def from_binary(<<n::unsigned-little-16>> = _bin) do
     <<
       _padding::10,
       closed::1,
@@ -44,8 +45,9 @@ defmodule TigerBeetlex.AccountFlags do
   end
 
   @doc """
-  Given a `%AccountFlags{}` struct, returns the corresponding serialized binary value.
+  Converts a `TigerBeetlex.AccountFlags` struct to its binary represenation.
   """
+  @spec to_binary(flags :: t()) :: <<_::16>>
   def to_binary(flags) do
     %__MODULE__{
       linked: linked,

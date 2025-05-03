@@ -7,6 +7,9 @@ defmodule TigerBeetlex.CreateAccountResult do
   @moduledoc """
   See [CreateAccountResult](https://docs.tigerbeetle.com/reference/requests/create_accounts#result).
   """
+  @doc """
+  Obtains the atom representation of a result from its integer value.
+  """
   def to_atom(0), do: :ok
   def to_atom(1), do: :linked_event_failed
   def to_atom(2), do: :linked_event_chain_open
@@ -34,6 +37,10 @@ defmodule TigerBeetlex.CreateAccountResult do
   def to_atom(13), do: :ledger_must_not_be_zero
   def to_atom(14), do: :code_must_not_be_zero
   def to_atom(26), do: :imported_event_timestamp_must_not_regress
+
+  @doc """
+  Obtains the integer representation of a result reason from its atom value.
+  """
 
   def from_atom(:ok), do: 0
   def from_atom(:linked_event_failed), do: 1

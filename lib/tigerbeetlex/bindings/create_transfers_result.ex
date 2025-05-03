@@ -15,6 +15,10 @@ defmodule TigerBeetlex.CreateTransfersResult do
     field :result, atom()
   end
 
+  @doc """
+  Creates a `TigerBeetlex.CreateTransfersResult` struct from its binary representation.
+  """
+  @spec from_binary(binary :: <<_::64>>) :: t()
   def from_binary(<<_::binary-size(8)>> = bin) do
     <<
       index::unsigned-little-32,
@@ -27,6 +31,10 @@ defmodule TigerBeetlex.CreateTransfersResult do
     }
   end
 
+  @doc """
+  Converts a `TigerBeetlex.CreateTransfersResult` struct to its binary representation.
+  """
+  @spec to_binary(struct :: t()) :: <<_::64>>
   def to_binary(struct) do
     %__MODULE__{
       index: index,

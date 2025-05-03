@@ -22,6 +22,10 @@ defmodule TigerBeetlex.QueryFilter do
     field :flags, QueryFilterFlags.t(), default: %QueryFilterFlags{}
   end
 
+  @doc """
+  Creates a `TigerBeetlex.QueryFilter` struct from its binary representation.
+  """
+  @spec from_binary(binary :: <<_::512>>) :: t()
   def from_binary(<<_::binary-size(64)>> = bin) do
     <<
       user_data_128::binary-size(16),
@@ -49,6 +53,10 @@ defmodule TigerBeetlex.QueryFilter do
     }
   end
 
+  @doc """
+  Converts a `TigerBeetlex.QueryFilter` struct to its binary representation.
+  """
+  @spec to_binary(struct :: t()) :: <<_::512>>
   def to_binary(struct) do
     %__MODULE__{
       user_data_128: user_data_128,

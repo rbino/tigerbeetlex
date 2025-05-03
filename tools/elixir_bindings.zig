@@ -159,16 +159,18 @@ fn emit_flags(
         });
     }
 
-    try buffer.writer().print("  end\n\n", .{});
-
     try buffer.writer().print(
+        \\  end
+        \\
         \\  @doc """
-        \\  Given a binary flags value, returns the corresponding struct.
+        \\  Creates a `TigerBeetlex.{[module_name]s}` struct from its binary representation.
         \\  """
-        \\  def from_binary(<<n::unsigned-little-{[bit_size]}>>) do
+        \\  @spec from_binary(binary :: <<_::{[bit_size]}>>) :: t()
+        \\  def from_binary(<<n::unsigned-little-{[bit_size]}>> = _bin) do
         \\    <<
         \\
     , .{
+        .module_name = mapping.module_name,
         .bit_size = @bitSizeOf(type_info.backing_integer.?),
     });
 
@@ -219,18 +221,16 @@ fn emit_flags(
         \\    }}
         \\  end
         \\
-        \\
-    , .{});
-
-    try buffer.writer().print(
         \\  @doc """
-        \\  Given a `%{[module_name]s}{{}}` struct, returns the corresponding serialized binary value.
+        \\  Converts a `TigerBeetlex.{[module_name]s}` struct to its binary represenation.
         \\  """
+        \\  @spec to_binary(flags :: t()) :: <<_::{[bit_size]}>>
         \\  def to_binary(flags) do
         \\    %__MODULE__{{
         \\
     , .{
         .module_name = mapping.module_name,
+        .bit_size = @bitSizeOf(type_info.backing_integer.?),
     });
 
     inline for (type_info.fields) |field| {
@@ -362,10 +362,16 @@ fn emit_struct(
     try buffer.writer().print(
         \\  end
         \\
+        \\  @doc """
+        \\  Creates a `TigerBeetlex.{[module_name]s}` struct from its binary representation.
+        \\  """
+        \\  @spec from_binary(binary :: <<_::{[bit_size]}>>) :: t()
         \\  def from_binary(<<_::binary-size({[byte_size]})>> = bin) do
         \\    <<
         \\
     , .{
+        .module_name = mapping.module_name,
+        .bit_size = struct_size * 8,
         .byte_size = struct_size,
     });
 
@@ -408,10 +414,17 @@ fn emit_struct(
         \\    }}
         \\  end
         \\
+        \\  @doc """
+        \\  Converts a `TigerBeetlex.{[module_name]s}` struct to its binary representation.
+        \\  """
+        \\  @spec to_binary(struct :: t()) :: <<_::{[bit_size]}>>
         \\  def to_binary(struct) do
         \\    %__MODULE__{{
         \\
-    , .{});
+    , .{
+        .module_name = mapping.module_name,
+        .bit_size = struct_size * 8,
+    });
 
     inline for (type_info.fields) |field| {
         if (comptime mapping.hidden(field.name)) continue;
@@ -633,6 +646,14 @@ fn emit_enum(
 
     try emit_docs(buffer, mapping, null);
 
+    try buffer.writer().print(
+        \\
+        \\  @doc """
+        \\  Obtains the atom representation of a result from its integer value.
+        \\  """
+        \\
+    , .{});
+
     const type_info = @typeInfo(Type).Enum;
     inline for (type_info.fields) |field| {
         if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
@@ -640,15 +661,21 @@ fn emit_enum(
         if (comptime mapping.hidden(field.name)) continue;
 
         try buffer.writer().print(
-            \\
             \\  def to_atom({[int_value]d}), do: :{[field]s}
+            \\
         , .{
             .int_value = @intFromEnum(@field(Type, field.name)),
             .field = field.name,
         });
     }
 
-    try buffer.writer().print("\n", .{});
+    try buffer.writer().print(
+        \\
+        \\  @doc """
+        \\  Obtains the integer representation of a result reason from its atom value.
+        \\  """
+        \\
+    , .{});
 
     inline for (type_info.fields) |field| {
         if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
@@ -762,7 +789,7 @@ fn emit_response_module(
             const status: tb_client.PacketStatus = @enumFromInt(field.value);
             if (status == .ok) {
                 try buffer.writer().print(
-                    \\  def decode({{{[ok_value]}, operation, batch}}) do
+                    \\  def decode({{{[ok_value]}, operation, batch}} = _response) do
                     \\    {{:ok, build_result_list(operation, batch)}}
                     \\  end
                     \\

@@ -23,9 +23,10 @@ defmodule TigerBeetlex.TransferFlags do
   end
 
   @doc """
-  Given a binary flags value, returns the corresponding struct.
+  Creates a `TigerBeetlex.TransferFlags` struct from its binary representation.
   """
-  def from_binary(<<n::unsigned-little-16>>) do
+  @spec from_binary(binary :: <<_::16>>) :: t()
+  def from_binary(<<n::unsigned-little-16>> = _bin) do
     <<
       _padding::7,
       imported::1,
@@ -53,8 +54,9 @@ defmodule TigerBeetlex.TransferFlags do
   end
 
   @doc """
-  Given a `%TransferFlags{}` struct, returns the corresponding serialized binary value.
+  Converts a `TigerBeetlex.TransferFlags` struct to its binary represenation.
   """
+  @spec to_binary(flags :: t()) :: <<_::16>>
   def to_binary(flags) do
     %__MODULE__{
       linked: linked,

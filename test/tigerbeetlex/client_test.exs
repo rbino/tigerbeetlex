@@ -1,4 +1,4 @@
-defmodule TigerbeetlexTest do
+defmodule Tigerbeetlex.ClientTest do
   use ExUnit.Case, async: true
 
   alias TigerBeetlex.Account

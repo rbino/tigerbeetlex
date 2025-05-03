@@ -22,23 +22,6 @@ pub const std_options = .{
     .log_level = .err,
 };
 
-const RequestContext = struct {
-    env: *beam.Env,
-    caller_pid: beam.Pid,
-    client_resource: ClientResource,
-    request_ref: beam.Term,
-};
-
-const InitClientError = error{
-    AddressInvalid,
-    AddressLimitExceeded,
-    ArgumentError,
-    NetworkSubsystemFailed,
-    OutOfMemory,
-    SystemResources,
-    Unexpected,
-};
-
 pub fn init_client_nif(env_: ?*beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     const arity = 2;
     assert(argc == arity);
@@ -56,6 +39,16 @@ pub fn init_client_nif(env_: ?*beam.Env, argc: c_int, argv: [*c]const beam.Term)
         error.Unexpected => beam.make_error_atom(env, "unexpected"),
     };
 }
+
+const InitClientError = error{
+    AddressInvalid,
+    AddressLimitExceeded,
+    ArgumentError,
+    NetworkSubsystemFailed,
+    OutOfMemory,
+    SystemResources,
+    Unexpected,
+};
 
 fn init_client(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.Term) InitClientError!beam.Term {
     const cluster_id = try beam.get_u128(env, cluster_id_term);
@@ -89,16 +82,6 @@ fn init_client(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.
     return beam.make_ok_term(env, term_handle);
 }
 
-const SubmitError = error{
-    InvalidEnumTag,
-    InvalidResourceTerm,
-    TooManyRequests,
-    Shutdown,
-    OutOfMemory,
-    ClientInvalid,
-    ArgumentError,
-};
-
 pub fn submit_nif(env_: ?*beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
     const arity = 3;
     assert(argc == arity);
@@ -120,6 +103,23 @@ pub fn submit_nif(env_: ?*beam.Env, argc: c_int, argv: [*c]const beam.Term) call
         error.ArgumentError, error.InvalidEnumTag => beam.raise_badarg(env),
     };
 }
+
+const SubmitError = error{
+    InvalidEnumTag,
+    InvalidResourceTerm,
+    TooManyRequests,
+    Shutdown,
+    OutOfMemory,
+    ClientInvalid,
+    ArgumentError,
+};
+
+const RequestContext = struct {
+    env: *beam.Env,
+    caller_pid: beam.Pid,
+    client_resource: ClientResource,
+    request_ref: beam.Term,
+};
 
 fn submit(
     env: *beam.Env,
@@ -256,7 +256,7 @@ fn client_resource_deinit_fn(env: ?*beam.Env, resource_pointer: ?*anyopaque) cal
     defer client.deinit() catch {};
 }
 
-// NIF initialization code
+// NIF initialization code below
 
 const exported_nifs = [_]e.ErlNifFunc{
     .{ .name = "init_client", .arity = 2, .fptr = init_client_nif, .flags = 0 },

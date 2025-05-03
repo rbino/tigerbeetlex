@@ -7,7 +7,6 @@ const assert = std.debug.assert;
 const e = @import("beam/erl_nif.zig");
 
 pub const allocator = @import("beam/allocator.zig");
-pub const nif = @import("beam/nif.zig");
 
 pub const Env = e.ErlNifEnv;
 pub const Pid = e.ErlNifPid;

@@ -1,17 +1,18 @@
 defmodule TigerBeetlex.Connection do
   @moduledoc """
-  GenServer based API.
+  Blocking API.
 
   This module exposes a blocking API to the TigerBeetle NIF client. This is obtained by spawning
   receiver processes under a `PartitionSupervisor`. The receiver processes handle receiving messages
-  from the processless `TigerBeetlex` client and translate them in a blocking API.
+  from the message based `TigerBeetlex.Client` client and translate them in a blocking API.
 
-  If you already have a wrapping process, you can use `TigerBeetlex` directly instead.
+  If you already have a wrapping process, you can use `TigerBeetlex.Client` directly instead.
   """
 
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountBalance
   alias TigerBeetlex.AccountFilter
+  alias TigerBeetlex.Client
   alias TigerBeetlex.CreateAccountsResult
   alias TigerBeetlex.CreateTransfersResult
   alias TigerBeetlex.QueryFilter
@@ -56,7 +57,7 @@ defmodule TigerBeetlex.Connection do
   end
 
   @doc """
-  Starts a process-based TigerBeetlex client.
+  Starts a managed TigerBeetlex connection.
 
   This creates N receiver processes (where N can be controlled by
   passing options to the underlying `PartitionSupervisor`) under a `PartitionSupervisor`.
@@ -90,7 +91,7 @@ defmodule TigerBeetlex.Connection do
         )
   """
   @spec start_link(opts :: Types.start_options()) ::
-          Supervisor.on_start() | {:error, Types.client_init_error()}
+          Supervisor.on_start() | {:error, Types.init_client_error()}
   def start_link(opts) do
     {tigerbeetlex_opts, partition_supervisor_opts} = Keyword.split(opts, @start_link_opts_keys)
     tigerbeetlex_opts = NimbleOptions.validate!(tigerbeetlex_opts, @start_link_opts_schema)
@@ -103,7 +104,7 @@ defmodule TigerBeetlex.Connection do
     cluster_id = Keyword.fetch!(tigerbeetlex_opts, :cluster_id)
     addresses = Keyword.fetch!(tigerbeetlex_opts, :addresses)
 
-    with {:ok, client} <- TigerBeetlex.connect(cluster_id, addresses) do
+    with {:ok, client} <- Client.new(cluster_id, addresses) do
       start_opts = Keyword.merge(partition_supervisor_opts, child_spec: {Receiver, client})
       PartitionSupervisor.start_link(start_opts)
     end

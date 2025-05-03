@@ -29,7 +29,7 @@ const RequestContext = struct {
     request_ref: beam.Term,
 };
 
-const ClientInitError = error{
+const InitClientError = error{
     AddressInvalid,
     AddressLimitExceeded,
     ArgumentError,
@@ -39,13 +39,14 @@ const ClientInitError = error{
     Unexpected,
 };
 
-pub fn client_init_nif(env_: ?*beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
-    assert(argc == 2);
+pub fn init_client_nif(env_: ?*beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
+    const arity = 2;
+    assert(argc == arity);
 
     const env = env_.?;
-    const cluster_id_term, const addresses_term = argv[0..2].*;
+    const cluster_id_term, const addresses_term = argv[0..arity].*;
 
-    return client_init(env, cluster_id_term, addresses_term) catch |err| switch (err) {
+    return init_client(env, cluster_id_term, addresses_term) catch |err| switch (err) {
         error.AddressInvalid => beam.make_error_atom(env, "invalid_address"),
         error.AddressLimitExceeded => beam.make_error_atom(env, "address_limit_exceeded"),
         error.ArgumentError => beam.raise_badarg(env),
@@ -56,7 +57,7 @@ pub fn client_init_nif(env_: ?*beam.Env, argc: c_int, argv: [*c]const beam.Term)
     };
 }
 
-fn client_init(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.Term) ClientInitError!beam.Term {
+fn init_client(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.Term) InitClientError!beam.Term {
     const cluster_id = try beam.get_u128(env, cluster_id_term);
     const addresses = try beam.get_char_slice(env, addresses_term);
 
@@ -99,10 +100,11 @@ const SubmitError = error{
 };
 
 pub fn submit_nif(env_: ?*beam.Env, argc: c_int, argv: [*c]const beam.Term) callconv(.C) beam.Term {
-    assert(argc == 3);
+    const arity = 3;
+    assert(argc == arity);
 
     const env = env_.?;
-    const client_term, const operation_term, const payload_term = argv[0..3].*;
+    const client_term, const operation_term, const payload_term = argv[0..arity].*;
 
     return submit(
         env,
@@ -257,7 +259,7 @@ fn client_resource_deinit_fn(env: ?*beam.Env, resource_pointer: ?*anyopaque) cal
 // NIF initialization code
 
 const exported_nifs = [_]e.ErlNifFunc{
-    .{ .name = "client_init", .arity = 2, .fptr = client_init_nif, .flags = 0 },
+    .{ .name = "init_client", .arity = 2, .fptr = init_client_nif, .flags = 0 },
     .{ .name = "submit", .arity = 3, .fptr = submit_nif, .flags = 0 },
 };
 

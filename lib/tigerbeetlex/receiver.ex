@@ -4,7 +4,11 @@ defmodule TigerBeetlex.Receiver do
   use GenServer
 
   alias TigerBeetlex
+  alias TigerBeetlex.Client
+  alias TigerBeetlex.Operation
   alias TigerBeetlex.Response
+
+  @available_operations Operation.available_operations()
 
   defstruct [
     :client,
@@ -21,46 +25,18 @@ defmodule TigerBeetlex.Receiver do
   end
 
   @impl true
-  def handle_call({:create_accounts, accounts}, from, state) do
-    send_request(from, :create_accounts, [state.client, accounts], state)
-  end
-
-  def handle_call({:create_transfers, transfers}, from, state) do
-    send_request(from, :create_transfers, [state.client, transfers], state)
-  end
-
-  def handle_call({:lookup_accounts, ids}, from, state) do
-    send_request(from, :lookup_accounts, [state.client, ids], state)
-  end
-
-  def handle_call({:lookup_transfers, ids}, from, state) do
-    send_request(from, :lookup_transfers, [state.client, ids], state)
-  end
-
-  def handle_call({:get_account_balances, account_filter}, from, state) do
-    send_request(from, :get_account_balances, [state.client, account_filter], state)
-  end
-
-  def handle_call({:get_account_transfers, account_filter}, from, state) do
-    send_request(from, :get_account_transfers, [state.client, account_filter], state)
-  end
-
-  def handle_call({:query_accounts, query_filter}, from, state) do
-    send_request(from, :query_accounts, [state.client, query_filter], state)
-  end
-
-  def handle_call({:query_transfers, query_filter}, from, state) do
-    send_request(from, :query_transfers, [state.client, query_filter], state)
-  end
-
-  defp send_request(from, function, arguments, state) do
-    case apply(TigerBeetlex, function, arguments) do
+  def handle_call({operation, payload}, from, state) when operation in @available_operations do
+    case apply(Client, operation, [state.client, payload]) do
       {:ok, ref} ->
         {:noreply, %{state | pending_requests: Map.put(state.pending_requests, ref, from)}}
 
       {:error, _} = error ->
         {:reply, error, state}
     end
+  end
+
+  def handle_call({_unknown_operation, _payload}, _from, state) do
+    {:reply, {:error, :unknown_operation}, state}
   end
 
   @impl true

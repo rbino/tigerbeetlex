@@ -11,12 +11,12 @@ defmodule TigerBeetlex.NifAdapter do
     :erlang.load_nif(String.to_charlist(path), 0)
   end
 
-  @spec client_init(
+  @spec init_client(
           cluster_id :: Types.id_128(),
           addresses :: binary()
         ) ::
-          {:ok, Types.client()} | {:error, Types.client_init_error()}
-  def client_init(_cluster_id, _addresses) do
+          {:ok, Types.client()} | {:error, Types.init_client_error()}
+  def init_client(_cluster_id, _addresses) do
     :erlang.nif_error(:nif_not_loaded)
   end
 

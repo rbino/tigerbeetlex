@@ -9,7 +9,7 @@ defmodule TigerBeetlex.Types do
 
   @type id_128 :: <<_::128>>
 
-  @type client_init_error ::
+  @type init_client_error ::
           :unexpected
           | :out_of_memory
           | :invalid_address

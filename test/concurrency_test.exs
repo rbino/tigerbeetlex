@@ -2,10 +2,11 @@ defmodule TigerBeetlex.ConcurrencyTest do
   use ExUnit.Case, async: true
 
   alias TigerBeetlex.Account
+  alias TigerBeetlex.Client
   alias TigerBeetlex.Response
 
   setup do
-    {:ok, client} = TigerBeetlex.connect(<<0::128>>, ["3000"])
+    {:ok, client} = Client.new(<<0::128>>, ["3000"])
 
     {:ok, client: client}
   end
@@ -21,7 +22,7 @@ defmodule TigerBeetlex.ConcurrencyTest do
             code: 1
           }
 
-          {:ok, ref} = TigerBeetlex.create_accounts(client, [account])
+          {:ok, ref} = Client.create_accounts(client, [account])
 
           assert_receive {:tigerbeetlex_response, ^ref, response}, 1_000
 

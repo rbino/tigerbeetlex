@@ -26,6 +26,10 @@ defmodule TigerBeetlex.Transfer do
     field :timestamp, non_neg_integer(), default: 0
   end
 
+  @doc """
+  Creates a `TigerBeetlex.Transfer` struct from its binary representation.
+  """
+  @spec from_binary(binary :: <<_::1024>>) :: t()
   def from_binary(<<_::binary-size(128)>> = bin) do
     <<
       id::binary-size(16),
@@ -60,6 +64,10 @@ defmodule TigerBeetlex.Transfer do
     }
   end
 
+  @doc """
+  Converts a `TigerBeetlex.Transfer` struct to its binary representation.
+  """
+  @spec to_binary(struct :: t()) :: <<_::1024>>
   def to_binary(struct) do
     %__MODULE__{
       id: id,

@@ -17,6 +17,10 @@ defmodule TigerBeetlex.AccountBalance do
     field :timestamp, non_neg_integer(), default: 0
   end
 
+  @doc """
+  Creates a `TigerBeetlex.AccountBalance` struct from its binary representation.
+  """
+  @spec from_binary(binary :: <<_::1024>>) :: t()
   def from_binary(<<_::binary-size(128)>> = bin) do
     <<
       debits_pending::unsigned-little-128,
@@ -36,6 +40,10 @@ defmodule TigerBeetlex.AccountBalance do
     }
   end
 
+  @doc """
+  Converts a `TigerBeetlex.AccountBalance` struct to its binary representation.
+  """
+  @spec to_binary(struct :: t()) :: <<_::1024>>
   def to_binary(struct) do
     %__MODULE__{
       debits_pending: debits_pending,

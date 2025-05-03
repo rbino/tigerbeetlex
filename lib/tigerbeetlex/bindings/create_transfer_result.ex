@@ -7,6 +7,9 @@ defmodule TigerBeetlex.CreateTransferResult do
   @moduledoc """
   See [CreateTransferResult](https://docs.tigerbeetle.com/reference/requests/create_transfers#result).
   """
+  @doc """
+  Obtains the atom representation of a result from its integer value.
+  """
   def to_atom(0), do: :ok
   def to_atom(1), do: :linked_event_failed
   def to_atom(2), do: :linked_event_chain_open
@@ -75,6 +78,10 @@ defmodule TigerBeetlex.CreateTransferResult do
   def to_atom(53), do: :overflows_timeout
   def to_atom(54), do: :exceeds_credits
   def to_atom(55), do: :exceeds_debits
+
+  @doc """
+  Obtains the integer representation of a result reason from its atom value.
+  """
 
   def from_atom(:ok), do: 0
   def from_atom(:linked_event_failed), do: 1

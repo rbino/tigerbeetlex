@@ -22,7 +22,7 @@ defmodule TigerBeetlex.Response do
   - `query_accounts`: a list of `%TigerBeetlex.Account{}`
   - `query_transfers`: a list of `%TigerBeetlex.Transfer{}`
   """
-  def decode({0, operation, batch}) do
+  def decode({0, operation, batch} = _response) do
     {:ok, build_result_list(operation, batch)}
   end
 
@@ -113,20 +113,6 @@ defmodule TigerBeetlex.Response do
       client_shutdown: 5,
       invalid_operation: 6,
       invalid_data_size: 7
-    }
-  end
-
-  @doc false
-  def operation_map do
-    %{
-      create_accounts: 138,
-      create_transfers: 139,
-      lookup_accounts: 140,
-      lookup_transfers: 141,
-      get_account_transfers: 142,
-      get_account_balances: 143,
-      query_accounts: 144,
-      query_transfers: 145
     }
   end
 end

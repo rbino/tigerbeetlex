@@ -15,9 +15,10 @@ defmodule TigerBeetlex.QueryFilterFlags do
   end
 
   @doc """
-  Given a binary flags value, returns the corresponding struct.
+  Creates a `TigerBeetlex.QueryFilterFlags` struct from its binary representation.
   """
-  def from_binary(<<n::unsigned-little-32>>) do
+  @spec from_binary(binary :: <<_::32>>) :: t()
+  def from_binary(<<n::unsigned-little-32>> = _bin) do
     <<
       _padding::31,
       reversed::1
@@ -29,8 +30,9 @@ defmodule TigerBeetlex.QueryFilterFlags do
   end
 
   @doc """
-  Given a `%QueryFilterFlags{}` struct, returns the corresponding serialized binary value.
+  Converts a `TigerBeetlex.QueryFilterFlags` struct to its binary represenation.
   """
+  @spec to_binary(flags :: t()) :: <<_::32>>
   def to_binary(flags) do
     %__MODULE__{
       reversed: reversed

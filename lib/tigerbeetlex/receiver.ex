@@ -3,7 +3,6 @@ defmodule TigerBeetlex.Receiver do
 
   use GenServer
 
-  alias TigerBeetlex
   alias TigerBeetlex.Client
   alias TigerBeetlex.Operation
   alias TigerBeetlex.Response

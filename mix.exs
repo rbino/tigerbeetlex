@@ -34,7 +34,8 @@ defmodule TigerBeetlex.MixProject do
       {:uniq, "~> 0.6", only: :test},
       {:ex_doc, "~> 0.32", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.0", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:stream_data, "~> 1.2", only: [:dev, :test], runtime: false}
     ]
   end
 end

@@ -5,6 +5,21 @@ defmodule Tigerbeetlex.ClientTest do
   alias TigerBeetlex.Client
   alias TigerBeetlex.CreateAccountsResult
 
+  describe "new/2" do
+    test "returns a client with valid parameters" do
+      assert {:ok, %Client{}} = Client.new(<<0::128>>, ["3000"])
+    end
+
+    test "returns :invalid_address for invalid address" do
+      assert {:error, :invalid_address} = Client.new(<<0::128>>, ["foobar"])
+    end
+
+    test "returns :address_limit_exceeded for too many addresses" do
+      addresses = Enum.map(3000..3010, &to_string/1)
+      assert {:error, :address_limit_exceeded} = Client.new(<<0::128>>, addresses)
+    end
+  end
+
   describe "receive_and_decode/1" do
     setup do
       {:ok, client} = Client.new(<<0::128>>, ["3000"])

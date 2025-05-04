@@ -10,7 +10,6 @@ defmodule TigerBeetlex.MixProject do
       zig_build_mode: zig_build_mode(Mix.env()),
       compilers: [:build_dot_zig] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
-      dialyzer: [plt_add_apps: [:zig_parser]],
       deps: deps()
     ]
   end

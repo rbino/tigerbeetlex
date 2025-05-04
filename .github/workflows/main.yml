@@ -32,7 +32,7 @@ jobs:
           version: ${{ matrix.zig }}
 
       - name: Install and compile dependencies
-        run: mix do deps.get --only test, deps.compile
+        run: mix do deps.get, deps.compile
 
       - name: Check Elixir formatting
         run: mix format --check-formatted
@@ -55,7 +55,7 @@ jobs:
         uses: actions/cache@v4
         id: cache-plt
         with:
-          path: priv/plts
+          path: _build
           key: ${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}
 
       # Create PLTs if no cache was found

@@ -15,6 +15,7 @@ defmodule TigerBeetlex.Connection do
   alias TigerBeetlex.Client
   alias TigerBeetlex.CreateAccountsResult
   alias TigerBeetlex.CreateTransfersResult
+  alias TigerBeetlex.Operation
   alias TigerBeetlex.QueryFilter
   alias TigerBeetlex.Receiver
   alias TigerBeetlex.Transfer
@@ -47,6 +48,8 @@ defmodule TigerBeetlex.Connection do
   ]
 
   @start_link_opts_keys Keyword.keys(@start_link_opts_schema)
+
+  @available_operations Operation.available_operations()
 
   @doc false
   def child_spec(arg) do
@@ -147,8 +150,7 @@ defmodule TigerBeetlex.Connection do
         ) ::
           {:ok, [CreateAccountsResult.t()]} | {:error, Types.request_error()}
   def create_accounts(name, accounts) when is_list(accounts) do
-    via_tuple(name)
-    |> GenServer.call({:create_accounts, accounts})
+    submit(name, :create_accounts, accounts)
   end
 
   @doc """
@@ -205,8 +207,7 @@ defmodule TigerBeetlex.Connection do
         ) ::
           {:ok, [CreateTransfersResult.t()]} | {:error, Types.request_error()}
   def create_transfers(name, transfers) when is_list(transfers) do
-    via_tuple(name)
-    |> GenServer.call({:create_transfers, transfers})
+    submit(name, :create_transfers, transfers)
   end
 
   @doc """
@@ -236,8 +237,7 @@ defmodule TigerBeetlex.Connection do
         ) ::
           {:ok, [Account.t()]} | {:error, Types.request_error()}
   def lookup_accounts(name, ids) when is_list(ids) do
-    via_tuple(name)
-    |> GenServer.call({:lookup_accounts, ids})
+    submit(name, :lookup_accounts, ids)
   end
 
   @doc """
@@ -267,8 +267,7 @@ defmodule TigerBeetlex.Connection do
         ) ::
           {:ok, [Transfer.t()]} | {:error, Types.request_error()}
   def lookup_transfers(name, ids) when is_list(ids) do
-    via_tuple(name)
-    |> GenServer.call({:lookup_transfers, ids})
+    submit(name, :lookup_transfers, ids)
   end
 
   @doc """
@@ -299,8 +298,7 @@ defmodule TigerBeetlex.Connection do
         ) ::
           {:ok, [AccountBalance.t()]} | {:error, Types.request_error()}
   def get_account_balances(name, %AccountFilter{} = account_filter) do
-    via_tuple(name)
-    |> GenServer.call({:get_account_balances, account_filter})
+    submit(name, :get_account_balances, account_filter)
   end
 
   @doc """
@@ -329,8 +327,7 @@ defmodule TigerBeetlex.Connection do
         ) ::
           {:ok, [Transfer.t()]} | {:error, Types.request_error()}
   def get_account_transfers(name, %AccountFilter{} = account_filter) do
-    via_tuple(name)
-    |> GenServer.call({:get_account_transfers, account_filter})
+    submit(name, :get_account_transfers, account_filter)
   end
 
   @doc """
@@ -359,8 +356,7 @@ defmodule TigerBeetlex.Connection do
         ) ::
           {:ok, [Account.t()]} | {:error, Types.request_error()}
   def query_accounts(name, %QueryFilter{} = query_filter) do
-    via_tuple(name)
-    |> GenServer.call({:query_accounts, query_filter})
+    submit(name, :query_accounts, query_filter)
   end
 
   @doc """
@@ -389,8 +385,13 @@ defmodule TigerBeetlex.Connection do
         ) ::
           {:ok, [Account.t()]} | {:error, Types.request_error()}
   def query_transfers(name, %QueryFilter{} = query_filter) do
-    via_tuple(name)
-    |> GenServer.call({:query_transfers, query_filter})
+    submit(name, :query_transfers, query_filter)
+  end
+
+  defp submit(name, operation, payload) when operation in @available_operations do
+    name
+    |> via_tuple()
+    |> GenServer.call({operation, payload}, :infinity)
   end
 
   defp via_tuple(name) do

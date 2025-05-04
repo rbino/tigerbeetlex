@@ -40,6 +40,11 @@ jobs:
       - name: Check Zig formatting
         run: zig fmt --check src/*.zig
 
+      - name: Check if generated bindings are up to date
+        run: |
+          zig build bindings
+          git diff --exit-code
+
       - name: Check no unused dependencies
         run: mix do deps.get, deps.unlock --check-unused
 

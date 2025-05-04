@@ -58,7 +58,7 @@ fn init_client(env: *beam.Env, cluster_id_term: beam.Term, addresses_term: beam.
     errdefer beam.general_purpose_allocator.destroy(client);
 
     try tb_client.init(
-        beam.general_purpose_allocator,
+        beam.large_allocator,
         client,
         cluster_id,
         addresses,

@@ -4,10 +4,7 @@ defmodule TigerBeetlex.Receiver do
   use GenServer
 
   alias TigerBeetlex.Client
-  alias TigerBeetlex.Operation
   alias TigerBeetlex.Response
-
-  @available_operations Operation.available_operations()
 
   defstruct [
     :client,
@@ -24,7 +21,7 @@ defmodule TigerBeetlex.Receiver do
   end
 
   @impl true
-  def handle_call({operation, payload}, from, state) when operation in @available_operations do
+  def handle_call({operation, payload}, from, state) do
     case apply(Client, operation, [state.client, payload]) do
       {:ok, ref} ->
         {:noreply, %{state | pending_requests: Map.put(state.pending_requests, ref, from)}}
@@ -32,10 +29,6 @@ defmodule TigerBeetlex.Receiver do
       {:error, _} = error ->
         {:reply, error, state}
     end
-  end
-
-  def handle_call({_unknown_operation, _payload}, _from, state) do
-    {:reply, {:error, :unknown_operation}, state}
   end
 
   @impl true

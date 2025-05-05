@@ -7,8 +7,10 @@ defmodule TigerBeetlex.Account do
   @moduledoc """
   See [Account](https://docs.tigerbeetle.com/reference/account#).
   """
-  alias TigerBeetlex.AccountFlags
+
   use TypedStruct
+
+  alias TigerBeetlex.AccountFlags
 
   typedstruct do
     field :id, <<_::128>>, default: <<0::size(128)>>

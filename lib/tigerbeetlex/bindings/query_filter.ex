@@ -7,8 +7,10 @@ defmodule TigerBeetlex.QueryFilter do
   @moduledoc """
   See [QueryFilter](https://docs.tigerbeetle.com/reference/query-filter#).
   """
-  alias TigerBeetlex.QueryFilterFlags
+
   use TypedStruct
+
+  alias TigerBeetlex.QueryFilterFlags
 
   typedstruct do
     field :user_data_128, <<_::128>>, default: <<0::size(128)>>

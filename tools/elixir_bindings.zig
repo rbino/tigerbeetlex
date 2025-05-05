@@ -137,30 +137,11 @@ fn emit_flags(
         \\
         \\  use TypedStruct
         \\
-        \\  typedstruct do
-        \\
     , .{});
 
-    inline for (type_info.fields) |field| {
-        if (comptime mapping.hidden(field.name)) continue;
-
-        const default_opt = if (comptime default_field_value(field.name, field.type)) |default|
-            std.fmt.comptimePrint(", default: {s}", .{default})
-        else
-            "";
-
-        try buffer.writer().print(
-            \\    field :{[field_name]s}, {[typespec_type]s}{[default_opt]s}
-            \\
-        , .{
-            .field_name = field.name,
-            .typespec_type = typespec_type(field.name, field.type),
-            .default_opt = default_opt,
-        });
-    }
+    try emit_typed_struct(buffer, type_info, mapping);
 
     try buffer.writer().print(
-        \\  end
         \\
         \\  @doc """
         \\  Creates a `TigerBeetlex.{[module_name]s}` struct from its binary representation.
@@ -180,16 +161,14 @@ fn emit_flags(
         // avoid having to manually swap bytes
         comptime var reversed_fields = std.mem.reverseIterator(type_info.fields);
         inline while (reversed_fields.next()) |field| {
-            try buffer.writer().print("      ", .{});
-
             // Hidden == unused
-            if (comptime mapping.hidden(field.name))
-                try buffer.writer().print("_", .{});
+            const prefix = if (comptime mapping.hidden(field.name)) "_" else "";
 
             try buffer.writer().print(
-                \\{[field_name]s}::{[bit_size]},
+                \\      {[prefix]s}{[field_name]s}::{[bit_size]},
                 \\
             , .{
+                .prefix = prefix,
                 .field_name = field.name,
                 .bit_size = @bitSizeOf(field.type),
             });
@@ -317,6 +296,13 @@ fn emit_struct(
 
     try emit_docs(buffer, mapping, null);
 
+    try buffer.writer().print(
+        \\
+        \\
+        \\ use TypedStruct
+        \\
+    , .{});
+
     inline for (type_info.fields) |field| {
         if (comptime mapping.hidden(field.name)) continue;
 
@@ -333,34 +319,9 @@ fn emit_struct(
         }
     }
 
-    try buffer.writer().print(
-        \\
-        \\  use TypedStruct
-        \\
-        \\  typedstruct do
-        \\
-    , .{});
-
-    inline for (type_info.fields) |field| {
-        if (comptime mapping.hidden(field.name)) continue;
-
-        const default_opt = if (comptime default_field_value(field.name, field.type)) |default|
-            std.fmt.comptimePrint(", default: {s}", .{default})
-        else
-            "";
-
-        try buffer.writer().print(
-            \\    field :{[field_name]s}, {[typespec_type]s}{[default_opt]s}
-            \\
-        , .{
-            .field_name = field.name,
-            .typespec_type = typespec_type(field.name, field.type),
-            .default_opt = default_opt,
-        });
-    }
+    try emit_typed_struct(buffer, type_info, mapping);
 
     try buffer.writer().print(
-        \\  end
         \\
         \\  @doc """
         \\  Creates a `TigerBeetlex.{[module_name]s}` struct from its binary representation.
@@ -376,16 +337,13 @@ fn emit_struct(
     });
 
     inline for (type_info.fields) |field| {
-        try buffer.writer().print("      ", .{});
-
-        // Hidden == unused
-        if (comptime mapping.hidden(field.name))
-            try buffer.writer().print("_", .{});
+        const prefix = if (comptime mapping.hidden(field.name)) "_" else "";
 
         try buffer.writer().print(
-            \\{[field_name]s}::{[bitstring_options]s},
+            \\      {[prefix]s}{[field_name]s}::{[bitstring_options]s},
             \\
         , .{
+            .prefix = prefix,
             .field_name = field.name,
             .bitstring_options = bitstring_options(field.name, field.type),
         });
@@ -471,6 +429,42 @@ fn emit_struct(
         \\    >>
         \\  end
         \\end
+        \\
+    , .{});
+}
+
+fn emit_typed_struct(
+    buffer: *std.ArrayList(u8),
+    comptime type_info: anytype,
+    comptime mapping: TypeMapping,
+) !void {
+    try buffer.writer().print(
+        \\
+        \\
+        \\  typedstruct do
+        \\
+    , .{});
+
+    inline for (type_info.fields) |field| {
+        if (comptime mapping.hidden(field.name)) continue;
+
+        const default_opt = if (comptime default_field_value(field.name, field.type)) |default|
+            std.fmt.comptimePrint(", default: {s}", .{default})
+        else
+            "";
+
+        try buffer.writer().print(
+            \\    field :{[field_name]s}, {[typespec_type]s}{[default_opt]s}
+            \\
+        , .{
+            .field_name = field.name,
+            .typespec_type = typespec_type(field.name, field.type),
+            .default_opt = default_opt,
+        });
+    }
+
+    try buffer.writer().print(
+        \\  end
         \\
     , .{});
 }
@@ -679,7 +673,6 @@ fn emit_enum(
 
     inline for (type_info.fields) |field| {
         if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
-
         if (comptime mapping.hidden(field.name)) continue;
 
         try buffer.writer().print(
@@ -696,45 +689,6 @@ fn emit_enum(
         \\end
         \\
     , .{});
-}
-
-fn emit_docs(
-    buffer: anytype,
-    comptime mapping: TypeMapping,
-    comptime field: ?[]const u8,
-) !void {
-    if (mapping.docs_link) |docs_link| {
-        try buffer.writer().print(
-            \\  @{[doc_type]s} """
-            \\  See [{[name]s}](https://docs.tigerbeetle.com/{[docs_link]s}{[field]s}).
-            \\  """
-        , .{
-            .doc_type = if (field == null) "moduledoc" else "doc",
-            .name = field orelse mapping.module_name,
-            .docs_link = docs_link,
-            .field = field orelse "",
-        });
-    }
-}
-
-pub fn generate_bindings(
-    comptime ZigType: type,
-    comptime mapping: TypeMapping,
-    buffer: *std.ArrayList(u8),
-) !void {
-    @setEvalBranchQuota(100_000);
-
-    switch (@typeInfo(ZigType)) {
-        .Struct => |info| switch (info.layout) {
-            .auto => @compileError(
-                "Only packed or extern structs are supported: " ++ @typeName(ZigType),
-            ),
-            .@"packed" => try emit_flags(buffer, info, mapping),
-            .@"extern" => try emit_struct(buffer, info, mapping, @sizeOf(ZigType)),
-        },
-        .Enum => try emit_enum(buffer, ZigType, mapping),
-        else => @compileError("Type cannot be represented: " ++ @typeName(ZigType)),
-    }
 }
 
 fn emit_response_module(
@@ -876,15 +830,8 @@ fn emit_operation_module(
 ) !void {
     try buffer.writer().print(
         \\defmodule TigerBeetlex.Operation do
-        \\  @moduledoc """
-        \\  This module contains utility functions around tb_client Operation enum.
-        \\  It allows retrieving all available operations and convert between their
-        \\  atom and integer representation.
-        \\  """
+        \\  @moduledoc false
         \\
-        \\  @doc """
-        \\  Obtain the list of atoms with all available operations.
-        \\  """
         \\
     , .{});
 
@@ -913,16 +860,9 @@ fn emit_operation_module(
             \\    ]
             \\  end
             \\
+            \\
         , .{});
     }
-
-    try buffer.writer().print(
-        \\
-        \\  @doc """
-        \\  Obtains the integer representation of an operation from its atom value.
-        \\  """
-        \\
-    , .{});
 
     {
         const operation_info = @typeInfo(tb_client.Operation).Enum;
@@ -946,6 +886,45 @@ fn emit_operation_module(
         \\end
         \\
     , .{});
+}
+
+fn emit_docs(
+    buffer: anytype,
+    comptime mapping: TypeMapping,
+    comptime field: ?[]const u8,
+) !void {
+    if (mapping.docs_link) |docs_link| {
+        try buffer.writer().print(
+            \\  @{[doc_type]s} """
+            \\  See [{[name]s}](https://docs.tigerbeetle.com/{[docs_link]s}{[field]s}).
+            \\  """
+        , .{
+            .doc_type = if (field == null) "moduledoc" else "doc",
+            .name = field orelse mapping.module_name,
+            .docs_link = docs_link,
+            .field = field orelse "",
+        });
+    }
+}
+
+pub fn generate_bindings(
+    comptime ZigType: type,
+    comptime mapping: TypeMapping,
+    buffer: *std.ArrayList(u8),
+) !void {
+    @setEvalBranchQuota(100_000);
+
+    switch (@typeInfo(ZigType)) {
+        .Struct => |info| switch (info.layout) {
+            .auto => @compileError(
+                "Only packed or extern structs are supported: " ++ @typeName(ZigType),
+            ),
+            .@"packed" => try emit_flags(buffer, info, mapping),
+            .@"extern" => try emit_struct(buffer, info, mapping, @sizeOf(ZigType)),
+        },
+        .Enum => try emit_enum(buffer, ZigType, mapping),
+        else => @compileError("Type cannot be represented: " ++ @typeName(ZigType)),
+    }
 }
 
 // TODO: accept this from the build system

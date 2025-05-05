@@ -7,8 +7,10 @@ defmodule TigerBeetlex.AccountFilter do
   @moduledoc """
   See [AccountFilter](https://docs.tigerbeetle.com/reference/account-filter#).
   """
-  alias TigerBeetlex.AccountFilterFlags
+
   use TypedStruct
+
+  alias TigerBeetlex.AccountFilterFlags
 
   typedstruct do
     field :account_id, <<_::128>>, default: <<0::size(128)>>

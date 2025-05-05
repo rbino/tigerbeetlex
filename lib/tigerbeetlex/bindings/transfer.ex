@@ -7,8 +7,10 @@ defmodule TigerBeetlex.Transfer do
   @moduledoc """
   See [Transfer](https://docs.tigerbeetle.com/reference/transfer#).
   """
-  alias TigerBeetlex.TransferFlags
+
   use TypedStruct
+
+  alias TigerBeetlex.TransferFlags
 
   typedstruct do
     field :id, <<_::128>>, default: <<0::size(128)>>

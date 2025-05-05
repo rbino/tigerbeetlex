@@ -24,7 +24,8 @@ defmodule TigerBeetlex.ResponseTest do
     for op_name <- Operation.available_operations() do
       test "for operation #{op_name} with empty data" do
         assert {:ok, []} =
-                 Operation.from_atom(unquote(op_name))
+                 unquote(op_name)
+                 |> Operation.from_atom()
                  |> ok_response(<<>>)
                  |> Response.decode()
       end
@@ -99,7 +100,7 @@ defmodule TigerBeetlex.ResponseTest do
 
   defp error_response(error_status_value) do
     op_value = Operation.available_operations() |> Enum.random() |> Operation.from_atom()
-    data = Enum.random(0..16) |> :rand.bytes()
+    data = 0..16 |> Enum.random() |> :rand.bytes()
 
     {error_status_value, op_value, data}
   end
@@ -108,5 +109,5 @@ defmodule TigerBeetlex.ResponseTest do
     {status(:ok), operation, data}
   end
 
-  defp status(status_name), do: Response.status_map() |> Map.fetch!(status_name)
+  defp status(status_name), do: Map.fetch!(Response.status_map(), status_name)
 end

@@ -46,10 +46,6 @@ defmodule TigerBeetlex.Client do
 
   use TypedStruct
 
-  typedstruct do
-    field :ref, reference(), enforce: true
-  end
-
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountFilter
   alias TigerBeetlex.NifAdapter
@@ -57,6 +53,10 @@ defmodule TigerBeetlex.Client do
   alias TigerBeetlex.QueryFilter
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.Types
+
+  typedstruct do
+    field :ref, reference(), enforce: true
+  end
 
   @doc """
   Creates a message based TigerBeetlex client.
@@ -80,8 +80,7 @@ defmodule TigerBeetlex.Client do
           addresses :: [binary()]
         ) ::
           {:ok, t()} | {:error, Types.init_client_error()}
-  def new(<<_::128>> = cluster_id, addresses)
-      when is_list(addresses) do
+  def new(<<_::128>> = cluster_id, addresses) when is_list(addresses) do
     joined_addresses = Enum.join(addresses, ",")
 
     with {:ok, ref} <- NifAdapter.init_client(cluster_id, joined_addresses) do

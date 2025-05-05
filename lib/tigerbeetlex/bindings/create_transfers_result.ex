@@ -7,8 +7,10 @@ defmodule TigerBeetlex.CreateTransfersResult do
   @moduledoc """
   See [CreateTransfersResult](https://docs.tigerbeetle.com/reference/requests/create_transfers#).
   """
-  alias TigerBeetlex.CreateTransferResult
+
   use TypedStruct
+
+  alias TigerBeetlex.CreateTransferResult
 
   typedstruct do
     field :index, non_neg_integer(), default: 0

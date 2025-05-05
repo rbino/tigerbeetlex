@@ -7,8 +7,10 @@ defmodule TigerBeetlex.CreateAccountsResult do
   @moduledoc """
   See [CreateAccountsResult](https://docs.tigerbeetle.com/reference/requests/create_accounts#).
   """
-  alias TigerBeetlex.CreateAccountResult
+
   use TypedStruct
+
+  alias TigerBeetlex.CreateAccountResult
 
   typedstruct do
     field :index, non_neg_integer(), default: 0

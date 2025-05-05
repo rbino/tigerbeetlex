@@ -7,6 +7,7 @@ defmodule TigerBeetlex.AccountBalance do
   @moduledoc """
   See [AccountBalance](https://docs.tigerbeetle.com/reference/account-balance#).
   """
+
   use TypedStruct
 
   typedstruct do

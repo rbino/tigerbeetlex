@@ -1,13 +1,6 @@
 defmodule TigerBeetlex.Operation do
-  @moduledoc """
-  This module contains utility functions around tb_client Operation enum.
-  It allows retrieving all available operations and convert between their
-  atom and integer representation.
-  """
+  @moduledoc false
 
-  @doc """
-  Obtain the list of atoms with all available operations.
-  """
   def available_operations do
     [
       :create_accounts,
@@ -21,9 +14,6 @@ defmodule TigerBeetlex.Operation do
     ]
   end
 
-  @doc """
-  Obtains the integer representation of an operation from its atom value.
-  """
   def from_atom(:create_accounts), do: 138
   def from_atom(:create_transfers), do: 139
   def from_atom(:lookup_accounts), do: 140

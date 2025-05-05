@@ -108,7 +108,7 @@ defmodule TigerBeetlex.Connection do
     addresses = Keyword.fetch!(tigerbeetlex_opts, :addresses)
 
     with {:ok, client} <- Client.new(cluster_id, addresses) do
-      start_opts = Keyword.merge(partition_supervisor_opts, child_spec: {Receiver, client})
+      start_opts = Keyword.put(partition_supervisor_opts, :child_spec, {Receiver, client})
       PartitionSupervisor.start_link(start_opts)
     end
   end

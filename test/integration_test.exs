@@ -1,8 +1,6 @@
 defmodule TigerBeetlex.IntegrationTest do
   use ExUnit.Case, async: true
 
-  @moduletag :integration
-
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountBalance
   alias TigerBeetlex.AccountFilter
@@ -14,6 +12,8 @@ defmodule TigerBeetlex.IntegrationTest do
   alias TigerBeetlex.QueryFilterFlags
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.TransferFlags
+
+  @moduletag :integration
 
   # 253 since it runs against a --development instance
   @max_batch_size 253

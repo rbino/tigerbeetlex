@@ -14,7 +14,8 @@ batch_size = 8189
 
 bench = fn ->
   chunks =
-    Enum.chunk_every(0..(samples - 1), batch_size)
+    0..(samples - 1)
+    |> Enum.chunk_every(batch_size)
     |> Enum.map(fn chunk ->
       chunk
       |> Enum.with_index()

@@ -31,6 +31,7 @@ defmodule TigerBeetlex.MixProject do
       {:nimble_options, "~> 1.0"},
       {:build_dot_zig, "~> 0.6.1", runtime: false},
       {:uniq, "~> 0.6", only: :test},
+      {:styler, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.32", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},

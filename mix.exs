@@ -4,13 +4,16 @@ defmodule TigerBeetlex.MixProject do
   def project do
     [
       app: :tigerbeetlex,
-      version: "0.1.0",
+      version: "0.16.38",
       elixir: "~> 1.14",
       install_zig: "0.13.0",
       zig_build_mode: zig_build_mode(Mix.env()),
       compilers: [:build_dot_zig] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      description: description(),
+      source_url: "https://github.com/rbino/tigerbeetlex",
+      package: package()
     ]
   end
 
@@ -36,6 +39,20 @@ defmodule TigerBeetlex.MixProject do
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
       {:stream_data, "~> 1.2", only: [:dev, :test], runtime: false}
+    ]
+  end
+
+  defp description do
+    "Elixir client for TigerBeetle, the financial transactions database."
+  end
+
+  defp package do
+    [
+      name: "TigerBeetlex",
+      files: ~w(lib src tools .formatter.exs mix.exs README* LICENSE*
+                CHANGELOG* build.zig build.zig.zon),
+      licenses: ["Apache-2.0"],
+      links: %{"GitHub" => "https://github.com/rbino/tigerbeetlex"}
     ]
   end
 end

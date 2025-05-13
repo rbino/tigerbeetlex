@@ -200,7 +200,7 @@ fn on_completion(
 ) callconv(.C) void {
     _ = context;
     assert(packet.user_data != null);
-    const ctx: *RequestContext = @ptrCast(@alignCast(packet.user_data));
+    const ctx: *const RequestContext = @ptrCast(@alignCast(packet.user_data));
     defer beam.general_purpose_allocator.destroy(ctx);
 
     // Decrease client resource refcount after we exit

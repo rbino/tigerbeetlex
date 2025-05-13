@@ -13,7 +13,7 @@ The package can be installed by adding `tigerbeetlex` to your list of dependenci
 ```elixir
 def deps do
   [
-    {:tigerbeetlex, github: "rbino/tigerbeetlex"}
+    {:tigerbeetlex, "~> 0.16.38"}
   ]
 end
 ```
@@ -21,6 +21,18 @@ end
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at <https://hexdocs.pm/tigerbeetlex>.
+
+### Client versioning
+
+TigerBeetle requires the client to have the same or lower version than the server.
+
+TigerBeetlex uses the same version number as the underlying Zig TigerBeetle client to
+simplify selecting the right version. This also implies that we need to wait for a new
+TigerBeetle release to cut a new release, but this shouldn't be a problem since TigerBeetle
+has a fixed weekly release schedule.
+
+If/when TigerBeetle switches to a slower release cadence, we might evaluate using different
+version numbers.
 
 ## Contributing
 

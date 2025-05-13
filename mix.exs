@@ -48,7 +48,6 @@ defmodule TigerBeetlex.MixProject do
 
   defp package do
     [
-      name: "TigerBeetlex",
       files: ~w(lib src tools .formatter.exs mix.exs README* LICENSE*
                 CHANGELOG* build.zig build.zig.zon),
       licenses: ["Apache-2.0"],

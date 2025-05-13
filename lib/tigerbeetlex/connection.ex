@@ -31,7 +31,7 @@ defmodule TigerBeetlex.Connection do
       """
     ],
     cluster_id: [
-      type: {:custom, TigerBeetlex.ID128, :validate, []},
+      type: {:custom, TigerBeetlex.ID, :validate, []},
       type_doc: "`t:TigerBeetlex.Types.id_128/0`",
       required: true,
       doc: "The TigerBeetle cluster id."

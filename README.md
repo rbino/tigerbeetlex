@@ -13,14 +13,14 @@ The package can be installed by adding `tigerbeetlex` to your list of dependenci
 ```elixir
 def deps do
   [
-    {:tigerbeetlex, "~> 0.16.38"}
+    {:tigerbeetlex, github: "rbino/tigerbeetlex", tag: "0.16.38"}
   ]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/tigerbeetlex>.
+The package is not currently published on Hex due to [this issue](https://github.com/rbino/tigerbeetlex/issues/85).
+
+Docs can still be accessed on [HexDocs](https://hexdocs.pm/tigerbeetlex/).
 
 ### Client versioning
 

@@ -20,7 +20,7 @@ end
 
 The package is not currently published on Hex due to [this issue](https://github.com/rbino/tigerbeetlex/issues/85).
 
-Docs can still be accessed on [HexDocs](https://hexdocs.pm/tigerbeetlex/).
+Due to this, the documentation is not yet on HexDocs. Run `mix docs` to build and access the documentation locally.
 
 ### Client versioning
 

@@ -4,9 +4,8 @@
 #######################################################
 
 defmodule TigerBeetlex.CreateAccountResult do
-  @moduledoc """
-  See [CreateAccountResult](https://docs.tigerbeetle.com/reference/requests/create_accounts#result).
-  """
+  @moduledoc false
+
   @doc """
   Obtains the atom representation of a result from its integer value.
   """

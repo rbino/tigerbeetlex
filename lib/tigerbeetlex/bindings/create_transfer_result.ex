@@ -4,9 +4,8 @@
 #######################################################
 
 defmodule TigerBeetlex.CreateTransferResult do
-  @moduledoc """
-  See [CreateTransferResult](https://docs.tigerbeetle.com/reference/requests/create_transfers#result).
-  """
+  @moduledoc false
+
   @doc """
   Obtains the atom representation of a result from its integer value.
   """

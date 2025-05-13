@@ -632,13 +632,13 @@ fn emit_enum(
     try buffer.writer().print(
         \\{[notice]s}
         \\defmodule TigerBeetlex.{[module_name]s} do
+        \\    @moduledoc false
+        \\
         \\
     , .{
         .notice = auto_generated_code_notice,
         .module_name = mapping.module_name,
     });
-
-    try emit_docs(buffer, mapping, null);
 
     try buffer.writer().print(
         \\

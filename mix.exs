@@ -1,10 +1,14 @@
 defmodule TigerBeetlex.MixProject do
   use Mix.Project
 
+  @version "0.16.38"
+
+  @repo_url "https://github.com/rbino/tigerbeetlex"
+
   def project do
     [
       app: :tigerbeetlex,
-      version: "0.16.38",
+      version: @version,
       elixir: "~> 1.14",
       install_zig: "0.13.0",
       zig_build_mode: zig_build_mode(Mix.env()),
@@ -12,8 +16,30 @@ defmodule TigerBeetlex.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
-      source_url: "https://github.com/rbino/tigerbeetlex",
-      package: package()
+      package: package(),
+      docs: [
+        main: "TigerBeetlex.Client",
+        source_ref: @version,
+        source_url: @repo_url,
+        groups_for_modules: [
+          "Message based API": [TigerBeetlex.Client, TigerBeetlex.Response],
+          "Blocking API": [TigerBeetlex.Connection],
+          "Data structures": [
+            TigerBeetlex.Account,
+            TigerBeetlex.AccountBalance,
+            TigerBeetlex.AccountFilter,
+            TigerBeetlex.AccountFilterFlags,
+            TigerBeetlex.AccountFlags,
+            TigerBeetlex.CreateAccountsResult,
+            TigerBeetlex.CreateTransfersResult,
+            TigerBeetlex.QueryFilter,
+            TigerBeetlex.QueryFilterFlags,
+            TigerBeetlex.Transfer,
+            TigerBeetlex.TransferFlags
+          ],
+          Types: [TigerBeetlex.Types]
+        ]
+      ]
     ]
   end
 
@@ -48,10 +74,11 @@ defmodule TigerBeetlex.MixProject do
 
   defp package do
     [
+      maintainers: ["Riccardo Binetti"],
       files: ~w(lib src tools .formatter.exs mix.exs README* LICENSE*
                 CHANGELOG* build.zig build.zig.zon),
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => "https://github.com/rbino/tigerbeetlex"}
+      links: %{"GitHub" => @repo_url}
     ]
   end
 end

@@ -4,7 +4,7 @@ defmodule TigerBeetlex.MixProject do
   def project do
     [
       app: :tigerbeetlex,
-      version: "0.1.0",
+      version: "0.16.38",
       elixir: "~> 1.14",
       install_zig: "0.13.0",
       zig_build_mode: zig_build_mode(Mix.env()),

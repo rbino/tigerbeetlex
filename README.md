@@ -13,7 +13,7 @@ The package can be installed by adding `tigerbeetlex` to your list of dependenci
 ```elixir
 def deps do
   [
-    {:tigerbeetlex, github: "rbino/tigerbeetlex"}
+    {:tigerbeetlex, "~> 0.16.38"}
   ]
 end
 ```

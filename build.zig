@@ -64,7 +64,14 @@ pub fn build(b: *std.Build) !void {
         break :blk b.run(&argv);
     };
 
-    const tigerbeetle_dep = b.dependency("tigerbeetle", .{});
+    // In its build.zig, TigerBeetle accepts a git commit hash that gets passed around to different modules (CI, VSR etc).
+    // If no one is explicitly passed, it falls back to reading it by shelling out to git.
+    // This is a problem because it means that it's a compile-time requirement to build inside a git repo, which could be
+    // false if we're using TigerBeetlex, e.g., in an .exs script.
+    // To avoid this, we just pass a fake git commit hash, since the git commit hash doesn't change the client behavior
+    // in any way.
+    const fake_git_commit_hash = "bee71e0000000000000000000000000000bee71e"; // Beetle-hash!
+    const tigerbeetle_dep = b.dependency("tigerbeetle", .{ .@"git-commit" = @as([]const u8, fake_git_commit_hash) });
     const vsr_mod = b.createModule(.{
         .root_source_file = tigerbeetle_dep.path("src/vsr.zig"),
     });

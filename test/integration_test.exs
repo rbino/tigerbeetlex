@@ -8,6 +8,7 @@ defmodule TigerBeetlex.IntegrationTest do
   alias TigerBeetlex.Connection
   alias TigerBeetlex.CreateAccountsResult
   alias TigerBeetlex.CreateTransfersResult
+  alias TigerBeetlex.ID
   alias TigerBeetlex.QueryFilter
   alias TigerBeetlex.QueryFilterFlags
   alias TigerBeetlex.Transfer
@@ -34,7 +35,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
   describe "create_accounts/2" do
     test "successful account creation", %{conn: conn} do
-      id = random_id()
+      id = ID.generate()
 
       account = %Account{
         id: id,
@@ -54,8 +55,8 @@ defmodule TigerBeetlex.IntegrationTest do
     end
 
     test "successful linked account creation", %{conn: conn} do
-      id_1 = random_id()
-      id_2 = random_id()
+      id_1 = ID.generate()
+      id_2 = ID.generate()
 
       accounts = [
         %Account{
@@ -105,8 +106,8 @@ defmodule TigerBeetlex.IntegrationTest do
     end
 
     test "failed linked account creation", %{conn: conn} do
-      id_1 = random_id()
-      id_2 = random_id()
+      id_1 = ID.generate()
+      id_2 = ID.generate()
 
       accounts = [
         %Account{
@@ -135,8 +136,8 @@ defmodule TigerBeetlex.IntegrationTest do
     end
 
     test "mixed successful and failed account creations", %{conn: conn} do
-      id_1 = random_id()
-      id_2 = random_id()
+      id_1 = ID.generate()
+      id_2 = ID.generate()
 
       accounts = [
         %Account{
@@ -176,7 +177,7 @@ defmodule TigerBeetlex.IntegrationTest do
       accounts =
         for _ <- 1..@max_batch_size do
           %Account{
-            id: random_id(),
+            id: ID.generate(),
             ledger: 1,
             code: 1,
             flags: %AccountFlags{credits_must_not_exceed_debits: true}
@@ -207,7 +208,7 @@ defmodule TigerBeetlex.IntegrationTest do
         debit_account_id: debit_account_id
       } = ctx
 
-      id = random_id()
+      id = ID.generate()
 
       transfer = %Transfer{
         id: id,
@@ -253,8 +254,8 @@ defmodule TigerBeetlex.IntegrationTest do
         debit_account_id: debit_account_id
       } = ctx
 
-      id_1 = random_id()
-      id_2 = random_id()
+      id_1 = ID.generate()
+      id_2 = ID.generate()
 
       transfers = [
         %Transfer{
@@ -319,7 +320,7 @@ defmodule TigerBeetlex.IntegrationTest do
         debit_account_id: debit_account_id
       } = ctx
 
-      pending_id = random_id()
+      pending_id = ID.generate()
 
       pending_transfer = %Transfer{
         id: pending_id,
@@ -359,7 +360,7 @@ defmodule TigerBeetlex.IntegrationTest do
                debits_posted: 0
              } = get_account!(conn, debit_account_id)
 
-      post_pending_id = random_id()
+      post_pending_id = ID.generate()
 
       amount_max = 2 ** 128 - 1
 
@@ -407,7 +408,7 @@ defmodule TigerBeetlex.IntegrationTest do
         debit_account_id: debit_account_id
       } = ctx
 
-      pending_id = random_id()
+      pending_id = ID.generate()
 
       pending_transfer = %Transfer{
         id: pending_id,
@@ -447,7 +448,7 @@ defmodule TigerBeetlex.IntegrationTest do
                debits_posted: 0
              } = get_account!(conn, debit_account_id)
 
-      void_pending_id = random_id()
+      void_pending_id = ID.generate()
 
       void_pending_transfer = %Transfer{
         id: void_pending_id,
@@ -491,7 +492,7 @@ defmodule TigerBeetlex.IntegrationTest do
         credit_account_id: credit_account_id
       } = ctx
 
-      id = random_id()
+      id = ID.generate()
 
       transfer = %Transfer{
         id: id,
@@ -518,8 +519,8 @@ defmodule TigerBeetlex.IntegrationTest do
         debit_account_id: debit_account_id
       } = ctx
 
-      id_1 = random_id()
-      id_2 = random_id()
+      id_1 = ID.generate()
+      id_2 = ID.generate()
 
       transfers = [
         %Transfer{
@@ -562,8 +563,8 @@ defmodule TigerBeetlex.IntegrationTest do
         debit_account_id: debit_account_id
       } = ctx
 
-      id_1 = random_id()
-      id_2 = random_id()
+      id_1 = ID.generate()
+      id_2 = ID.generate()
 
       transfers = [
         %Transfer{
@@ -733,8 +734,8 @@ defmodule TigerBeetlex.IntegrationTest do
         conn: conn
       } = ctx
 
-      debit_account_id = random_id()
-      credit_account_id = random_id()
+      debit_account_id = ID.generate()
+      credit_account_id = ID.generate()
 
       accounts = [
         %Account{
@@ -755,7 +756,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       transfers = [
         %Transfer{
-          id: random_id(),
+          id: ID.generate(),
           credit_account_id: credit_account_id,
           debit_account_id: debit_account_id,
           ledger: 1,
@@ -764,7 +765,7 @@ defmodule TigerBeetlex.IntegrationTest do
           amount: 100
         },
         %Transfer{
-          id: random_id(),
+          id: ID.generate(),
           credit_account_id: credit_account_id,
           debit_account_id: debit_account_id,
           ledger: 1,
@@ -834,8 +835,8 @@ defmodule TigerBeetlex.IntegrationTest do
         conn: conn
       } = ctx
 
-      debit_account_id = random_id()
-      credit_account_id = random_id()
+      debit_account_id = ID.generate()
+      credit_account_id = ID.generate()
 
       accounts = [
         %Account{
@@ -856,7 +857,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       transfers = [
         %Transfer{
-          id: random_id(),
+          id: ID.generate(),
           credit_account_id: credit_account_id,
           debit_account_id: debit_account_id,
           ledger: 1,
@@ -865,7 +866,7 @@ defmodule TigerBeetlex.IntegrationTest do
           amount: 100
         },
         %Transfer{
-          id: random_id(),
+          id: ID.generate(),
           credit_account_id: credit_account_id,
           debit_account_id: debit_account_id,
           ledger: 1,
@@ -918,7 +919,7 @@ defmodule TigerBeetlex.IntegrationTest do
   describe "query_accounts/2" do
     test "retrieves account using a query_filter", %{conn: conn} do
       target_code = Enum.random(1..65_535)
-      matched_account_id = random_id()
+      matched_account_id = ID.generate()
 
       matched_account = %Account{
         id: matched_account_id,
@@ -928,14 +929,14 @@ defmodule TigerBeetlex.IntegrationTest do
       }
 
       other_code_account = %Account{
-        id: random_id(),
+        id: ID.generate(),
         ledger: 1,
         code: 1,
         user_data_128: <<42::128>>
       }
 
       other_user_data_account = %Account{
-        id: random_id(),
+        id: ID.generate(),
         ledger: 1,
         code: target_code,
         user_data_128: <<1::128>>
@@ -957,7 +958,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
     test "reverses order when using the reversed flag", %{conn: conn} do
       target_code = Enum.random(1..65_535)
-      account_id_1 = random_id()
+      account_id_1 = ID.generate()
 
       account_1 = %Account{
         id: account_id_1,
@@ -965,7 +966,7 @@ defmodule TigerBeetlex.IntegrationTest do
         code: target_code
       }
 
-      account_id_2 = random_id()
+      account_id_2 = ID.generate()
 
       account_2 = %Account{
         id: account_id_2,
@@ -1007,7 +1008,7 @@ defmodule TigerBeetlex.IntegrationTest do
       } = ctx
 
       target_code = Enum.random(1..65_535)
-      matched_transfer_id = random_id()
+      matched_transfer_id = ID.generate()
 
       matched_transfer = %Transfer{
         id: matched_transfer_id,
@@ -1019,7 +1020,7 @@ defmodule TigerBeetlex.IntegrationTest do
       }
 
       other_code_transfer = %Transfer{
-        id: random_id(),
+        id: ID.generate(),
         credit_account_id: credit_account_id,
         debit_account_id: debit_account_id,
         ledger: 1,
@@ -1028,7 +1029,7 @@ defmodule TigerBeetlex.IntegrationTest do
       }
 
       other_user_data_transfer = %Transfer{
-        id: random_id(),
+        id: ID.generate(),
         credit_account_id: credit_account_id,
         debit_account_id: debit_account_id,
         ledger: 1,
@@ -1058,7 +1059,7 @@ defmodule TigerBeetlex.IntegrationTest do
       } = ctx
 
       target_code = Enum.random(1..65_535)
-      transfer_id_1 = random_id()
+      transfer_id_1 = ID.generate()
 
       transfer_1 = %Transfer{
         id: transfer_id_1,
@@ -1068,7 +1069,7 @@ defmodule TigerBeetlex.IntegrationTest do
         code: target_code
       }
 
-      transfer_id_2 = random_id()
+      transfer_id_2 = ID.generate()
 
       transfer_2 = %Transfer{
         id: transfer_id_2,
@@ -1091,12 +1092,8 @@ defmodule TigerBeetlex.IntegrationTest do
     end
   end
 
-  defp random_id do
-    Uniq.UUID.uuid7(:raw)
-  end
-
   defp create_account!(conn) do
-    id = random_id()
+    id = ID.generate()
 
     account = %Account{
       id: id,
@@ -1111,7 +1108,7 @@ defmodule TigerBeetlex.IntegrationTest do
   end
 
   defp create_transfer!(conn) do
-    id = random_id()
+    id = ID.generate()
 
     credit_account_id = create_account!(conn)
     debit_account_id = create_account!(conn)

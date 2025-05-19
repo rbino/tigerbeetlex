@@ -104,9 +104,10 @@ defmodule TigerBeetlex.Client do
 
   ## Examples
       alias TigerBeetlex.Account
+      alias TigerBeetlex.ID
 
       # Successful request
-      accounts = [%Account{id: <<42::128>>, ledger: 3, code: 4}]
+      accounts = [%Account{id: ID.generate(), ledger: 3, code: 4}]
 
       {:ok, ref} = Client.create_accounts(client, accounts)
 
@@ -146,12 +147,13 @@ defmodule TigerBeetlex.Client do
   See [`create_transfers`](https://docs.tigerbeetle.com/reference/requests/create_transfers/).
 
   ## Examples
+      alias TigerBeetlex.ID
       alias TigerBeetlex.Transfer
 
       # Successful request
       transfers = [
         %Transfer{
-          id: <<42::128>>,
+          id: ID.generate(),
           debit_account_id: <<42::128>>,
           credit_account_id: <<43::128>>,
           ledger: 3,

@@ -3,6 +3,7 @@ defmodule TigerBeetlex.ConcurrencyTest do
 
   alias TigerBeetlex.Account
   alias TigerBeetlex.Client
+  alias TigerBeetlex.ID
   alias TigerBeetlex.Response
 
   setup do
@@ -18,7 +19,7 @@ defmodule TigerBeetlex.ConcurrencyTest do
         Task.async(fn ->
           for _ <- 1..10 do
             account = %Account{
-              id: random_id(),
+              id: ID.generate(),
               ledger: 1,
               code: 1
             }
@@ -33,9 +34,5 @@ defmodule TigerBeetlex.ConcurrencyTest do
       end
 
     Task.await_many(tasks, 30_000)
-  end
-
-  defp random_id do
-    Uniq.UUID.uuid7(:raw)
   end
 end

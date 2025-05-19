@@ -46,6 +46,7 @@ defmodule TigerBeetlex.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      mod: {TigerBeetlex.Application, []},
       extra_applications: [:logger]
     ]
   end
@@ -59,7 +60,6 @@ defmodule TigerBeetlex.MixProject do
       {:typed_struct, "~> 0.3.0"},
       {:nimble_options, "~> 1.0"},
       {:build_dot_zig, "~> 0.6.1", runtime: false},
-      {:uniq, "~> 0.6", only: :test},
       {:styler, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.32", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},

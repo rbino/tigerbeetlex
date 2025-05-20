@@ -1,10 +1,11 @@
 alias TigerBeetlex.Connection
+alias TigerBeetlex.ID
 alias TigerBeetlex.Transfer
 
 {:ok, _pid} =
   Connection.start_link(
     name: :tb,
-    cluster_id: <<0::128>>,
+    cluster_id: ID.from_int(0),
     addresses: ["3000"],
     partitions: 1
   )
@@ -27,9 +28,9 @@ bench = fn ->
       transfers =
         for _idx <- chunk do
           %Transfer{
-            id: <<0::unsigned-little-size(128)>>,
-            debit_account_id: <<0::unsigned-little-size(128)>>,
-            credit_account_id: <<0::unsigned-little-size(128)>>,
+            id: ID.from_int(0),
+            debit_account_id: ID.from_int(0),
+            credit_account_id: ID.from_int(0),
             ledger: 1,
             code: 1,
             amount: 10

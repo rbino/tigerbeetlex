@@ -7,7 +7,7 @@ defmodule TigerBeetlex.ConcurrencyTest do
   alias TigerBeetlex.Response
 
   setup do
-    {:ok, client} = Client.new(<<0::128>>, ["3000"])
+    {:ok, client} = Client.new(ID.from_int(0), ["3000"])
 
     {:ok, client: client}
   end

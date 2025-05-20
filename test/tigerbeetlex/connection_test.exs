@@ -2,12 +2,13 @@ defmodule TigerBeetlex.ConnectionTest do
   use ExUnit.Case, async: true
 
   alias TigerBeetlex.Connection
+  alias TigerBeetlex.ID
 
   describe "start_link/1" do
     setup do
       valid_opts = [
         name: :tb_connection_test,
-        cluster_id: <<0::128>>,
+        cluster_id: ID.from_int(0),
         addresses: ["3000"]
       ]
 

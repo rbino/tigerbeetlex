@@ -16,6 +16,16 @@ defmodule TigerBeetlex.ID do
     Server.generate_id()
   end
 
+  @doc """
+  Converts an integer to a 128 bit binary id.
+
+  The integer is formatted in little endian format so that the correct ordering is preserved in
+  TigerBeetle LSM trees.
+  """
+  def from_int(n) when is_integer(n) and n >= 0 do
+    <<n::unsigned-integer-little-size(128)>>
+  end
+
   @doc false
   def validate(<<_::128>> = value), do: {:ok, value}
   def validate(_other), do: {:error, "not a valid 128-bit binary"}

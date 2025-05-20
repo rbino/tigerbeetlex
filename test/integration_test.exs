@@ -24,7 +24,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
     args = [
       name: name,
-      cluster_id: <<0::128>>,
+      cluster_id: ID.from_int(0),
       addresses: ["3000"]
     ]
 
@@ -92,7 +92,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
     test "failed account creation", %{conn: conn} do
       account = %Account{
-        id: <<0::128>>,
+        id: ID.from_int(0),
         ledger: 1,
         code: 1,
         flags: %AccountFlags{credits_must_not_exceed_debits: true}
@@ -656,7 +656,7 @@ defmodule TigerBeetlex.IntegrationTest do
         conn: conn
       } = ctx
 
-      non_existing_id = <<42::128>>
+      non_existing_id = ID.from_int(42)
 
       assert {:ok, []} = Connection.lookup_accounts(conn, [non_existing_id])
     end
@@ -667,7 +667,7 @@ defmodule TigerBeetlex.IntegrationTest do
         conn: conn
       } = ctx
 
-      non_existing_id = <<42::128>>
+      non_existing_id = ID.from_int(42)
       account_ids = [non_existing_id, account_id]
 
       assert {:ok, results} = Connection.lookup_accounts(conn, account_ids)
@@ -709,7 +709,7 @@ defmodule TigerBeetlex.IntegrationTest do
         conn: conn
       } = ctx
 
-      non_existing_id = <<42::128>>
+      non_existing_id = ID.from_int(42)
 
       assert {:ok, []} = Connection.lookup_transfers(conn, [non_existing_id])
     end
@@ -720,7 +720,7 @@ defmodule TigerBeetlex.IntegrationTest do
         conn: conn
       } = ctx
 
-      non_existing_id = <<42::128>>
+      non_existing_id = ID.from_int(42)
       transfer_ids = [non_existing_id, transfer_id]
 
       assert {:ok, results} = Connection.lookup_transfers(conn, transfer_ids)

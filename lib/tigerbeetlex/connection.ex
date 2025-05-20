@@ -84,11 +84,13 @@ defmodule TigerBeetlex.Connection do
       )
 
   ## Examples
+      alias TigerBeetlex.Connection
+      alias TigerBeetlex.ID
 
       # Start the TigerBeetlex connection
       {:ok, pid} =
-        TigerBeetlex.Connection.start_link(
-          cluster_id: <<0::128>>,
+        Connection.start_link(
+          cluster_id: ID.from_int(0),
           addresses: ["3000"],
           name: :tb
         )
@@ -139,7 +141,7 @@ defmodule TigerBeetlex.Connection do
       #=> {:ok, []}
 
       # Creation error
-      accounts = [%Account{id: <<0::128>>, ledger: 3, code: 4}]
+      accounts = [%Account{id: ID.from_int(0), ledger: 3, code: 4}]
 
       TigerBeetlex.Connection.create_accounts(:tb, accounts)
 
@@ -177,8 +179,8 @@ defmodule TigerBeetlex.Connection do
       transfers = [
         %Transfer{
           id: ID.generate(),
-          debit_account_id: <<42::128>>,
-          credit_account_id: <<43::128>>,
+          debit_account_id: ID.from_int(42),
+          credit_account_id: ID.from_int(43),
           ledger: 3,
           code: 4
           amount: 100
@@ -191,9 +193,9 @@ defmodule TigerBeetlex.Connection do
       # Creation error
       transfers = [
         %Transfer{
-          id: <<0::128>>,
-          debit_account_id: <<42::128>>,
-          credit_account_id: <<43::128>>,
+          id: ID.from_int(0),
+          debit_account_id: ID.from_int(42),
+          credit_account_id: ID.from_int(43),
           ledger: 3,
           code: 4
           amount: 100
@@ -228,7 +230,9 @@ defmodule TigerBeetlex.Connection do
 
   ## Examples
 
-      ids = [<<42::128>>]
+      alias TigerBeetlex.ID
+
+      ids = [ID.from_int(42)]
 
       TigerBeetlex.Connection.lookup_accounts(:tb, ids)
       #=> {:ok, [%TigerBeetlex.Account{}]}
@@ -258,7 +262,9 @@ defmodule TigerBeetlex.Connection do
 
   ## Examples
 
-      ids = [<<42::128>>]
+      alias TigerBeetlex.ID
+
+      ids = [ID.from_int(43)]
 
       TigerBeetlex.Connection.lookup_transfers(:tb, ids)
       #=> {:ok, [%TigerBeetlex.Transfer{}]}
@@ -288,8 +294,9 @@ defmodule TigerBeetlex.Connection do
 
   ## Examples
       alias TigerBeetlex.AccountFilter
+      alias TigerBeetlex.ID
 
-      account_filter = %AccountFilter{id: <<42::128>>, limit: 10}
+      account_filter = %AccountFilter{id: ID.from_int(42), limit: 10}
 
       TigerBeetlex.Connection.get_account_balances(:tb, account_filter)
       #=> {:ok, [%TigerBeetlex.AccountBalance{}]}
@@ -317,8 +324,9 @@ defmodule TigerBeetlex.Connection do
 
   ## Examples
       alias TigerBeetlex.AccountFilter
+      alias TigerBeetlex.ID
 
-      account_filter = %AccountFilter{id: <<42::128>>, limit: 10}
+      account_filter = %AccountFilter{id: ID.from_int(42), limit: 10}
 
       TigerBeetlex.Connection.get_account_transfers(:tb, account_filter)
       #=> {:ok, [%TigerBeetlex.Transfer{}]}
@@ -347,7 +355,7 @@ defmodule TigerBeetlex.Connection do
   ## Examples
       alias TigerBeetlex.QueryFilter
 
-      query_filter = %QueryFilter{id: <<42::128>>, limit: 10}
+      query_filter = %QueryFilter{ledger: 42, limit: 10}
 
       TigerBeetlex.Connection.query_accounts(:tb, query_filter)
       #=> {:ok, [%TigerBeetlex.Account{}]}
@@ -376,7 +384,7 @@ defmodule TigerBeetlex.Connection do
   ## Examples
       alias TigerBeetlex.QueryFilter
 
-      query_filter = %QueryFilter{id: <<42::128>>, limit: 10}
+      query_filter = %QueryFilter{ledger: 42, limit: 10}
 
       TigerBeetlex.Connection.query_transfers(:tb, query_filter)
       #=> {:ok, [%TigerBeetlex.Transfer{}]}

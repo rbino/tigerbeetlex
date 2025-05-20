@@ -1,5 +1,5 @@
 defmodule TigerBeetlex.IDTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias TigerBeetlex.ID
 
@@ -8,6 +8,12 @@ defmodule TigerBeetlex.IDTest do
       ids = Enum.map(1..100, fn _ -> ID.generate() end)
 
       assert_strictly_monotonic(ids)
+    end
+  end
+
+  describe "from_int/1" do
+    test "encodes the integer in little endian" do
+      assert ID.from_int(42) == <<42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>
     end
   end
 

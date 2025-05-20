@@ -73,7 +73,9 @@ defmodule TigerBeetlex.Client do
 
   ## Examples
 
-      {:ok, client} = Client.new(<<0::128>>, ["3000"])
+      alias TigerBeetlex.ID
+
+      {:ok, client} = Client.new(ID.from_int(0), ["3000"])
   """
   @spec new(
           cluster_id :: Types.id_128(),
@@ -116,7 +118,7 @@ defmodule TigerBeetlex.Client do
       #=> {:ok, []}
 
       # Creation error
-      accounts = [%Account{id: <<0::128>>, ledger: 3, code: 4}]
+      accounts = [%Account{id: ID.from_int(0), ledger: 3, code: 4}]
 
       {:ok, ref} = Client.create_accounts(client, accounts)
 
@@ -154,8 +156,8 @@ defmodule TigerBeetlex.Client do
       transfers = [
         %Transfer{
           id: ID.generate(),
-          debit_account_id: <<42::128>>,
-          credit_account_id: <<43::128>>,
+          debit_account_id: ID.from_int(42),
+          credit_account_id: ID.from_int(43),
           ledger: 3,
           code: 4
           amount: 100
@@ -171,9 +173,9 @@ defmodule TigerBeetlex.Client do
       # Creation error
       transfers = [
         %Transfer{
-          id: <<0::128>>,
-          debit_account_id: <<42::128>>,
-          credit_account_id: <<43::128>>,
+          id: ID.from_int(0),
+          debit_account_id: ID.from_int(42),
+          credit_account_id: ID.from_int(43),
           ledger: 3,
           code: 4
           amount: 100
@@ -209,8 +211,9 @@ defmodule TigerBeetlex.Client do
 
   ## Examples
       alias TigerBeetlex.AccountFilter
+      alias TigerBeetlex.ID
 
-      account_filter = %AccountFilter{id: <<42::128>>, limit: 10}
+      account_filter = %AccountFilter{id: ID.from_int(42), limit: 10}
 
       {:ok, ref} = Client.get_account_balances(client, account_filter)
 
@@ -239,8 +242,9 @@ defmodule TigerBeetlex.Client do
 
   ## Examples
       alias TigerBeetlex.AccountFilter
+      alias TigerBeetlex.ID
 
-      account_filter = %AccountFilter{id: <<42::128>>, limit: 10}
+      account_filter = %AccountFilter{id: ID.from_int(42), limit: 10}
 
       {:ok, ref} = Client.get_account_balances(client, account_filter)
 
@@ -269,7 +273,9 @@ defmodule TigerBeetlex.Client do
 
   ## Examples
 
-      ids = [<<42::128>>]
+      alias TigerBeetlex.ID
+
+      ids = [ID.from_int(42)]
 
       {:ok, ref} = Client.lookup_accounts(client, ids)
 
@@ -297,7 +303,9 @@ defmodule TigerBeetlex.Client do
 
   ## Examples
 
-      ids = [<<42::128>>]
+      alias TigerBeetlex.ID
+
+      ids = [ID.from_int(42)]
 
       {:ok, ref} = Client.lookup_transfers(client, ids)
 
@@ -326,7 +334,7 @@ defmodule TigerBeetlex.Client do
   ## Examples
       alias TigerBeetlex.QueryFilter
 
-      query_filter = %QueryFilter{user_data_128: <<42::128>>, limit: 10}
+      query_filter = %QueryFilter{ledger: 42, limit: 10}
 
       {:ok, ref} = Client.query_accounts(client, query_filter)
 
@@ -356,7 +364,7 @@ defmodule TigerBeetlex.Client do
   ## Examples
       alias TigerBeetlex.QueryFilter
 
-      query_filter = %QueryFilter{user_data_128: <<42::128>>, limit: 10}
+      query_filter = %QueryFilter{ledger: 42, limit: 10}
 
       {:ok, ref} = Client.query_transfers(client, ids)
 

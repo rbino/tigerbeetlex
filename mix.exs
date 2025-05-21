@@ -18,7 +18,7 @@ defmodule TigerBeetlex.MixProject do
       description: description(),
       package: package(),
       docs: [
-        main: "TigerBeetlex.Client",
+        main: "walkthrough",
         source_ref: @version,
         source_url: @repo_url,
         groups_for_modules: [
@@ -38,7 +38,9 @@ defmodule TigerBeetlex.MixProject do
             TigerBeetlex.TransferFlags
           ],
           Types: [TigerBeetlex.Types]
-        ]
+        ],
+        extras: ["guides/walkthrough.livemd"],
+        groups_for_extras: [Introduction: ~r/guides/]
       ]
     ]
   end

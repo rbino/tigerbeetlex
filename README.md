@@ -1,10 +1,11 @@
 # TigerBeetlex
 
-Elixir client for [TigerBeetle](https://github.com/tigerbeetledb/tigerbeetle).
+Elixir client for [TigerBeetle](https://github.com/tigerbeetle/tigerbeetle).
 
 ## Usage
 
-More documentation is coming, for now check out the integration test in the `test` directory.
+Check out the documentation on [HexDocs](https://hexdocs.pm/tigerbeetlex). It also includes a
+walkthrough that can be executed on LiveBook.
 
 ## Installation
 
@@ -13,14 +14,10 @@ The package can be installed by adding `tigerbeetlex` to your list of dependenci
 ```elixir
 def deps do
   [
-    {:tigerbeetlex, github: "rbino/tigerbeetlex", tag: "0.16.40"}
+    {:tigerbeetlex, "~> 0.16.41"}
   ]
 end
 ```
-
-The package is not currently published on Hex due to [this issue](https://github.com/rbino/tigerbeetlex/issues/85).
-
-Due to this, the documentation is not yet on HexDocs. Run `mix docs` to build and access the documentation locally.
 
 ### Client versioning
 

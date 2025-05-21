@@ -23,11 +23,18 @@ const auto_generated_code_notice =
     \\
 ;
 
+const Constant = struct {
+    docs: []const u8,
+    name: []const u8,
+    value: []const u8,
+};
+
 const TypeMapping = struct {
     file_name: []const u8,
     module_name: []const u8,
     hidden_fields: []const []const u8 = &.{},
     docs_link: ?[]const u8 = null,
+    constants: []const Constant = &.{},
 
     pub fn hidden(comptime self: @This(), name: []const u8) bool {
         inline for (self.hidden_fields) |field| {
@@ -79,6 +86,13 @@ const type_mappings = .{
         .file_name = "transfer",
         .module_name = "Transfer",
         .docs_link = "reference/transfer#",
+        .constants = &.{
+            .{
+                .name = "amount_max",
+                .value = "Integer.pow(2, 128) - 1",
+                .docs = "The maximum amount for a transfer. Used in Two-Phase transfers to post the full pending amount.",
+            },
+        },
     } },
     .{ tb.QueryFilter, TypeMapping{
         .file_name = "query_filter",
@@ -321,6 +335,8 @@ fn emit_struct(
 
     try emit_typed_struct(buffer, type_info, mapping);
 
+    try emit_constants(buffer, mapping.constants);
+
     try buffer.writer().print(
         \\
         \\  @doc """
@@ -467,6 +483,26 @@ fn emit_typed_struct(
         \\  end
         \\
     , .{});
+}
+
+fn emit_constants(
+    buffer: *std.ArrayList(u8),
+    comptime consts: []const Constant,
+) !void {
+    for (consts) |constant| {
+        try buffer.writer().print(
+            \\
+            \\  @doc "{[docs]s}"
+            \\  def {[name]s} do
+            \\    {[value]s}
+            \\  end
+            \\
+        , .{
+            .docs = constant.docs,
+            .name = constant.name,
+            .value = constant.value,
+        });
+    }
 }
 
 fn typespec_type(comptime field_name: []const u8, comptime Type: type) []const u8 {

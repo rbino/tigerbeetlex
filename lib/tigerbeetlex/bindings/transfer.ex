@@ -28,6 +28,11 @@ defmodule TigerBeetlex.Transfer do
     field :timestamp, non_neg_integer(), default: 0
   end
 
+  @doc "The maximum amount for a transfer. Used in Two-Phase transfers to post the full pending amount."
+  def amount_max do
+    Integer.pow(2, 128) - 1
+  end
+
   @doc """
   Creates a `TigerBeetlex.Transfer` struct from its binary representation.
   """

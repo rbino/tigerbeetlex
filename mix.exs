@@ -1,7 +1,7 @@
 defmodule TigerBeetlex.MixProject do
   use Mix.Project
 
-  @version "0.16.40"
+  @version "0.16.41"
 
   @repo_url "https://github.com/rbino/tigerbeetlex"
 
@@ -37,6 +37,7 @@ defmodule TigerBeetlex.MixProject do
             TigerBeetlex.Transfer,
             TigerBeetlex.TransferFlags
           ],
+          Utilities: [TigerBeetlex.ID],
           Types: [TigerBeetlex.Types]
         ],
         extras: ["guides/walkthrough.livemd"],

@@ -129,7 +129,7 @@ fn submit(
     const operation = try std.meta.intToEnum(tb_client.Operation, operation_int);
 
     assert(operation != .pulse);
-    assert(operation != .get_events);
+    assert(operation != .get_change_events);
 
     const client_resource = try ClientResource.from_term_handle(env, client_term);
     // We increase the refcount of the client resource so we can be sure the destructor is not

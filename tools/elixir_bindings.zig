@@ -755,7 +755,7 @@ fn emit_response_module(
             if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
 
             const operation: tb_client.Operation = @enumFromInt(field.value);
-            if (operation == .pulse or operation == .get_events) continue;
+            if (operation == .pulse or operation == .get_change_events) continue;
             const result_type = StateMachine.ResultType(operation);
 
             try buffer.writer().print(
@@ -808,7 +808,7 @@ fn emit_response_module(
             if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
 
             const operation: tb_client.Operation = @enumFromInt(field.value);
-            if (operation == .pulse or operation == .get_events) continue;
+            if (operation == .pulse or operation == .get_change_events) continue;
             const result_type = StateMachine.ResultType(operation);
 
             try buffer.writer().print(
@@ -884,7 +884,7 @@ fn emit_operation_module(
             if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
 
             const operation: tb_client.Operation = @enumFromInt(field.value);
-            if (operation == .pulse or operation == .get_events) continue;
+            if (operation == .pulse or operation == .get_change_events) continue;
 
             try buffer.writer().print(
                 \\      :{[operation_name]s},
@@ -906,7 +906,7 @@ fn emit_operation_module(
             if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
 
             const operation: tb_client.Operation = @enumFromInt(field.value);
-            if (operation == .pulse or operation == .get_events) continue;
+            if (operation == .pulse or operation == .get_change_events) continue;
 
             try buffer.writer().print(
                 \\  def from_atom(:{[operation_name]s}), do: {[operation_value]}

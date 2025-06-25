@@ -14,7 +14,7 @@ The package can be installed by adding `tigerbeetlex` to your list of dependenci
 ```elixir
 def deps do
   [
-    {:tigerbeetlex, "~> 0.16.45"}
+    {:tigerbeetlex, "~> 0.16.46"}
   ]
 end
 ```

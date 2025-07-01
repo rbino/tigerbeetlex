@@ -32,4 +32,11 @@ defmodule TigerBeetlex.Types do
           | partition_supervisor_start_option()
 
   @type start_options :: [start_option()]
+
+  @type event_type ::
+          :single_phase
+          | :two_phase_pending
+          | :two_phase_posted
+          | :two_phase_voided
+          | :two_phase_expired
 end

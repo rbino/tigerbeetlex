@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.16.47] - Unreleased
+
+### Added
+
+- Add functionality and guides to handle TigerBeetle CDC data
+
 ## [0.16.46] - 2025-06-25
 
 ### Changed

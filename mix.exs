@@ -38,9 +38,19 @@ defmodule TigerBeetlex.MixProject do
             TigerBeetlex.TransferFlags
           ],
           Utilities: [TigerBeetlex.ID],
+          CDC: [
+            TigerBeetlex.CDC.Account,
+            TigerBeetlex.CDC.AccountFlags,
+            TigerBeetlex.CDC.Event,
+            TigerBeetlex.CDC.Transfer,
+            TigerBeetlex.CDC.TransferFlags
+          ],
           Types: [TigerBeetlex.Types]
         ],
-        extras: ["guides/walkthrough.livemd"],
+        extras: [
+          "guides/walkthrough.livemd",
+          "guides/change_data_capture.livemd"
+        ],
         groups_for_extras: [Introduction: ~r/guides/]
       ]
     ]

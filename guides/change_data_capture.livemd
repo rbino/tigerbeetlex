@@ -2,7 +2,7 @@
 
 ```elixir
 Mix.install([
-  {:tigerbeetlex, github: "rbino/tigerbeetlex"},
+  {:tigerbeetlex, "~> 0.16.47"},
   {:broadway, "~> 1.2"},
   {:broadway_rabbitmq, "~> 0.7"},
   {:jason, "~> 1.2"}
@@ -35,7 +35,7 @@ In your `mix.exs` add TigerBeetlex, Broadway and Jason as dependencies
 
 ```elixir
 [
-  {:tigerbeetlex, github: "rbino/tigerbeetlex"},
+  {:tigerbeetlex, "~> 0.16.47"},
   {:broadway, "~> 1.2"},
   {:broadway_rabbitmq, "~> 0.7"},
   {:jason, "~> 1.2"}

@@ -1,6 +1,7 @@
 // Taken from https://github.com/E-xyza/zigler/blob/master/priv/beam/allocator.zig
 
 const std = @import("std");
+const assert = std.debug.assert;
 const e = @import("erl_nif.zig");
 
 const Allocator = std.mem.Allocator;
@@ -14,6 +15,7 @@ pub const raw_allocator = Allocator{
 const raw_beam_allocator_vtable = Allocator.VTable{
     .alloc = raw_beam_alloc,
     .resize = raw_beam_resize,
+    .remap = raw_beam_remap,
     .free = raw_beam_free,
 };
 
@@ -23,46 +25,55 @@ pub const general_purpose_allocator = general_purpose_allocator_instance.allocat
 fn raw_beam_alloc(
     ctx: *anyopaque,
     len: usize,
-    log2_ptr_align: u8,
+    alignment: std.mem.Alignment,
     ret_addr: usize,
 ) ?[*]u8 {
     _ = ctx;
     _ = ret_addr;
-    const ptr_align = @as(usize, 1) << @as(Allocator.Log2Align, @intCast(log2_ptr_align));
-    if (ptr_align > MAX_ALIGN) {
-        return null;
-    }
-    const ptr = e.enif_alloc(len) orelse return null;
-    return @ptrCast(ptr);
+    assert(alignment.compare(.lte, comptime .fromByteUnits(MAX_ALIGN)));
+    assert(len > 0);
+    return @ptrCast(e.enif_alloc(len));
 }
 
 fn raw_beam_resize(
     ctx: *anyopaque,
     buf: []u8,
-    log2_buf_align: u8,
+    alignment: std.mem.Alignment,
     new_len: usize,
     return_address: usize,
-) ?usize {
+) bool {
     _ = ctx;
-    _ = log2_buf_align;
+    _ = buf;
+    _ = alignment;
+    _ = new_len;
     _ = return_address;
-    if (new_len <= buf.len) {
-        return true;
-    }
 
     return false;
 }
 
+fn raw_beam_remap(
+    ctx: *anyopaque,
+    memory: []u8,
+    alignment: std.mem.Alignment,
+    new_len: usize,
+    return_address: usize,
+) ?[*]u8 {
+    _ = ctx;
+    _ = alignment;
+    _ = return_address;
+    return @ptrCast(e.enif_realloc(memory.ptr, new_len)); // can't remap with raw allocator
+}
+
 fn raw_beam_free(
     ctx: *anyopaque,
-    buf: []u8,
-    log2_buf_align: u8,
+    memory: []u8,
+    alignment: std.mem.Alignment,
     return_address: usize,
 ) void {
     _ = ctx;
-    _ = log2_buf_align;
+    _ = alignment;
     _ = return_address;
-    e.enif_free(buf.ptr);
+    e.enif_free(memory.ptr);
 }
 
 pub const large_allocator = Allocator{
@@ -72,53 +83,64 @@ pub const large_allocator = Allocator{
 const large_beam_allocator_vtable = Allocator.VTable{
     .alloc = large_beam_alloc,
     .resize = large_beam_resize,
+    .remap = large_beam_remap,
     .free = large_beam_free,
 };
 
 fn large_beam_alloc(
     ctx: *anyopaque,
     len: usize,
-    log2_align: u8,
+    alignment: std.mem.Alignment,
     return_address: usize,
 ) ?[*]u8 {
     _ = ctx;
     _ = return_address;
-    return aligned_alloc(len, log2_align);
+    assert(len > 0);
+    return aligned_alloc(len, alignment);
 }
 
 fn large_beam_resize(
     ctx: *anyopaque,
     buf: []u8,
-    log2_buf_align: u8,
+    alignment: std.mem.Alignment,
     new_len: usize,
     ret_addr: usize,
 ) bool {
     _ = ctx;
-    _ = log2_buf_align;
+    _ = alignment;
     _ = ret_addr;
-    if (new_len <= buf.len) {
-        return true;
-    }
-    return false;
+    // we can shrink buffers but we can't grow them
+    return new_len < buf.len;
+}
+
+fn large_beam_remap(
+    ctx: *anyopaque,
+    memory: []u8,
+    alignment: std.mem.Alignment,
+    new_len: usize,
+    ret_addr: usize,
+) ?[*]u8 {
+    // can't use realloc directly because it might not respect alignment.
+    return if (large_beam_resize(ctx, memory, alignment, new_len, ret_addr)) memory.ptr else null;
 }
 
 fn large_beam_free(
     ctx: *anyopaque,
     buf: []u8,
-    log2_buf_align: u8,
+    alignment: std.mem.Alignment,
     return_address: usize,
 ) void {
     _ = ctx;
-    _ = log2_buf_align;
+    _ = alignment;
     _ = return_address;
     aligned_free(buf.ptr);
 }
 
-fn aligned_alloc(len: usize, log2_align: u8) ?[*]u8 {
-    const alignment = @as(usize, 1) << @as(Allocator.Log2Align, @intCast(log2_align));
-    const unaligned_ptr: [*]u8 = @ptrCast(e.enif_alloc(len + alignment - 1 + @sizeOf(usize)) orelse return null);
+fn aligned_alloc(len: usize, alignment: std.mem.Alignment) ?[*]u8 {
+    const alignment_bytes = alignment.toByteUnits();
+    const unaligned_ptr: [*]u8 = @ptrCast(e.enif_alloc(len + alignment_bytes - 1 + @sizeOf(usize)) orelse return null);
     const unaligned_addr = @intFromPtr(unaligned_ptr);
-    const aligned_addr = std.mem.alignForward(usize, unaligned_addr + @sizeOf(usize), alignment);
+    const aligned_addr = std.mem.alignForward(usize, unaligned_addr + @sizeOf(usize), alignment_bytes);
     const aligned_ptr = unaligned_ptr + (aligned_addr - unaligned_addr);
     get_header(aligned_ptr).* = unaligned_ptr;
 
@@ -131,7 +153,7 @@ fn aligned_free(ptr: [*]u8) void {
 }
 
 fn get_header(ptr: [*]u8) *[*]u8 {
-    return @ptrFromInt(@intFromPtr(ptr) - @sizeOf(usize));
+    return @alignCast(@ptrCast(ptr - @sizeOf(usize)));
 }
 
 const BeamGpa = std.heap.GeneralPurposeAllocator(.{ .thread_safe = true });

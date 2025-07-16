@@ -91,7 +91,7 @@ pub fn make_u8(env: *Env, val: u8) Term {
 /// Creates an BEAM tuple from a Zig tuple of terms
 pub fn make_tuple(env: *Env, tuple: anytype) Term {
     const type_info = @typeInfo(@TypeOf(tuple));
-    if (type_info != .Struct or !type_info.Struct.is_tuple)
+    if (type_info != .@"struct" or !type_info.@"struct".is_tuple)
         @compileError("invalid argument to make_tuple: not a tuple");
 
     var tuple_list: [tuple.len]Term = undefined;

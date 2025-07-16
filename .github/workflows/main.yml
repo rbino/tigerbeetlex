@@ -15,7 +15,7 @@ jobs:
       matrix:
         otp: ["27.2.4"]
         elixir: ["1.18.2-otp-27"]
-        zig: ["0.13.0"]
+        zig: ["0.14.1"]
     steps:
       - name: Clone the repository
         uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
           elixir-version: ${{ matrix.elixir }}
 
       - name: Install Zig
-        uses: mlugg/setup-zig@v1
+        uses: mlugg/setup-zig@v2
         with:
           version: ${{ matrix.zig }}
 

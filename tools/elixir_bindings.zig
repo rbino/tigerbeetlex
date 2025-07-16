@@ -321,7 +321,7 @@ fn emit_struct(
         if (comptime mapping.hidden(field.name)) continue;
 
         switch (@typeInfo(field.type)) {
-            .Struct, .Enum => {
+            .@"struct", .@"enum" => {
                 try buffer.writer().print(
                     \\
                     \\  alias TigerBeetlex.{[module_name]s}
@@ -507,15 +507,15 @@ fn emit_constants(
 
 fn typespec_type(comptime field_name: []const u8, comptime Type: type) []const u8 {
     switch (@typeInfo(Type)) {
-        .Bool => return "boolean()",
-        .Int => |int| {
+        .bool => return "boolean()",
+        .int => |int| {
             if (int.bits == 128 and !big_integer.contains(field_name))
                 return "<<_::128>>";
 
             return if (int.signedness == .unsigned) "non_neg_integer()" else "integer()";
         },
-        .Enum => return "atom()",
-        .Struct => return std.fmt.comptimePrint("{[module_name]s}.t()", .{
+        .@"enum" => return "atom()",
+        .@"struct" => return std.fmt.comptimePrint("{[module_name]s}.t()", .{
             .module_name = comptime module_name_for(type_mappings, Type),
         }),
         else => unreachable,
@@ -524,18 +524,18 @@ fn typespec_type(comptime field_name: []const u8, comptime Type: type) []const u
 
 fn bitstring_options(comptime field_name: []const u8, comptime Type: type) []const u8 {
     switch (@typeInfo(Type)) {
-        .Int => |info| {
+        .int => |info| {
             if (info.bits == 128 and !big_integer.contains(field_name))
                 return "binary-size(16)";
 
             return int_bitstring_options(info);
         },
-        .Enum => |info| {
+        .@"enum" => |info| {
             const tag_info = @typeInfo(info.tag_type);
-            assert(tag_info == .Int);
-            return int_bitstring_options(tag_info.Int);
+            assert(tag_info == .int);
+            return int_bitstring_options(tag_info.int);
         },
-        .Struct => |info| {
+        .@"struct" => |info| {
             assert(info.layout == .@"packed");
 
             return std.fmt.comptimePrint("binary-size({[byte_size]})", .{
@@ -543,7 +543,7 @@ fn bitstring_options(comptime field_name: []const u8, comptime Type: type) []con
             });
         },
         // This should always be padding
-        .Array => |info| {
+        .array => |info| {
             assert(info.child == u8);
 
             return std.fmt.comptimePrint("binary-size({[byte_size]})", .{
@@ -564,13 +564,13 @@ fn int_bitstring_options(comptime info: std.builtin.Type.Int) []const u8 {
 
 fn deserialize_struct_field(comptime field_name: []const u8, comptime Type: type) []const u8 {
     switch (@typeInfo(Type)) {
-        .Enum => {
+        .@"enum" => {
             return std.fmt.comptimePrint("TigerBeetlex.{[module_name]s}.to_atom({[field_name]s})", .{
                 .module_name = comptime module_name_for(type_mappings, Type),
                 .field_name = field_name,
             });
         },
-        .Struct => |info| {
+        .@"struct" => |info| {
             assert(info.layout == .@"packed");
 
             return std.fmt.comptimePrint("TigerBeetlex.{[module_name]s}.from_binary({[field_name]s})", .{
@@ -578,23 +578,23 @@ fn deserialize_struct_field(comptime field_name: []const u8, comptime Type: type
                 .field_name = field_name,
             });
         },
-        .Int => return field_name,
+        .int => return field_name,
         else => unreachable,
     }
 }
 
 fn default_field_value(comptime field_name: []const u8, comptime Type: type) ?[]const u8 {
     switch (@typeInfo(Type)) {
-        .Bool => return "false",
+        .bool => return "false",
 
-        .Int => |info| {
+        .int => |info| {
             if (info.bits == 128 and !big_integer.contains(field_name))
                 return "<<0::size(128)>>";
 
             return "0";
         },
 
-        .Struct => |info| {
+        .@"struct" => |info| {
             assert(info.layout == .@"packed");
 
             return std.fmt.comptimePrint("%{[module_name]s}{{}}", .{
@@ -608,16 +608,16 @@ fn default_field_value(comptime field_name: []const u8, comptime Type: type) ?[]
 
 fn serialized_value(comptime field_name: []const u8, comptime Type: type) []const u8 {
     switch (@typeInfo(Type)) {
-        .Int => return field_name,
+        .int => return field_name,
 
-        .Enum => {
+        .@"enum" => {
             return std.fmt.comptimePrint("{[module_name]s}.from_atom({[field_name]s})", .{
                 .module_name = comptime module_name_for(type_mappings, Type),
                 .field_name = field_name,
             });
         },
 
-        .Struct => |info| {
+        .@"struct" => |info| {
             assert(info.layout == .@"packed");
 
             return std.fmt.comptimePrint(
@@ -684,7 +684,7 @@ fn emit_enum(
         \\
     , .{});
 
-    const type_info = @typeInfo(Type).Enum;
+    const type_info = @typeInfo(Type).@"enum";
     inline for (type_info.fields) |field| {
         if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
 
@@ -750,7 +750,7 @@ fn emit_response_module(
     , .{});
 
     {
-        const operation_info = @typeInfo(tb_client.Operation).Enum;
+        const operation_info = @typeInfo(tb_client.Operation).@"enum";
         inline for (operation_info.fields) |field| {
             if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
 
@@ -774,7 +774,7 @@ fn emit_response_module(
     , .{});
 
     {
-        const packet_status_info = @typeInfo(tb_client.PacketStatus).Enum;
+        const packet_status_info = @typeInfo(tb_client.PacketStatus).@"enum";
         inline for (packet_status_info.fields) |field| {
             const status: tb_client.PacketStatus = @enumFromInt(field.value);
             if (status == .ok) {
@@ -803,7 +803,7 @@ fn emit_response_module(
     }
 
     {
-        const operation_info = @typeInfo(tb_client.Operation).Enum;
+        const operation_info = @typeInfo(tb_client.Operation).@"enum";
         inline for (operation_info.fields) |field| {
             if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
 
@@ -829,7 +829,7 @@ fn emit_response_module(
     }
 
     {
-        const packet_status_info = @typeInfo(tb_client.PacketStatus).Enum;
+        const packet_status_info = @typeInfo(tb_client.PacketStatus).@"enum";
 
         try buffer.writer().print(
             \\  @doc false
@@ -872,7 +872,7 @@ fn emit_operation_module(
     , .{});
 
     {
-        const operation_info = @typeInfo(tb_client.Operation).Enum;
+        const operation_info = @typeInfo(tb_client.Operation).@"enum";
 
         try buffer.writer().print(
             \\  def available_operations do
@@ -901,7 +901,7 @@ fn emit_operation_module(
     }
 
     {
-        const operation_info = @typeInfo(tb_client.Operation).Enum;
+        const operation_info = @typeInfo(tb_client.Operation).@"enum";
         inline for (operation_info.fields) |field| {
             if (comptime std.mem.startsWith(u8, field.name, "deprecated_")) continue;
 
@@ -951,14 +951,14 @@ pub fn generate_bindings(
     @setEvalBranchQuota(100_000);
 
     switch (@typeInfo(ZigType)) {
-        .Struct => |info| switch (info.layout) {
+        .@"struct" => |info| switch (info.layout) {
             .auto => @compileError(
                 "Only packed or extern structs are supported: " ++ @typeName(ZigType),
             ),
             .@"packed" => try emit_flags(buffer, info, mapping),
             .@"extern" => try emit_struct(buffer, info, mapping, @sizeOf(ZigType)),
         },
-        .Enum => try emit_enum(buffer, ZigType, mapping),
+        .@"enum" => try emit_enum(buffer, ZigType, mapping),
         else => @compileError("Type cannot be represented: " ++ @typeName(ZigType)),
     }
 }

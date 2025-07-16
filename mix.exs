@@ -1,7 +1,7 @@
 defmodule TigerBeetlex.MixProject do
   use Mix.Project
 
-  @version "0.16.48"
+  @version "0.16.50"
 
   @repo_url "https://github.com/rbino/tigerbeetlex"
 
@@ -10,7 +10,7 @@ defmodule TigerBeetlex.MixProject do
       app: :tigerbeetlex,
       version: @version,
       elixir: "~> 1.14",
-      install_zig: "0.13.0",
+      install_zig: "0.14.1",
       zig_build_mode: zig_build_mode(Mix.env()),
       compilers: [:build_dot_zig] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,

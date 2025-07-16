@@ -79,7 +79,6 @@ pub fn build(b: *std.Build) !void {
     const config_mod = b.createModule(.{
         .root_source_file = b.path("src/config.zig"),
     });
-    config_mod.addImport("vsr", vsr_mod);
 
     const elixir_bindings_generator = b.addExecutable(.{
         .name = "elixir_bindings",

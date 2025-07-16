@@ -1,5 +1,5 @@
 pub const vsr_options = .{
-    .release = "0.16.48",
+    .release = "0.16.50",
     .release_client_min = "0.16.4",
     .git_commit = null,
     .hash_log_mode = .none,

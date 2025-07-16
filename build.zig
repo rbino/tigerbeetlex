@@ -1,6 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const CrossTarget = std.zig.CrossTarget;
+const Query = std.Target.Query;
 
 // TigerBeetle requires certain CPU feature and supports a closed set of CPUs.
 // This is taken from TigerBeetle's build.zig, but we also add the ABI to the
@@ -29,7 +29,7 @@ fn resolve_target(b: *std.Build, target_requested: ?[]const u8) !std.Build.Resol
         std.log.err("unsupported target: '{s}'", .{target});
         return error.UnsupportedTarget;
     };
-    const query = try CrossTarget.parse(.{
+    const query = try Query.parse(.{
         .arch_os_abi = arch_os,
         .cpu_features = cpu,
     });
@@ -79,6 +79,7 @@ pub fn build(b: *std.Build) !void {
     const config_mod = b.createModule(.{
         .root_source_file = b.path("src/config.zig"),
     });
+    config_mod.addImport("vsr", vsr_mod);
 
     const elixir_bindings_generator = b.addExecutable(.{
         .name = "elixir_bindings",

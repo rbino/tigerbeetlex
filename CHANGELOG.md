@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.50] - 2025-07-16
+
+### Changed
+
+- Update Zig version to `0.14.1`
+- Update TigerBeetle client to 0.16.50
+
 ## [0.16.48] - 2025-07-05
 
 ### Changed

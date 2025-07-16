@@ -18,7 +18,7 @@ const ClientResource = beam.Resource(*ClientInterface, "TigerBeetlex.Client", cl
 pub const vsr_options = @import("config").vsr_options;
 
 // Reduce log spamminess
-pub const std_options = .{
+pub const std_options: std.Options = .{
     .log_level = .err,
 };
 

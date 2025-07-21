@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.51] - 2025-07-21
+
+### Changed
+
+- Reduce binary size in ReleaseSafe mode
+- Update TigerBeetle client to 0.16.51
+
 ## [0.16.50] - 2025-07-16
 
 ### Changed

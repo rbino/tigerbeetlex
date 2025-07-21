@@ -110,6 +110,13 @@ pub fn build(b: *std.Build) !void {
     lib.root_module.addImport("config", config_mod);
     // TigerBeetle imports
     lib.root_module.addImport("vsr", vsr_mod);
+    if (optimize == .ReleaseSafe) {
+        // Reduce binary size in release safe mode
+        lib.root_module.strip = true;
+        // While still supporting stack traces
+        lib.root_module.omit_frame_pointer = false;
+        lib.root_module.unwind_tables = .none;
+    }
     // This is needed to avoid errors on MacOS when loading the NIF
     lib.linker_allow_shlib_undefined = true;
 

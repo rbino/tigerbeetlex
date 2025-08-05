@@ -51,7 +51,7 @@ defmodule TigerBeetlex.AccountFilter do
       timestamp_min: timestamp_min,
       timestamp_max: timestamp_max,
       limit: limit,
-      flags: TigerBeetlex.AccountFilterFlags.from_binary(flags)
+      flags: AccountFilterFlags.from_binary(flags)
     }
   end
 

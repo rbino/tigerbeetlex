@@ -59,7 +59,7 @@ defmodule TigerBeetlex.Account do
       user_data_32: user_data_32,
       ledger: ledger,
       code: code,
-      flags: TigerBeetlex.AccountFlags.from_binary(flags),
+      flags: AccountFlags.from_binary(flags),
       timestamp: timestamp
     }
   end

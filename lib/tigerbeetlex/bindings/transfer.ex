@@ -66,7 +66,7 @@ defmodule TigerBeetlex.Transfer do
       timeout: timeout,
       ledger: ledger,
       code: code,
-      flags: TigerBeetlex.TransferFlags.from_binary(flags),
+      flags: TransferFlags.from_binary(flags),
       timestamp: timestamp
     }
   end

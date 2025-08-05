@@ -897,19 +897,19 @@ defmodule TigerBeetlex.IntegrationTest do
              } = get_account!(conn, credit_account_id)
 
       assert [
-               %TigerBeetlex.Transfer{
+               %Transfer{
                  amount: 100
                },
-               %TigerBeetlex.Transfer{
+               %Transfer{
                  amount: 3000
                }
              ] = get_account_transfers!(conn, debit_account_id)
 
       assert [
-               %TigerBeetlex.Transfer{
+               %Transfer{
                  amount: 100
                },
-               %TigerBeetlex.Transfer{
+               %Transfer{
                  amount: 3000
                }
              ] = get_account_transfers!(conn, credit_account_id)

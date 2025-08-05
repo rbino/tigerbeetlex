@@ -29,7 +29,7 @@ defmodule TigerBeetlex.CreateTransfersResult do
 
     %__MODULE__{
       index: index,
-      result: TigerBeetlex.CreateTransferResult.to_atom(result)
+      result: CreateTransferResult.to_atom(result)
     }
   end
 

@@ -51,7 +51,7 @@ defmodule TigerBeetlex.QueryFilter do
       timestamp_min: timestamp_min,
       timestamp_max: timestamp_max,
       limit: limit,
-      flags: TigerBeetlex.QueryFilterFlags.from_binary(flags)
+      flags: QueryFilterFlags.from_binary(flags)
     }
   end
 

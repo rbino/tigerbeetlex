@@ -29,7 +29,7 @@ defmodule TigerBeetlex.CreateAccountsResult do
 
     %__MODULE__{
       index: index,
-      result: TigerBeetlex.CreateAccountResult.to_atom(result)
+      result: CreateAccountResult.to_atom(result)
     }
   end
 

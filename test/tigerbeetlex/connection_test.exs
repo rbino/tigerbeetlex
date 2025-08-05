@@ -48,7 +48,7 @@ defmodule TigerBeetlex.ConnectionTest do
       opts = opts ++ [partitions: 3]
 
       _pid = start_supervised!({Connection, opts})
-      assert Process.whereis(:tb_connection_test) != nil
+      assert Process.whereis(:tb_connection_test)
       assert PartitionSupervisor.partitions(:tb_connection_test) == 3
     end
   end

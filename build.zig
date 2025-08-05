@@ -72,9 +72,12 @@ pub fn build(b: *std.Build) !void {
     // in any way.
     const fake_git_commit_hash = "bee71e0000000000000000000000000000bee71e"; // Beetle-hash!
     const tigerbeetle_dep = b.dependency("tigerbeetle", .{ .@"git-commit" = @as([]const u8, fake_git_commit_hash) });
+
+    const stdx_mod = b.createModule(.{ .root_source_file = tigerbeetle_dep.path("src/stdx/stdx.zig") });
     const vsr_mod = b.createModule(.{
         .root_source_file = tigerbeetle_dep.path("src/vsr.zig"),
     });
+    vsr_mod.addImport("stdx", stdx_mod);
 
     const config_mod = b.createModule(.{
         .root_source_file = b.path("src/config.zig"),

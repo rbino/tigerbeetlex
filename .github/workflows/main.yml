@@ -82,8 +82,14 @@ jobs:
             otp: "25.3"
             elixir: "1.14"
           - os: ubuntu-24.04
-            otp: "27.2.4"
-            elixir: "1.18.2-otp-27"
+            otp: "26.2.5.9"
+            elixir: "1.18.4-otp-26"
+          - os: ubuntu-24.04
+            otp: "27.3.4.2"
+            elixir: "1.18.4-otp-27"
+          - os: ubuntu-24.04
+            otp: "28.0.2"
+            elixir: "1.18.4-otp-28"
           - os: macos-13
             # These actually are not relevant since brew just pulls the latest version
             otp: "latest"

@@ -16,39 +16,46 @@ defmodule TigerBeetlex.ID do
     atomics = :persistent_term.get(:tigerbeetlex_id_atomics)
     ms_now = System.system_time(:millisecond)
     ms_in_atomics = :atomics.get(atomics, 1)
-    do_generate(atomics, ms_now, ms_in_atomics)
+    random = :atomics.get(atomics, 2)
+    do_generate(atomics, ms_now, ms_in_atomics, random)
   end
 
-  defp do_generate(atomics, ms_now, ms_in_atomics) do
+  defp do_generate(atomics, ms_now, ms_in_atomics, random) do
     case ms_in_atomics do
-      ms_higher_or_equal_than_now when ms_higher_or_equal_than_now >= ms_now ->
-        random = :atomics.get(atomics, 2)
-        do_finish_generate(atomics, ms_higher_or_equal_than_now, random)
+      ms_higher_than_now when ms_higher_than_now > ms_now ->
+        do_finish_generate(atomics, ms_higher_than_now, random, random + 1)
+
+      ^ms_now ->
+        do_finish_generate(atomics, ms_now, random, random + 1)
 
       ms_lower_than_now ->
+        random = :rand.uniform(unquote(2 ** 64)) - 1
+
         case :atomics.compare_exchange(atomics, 1, ms_lower_than_now, ms_now) do
           :ok ->
-            random = :rand.uniform(unquote(2 ** 64)) - 1
-            seed = :rand.uniform(unquote(2 ** 16)) - 1
             :atomics.put(atomics, 2, random)
-            <<ms_now :: unsigned-integer-size(48), random :: unsigned-integer-size(64), seed :: unsigned-integer-size(16)>>
+            seed = :rand.uniform(unquote(2 ** 16)) - 1
+            <<ms_now::unsigned-integer-size(48), random::unsigned-integer-size(64), seed::unsigned-integer-size(16)>>
 
           ms_in_atomics ->
-            do_generate(atomics, ms_now, ms_in_atomics)
+            random = :atomics.get(atomics, 2)
+            do_generate(atomics, ms_now, ms_in_atomics, random)
         end
     end
   end
 
   # Tested out with Python implementation as a reference
-  defp do_finish_generate(atomics, ms, random) do
-    random_plus_one = random + 1
-    case :atomics.compare_exchange(atomics, 2, random, random_plus_one) do
+  defp do_finish_generate(atomics, ms, expected_random, desired_random) do
+    case :atomics.compare_exchange(atomics, 2, expected_random, desired_random) do
       :ok ->
         seed = :rand.uniform(unquote(2 ** 16)) - 1
-        <<ms :: unsigned-integer-size(48), random_plus_one :: unsigned-integer-size(64), seed :: unsigned-integer-size(16)>>
+        <<ms::unsigned-integer-size(48), desired_random::unsigned-integer-size(64), seed::unsigned-integer-size(16)>>
 
-      _ ->
-        do_finish_generate(atomics, ms, random_plus_one)
+      new_random when new_random >= desired_random ->
+        do_finish_generate(atomics, ms, new_random, new_random + 1)
+
+      new_random ->
+        do_finish_generate(atomics, ms, new_random, desired_random)
     end
   end
 

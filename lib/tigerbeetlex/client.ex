@@ -45,7 +45,6 @@ defmodule TigerBeetlex.Client do
   """
 
   use TypedStruct
-  require TigerBeetlex.Operation
 
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountFilter
@@ -54,6 +53,8 @@ defmodule TigerBeetlex.Client do
   alias TigerBeetlex.QueryFilter
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.Types
+
+  require Operation
 
   typedstruct do
     field :ref, reference(), enforce: true

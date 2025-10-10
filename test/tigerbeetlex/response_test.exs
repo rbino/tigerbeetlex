@@ -1,7 +1,6 @@
 defmodule TigerBeetlex.ResponseTest do
   use ExUnit.Case, async: true
 
-  require TigerBeetlex.Operation
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountBalance
   alias TigerBeetlex.CreateAccountsResult
@@ -9,6 +8,8 @@ defmodule TigerBeetlex.ResponseTest do
   alias TigerBeetlex.Operation
   alias TigerBeetlex.Response
   alias TigerBeetlex.Transfer
+
+  require Operation
 
   describe "decode/1 returns error" do
     for {error_status_name, error_status_value} <- Map.delete(Response.status_map(), :ok) do

@@ -45,6 +45,7 @@ defmodule TigerBeetlex.Client do
   """
 
   use TypedStruct
+  require TigerBeetlex.Operation
 
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountFilter

@@ -20,10 +20,7 @@ defmodule TigerBeetlex.CDC do
   def cast_int!(term) when is_integer(term), do: term
 
   def cast_int!(term) when is_binary(term) do
-    case Integer.parse(term) do
-      {integer, ""} -> integer
-      _ -> raise "Invalid integer: #{term}"
-    end
+    String.to_integer(term)
   end
 
   def cast_id!(term) do

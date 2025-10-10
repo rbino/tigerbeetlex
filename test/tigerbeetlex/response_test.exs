@@ -1,6 +1,7 @@
 defmodule TigerBeetlex.ResponseTest do
   use ExUnit.Case, async: true
 
+  require TigerBeetlex.Operation
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountBalance
   alias TigerBeetlex.CreateAccountsResult

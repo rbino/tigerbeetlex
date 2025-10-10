@@ -12,19 +12,16 @@ defmodule TigerBeetlex.IDTest do
   end
 
   describe "from_int/1" do
-    test "encodes the integer in little endian" do
-      assert ID.from_int(42) == <<42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>
+    test "encodes the integer" do
+      assert ID.from_int(42) == <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42>>
     end
   end
 
   defp assert_strictly_monotonic([_id | []]), do: :ok
 
   defp assert_strictly_monotonic([id1, id2 | rest]) do
-    <<id1_as_uint128::unsigned-integer-little-size(128)>> = id1
-    <<id2_as_uint128::unsigned-integer-little-size(128)>> = id2
-
-    assert id1_as_uint128 < id2_as_uint128
-
+    assert byte_size(id1) == byte_size(id2)
+    assert id1 < id2
     assert_strictly_monotonic([id2 | rest])
   end
 end

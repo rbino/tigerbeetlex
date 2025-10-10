@@ -16,10 +16,10 @@ defmodule TigerBeetlex.CDC.EventTest do
                type: :single_phase,
                ledger: 2,
                transfer: %Transfer{
-                 id: <<9_082_709::unsigned-little-128>>,
+                 id: <<9_082_709::unsigned-integer-size(128)>>,
                  amount: 3794,
                  pending_id: <<0::128>>,
-                 user_data_128: <<79_248_595_801_719_937_611_592_367_840_129_079_151::unsigned-little-128>>,
+                 user_data_128: <<79_248_595_801_719_937_611_592_367_840_129_079_151::unsigned-128>>,
                  user_data_64: 13_615_171_707_598_273_871,
                  user_data_32: 3_229_992_513,
                  timeout: 0,
@@ -28,12 +28,12 @@ defmodule TigerBeetlex.CDC.EventTest do
                  timestamp: 1_745_328_372_758_695_656
                },
                debit_account: %Account{
-                 id: <<3750::unsigned-little-128>>,
+                 id: <<3750::unsigned-integer-size(128)>>,
                  debits_pending: 0,
                  debits_posted: 8_463_768,
                  credits_pending: 0,
                  credits_posted: 8_861_179,
-                 user_data_128: <<118_966_247_877_720_884_212_341_541_320_399_553_321::unsigned-little-128>>,
+                 user_data_128: <<118_966_247_877_720_884_212_341_541_320_399_553_321::unsigned-128>>,
                  user_data_64: 526_432_537_153_007_844,
                  user_data_32: 4_157_247_332,
                  code: 1,
@@ -41,12 +41,12 @@ defmodule TigerBeetlex.CDC.EventTest do
                  timestamp: 1_745_328_270_103_398_016
                },
                credit_account: %Account{
-                 id: <<6765::unsigned-little-128>>,
+                 id: <<6765::unsigned-integer-size(128)>>,
                  debits_pending: 0,
                  debits_posted: 8_669_204,
                  credits_pending: 0,
                  credits_posted: 8_637_251,
-                 user_data_128: <<43_670_023_860_556_310_170_878_798_978_091_998_141::unsigned-little-128>>,
+                 user_data_128: <<43_670_023_860_556_310_170_878_798_978_091_998_141::unsigned-128>>,
                  user_data_64: 12_485_093_662_256_535_374,
                  user_data_32: 1_924_162_092,
                  code: 1,
@@ -61,9 +61,9 @@ defmodule TigerBeetlex.CDC.EventTest do
       end
     end
 
-    for field <- @struct_fields do
-      test "raises if #{field} is missing" do
-        params = Map.delete(event_fixture(), to_string(unquote(field)))
+    test "raises if field is missing" do
+      for field <- @struct_fields do
+        params = Map.delete(event_fixture(), to_string(field))
 
         assert_raise KeyError, fn ->
           Event.cast!(params)
@@ -71,35 +71,39 @@ defmodule TigerBeetlex.CDC.EventTest do
       end
     end
 
-    for field <- @int_fields do
-      test "correctly parses #{field} as integer" do
-        assert %{unquote(field) => 42} =
+    test "correctly parses field as integer" do
+      for field <- @int_fields do
+        assert %{^field => 42} =
                  event_fixture()
-                 |> Map.put(to_string(unquote(field)), 42)
+                 |> Map.put(to_string(field), 42)
                  |> Event.cast!()
       end
+    end
 
-      test "correctly parses #{field} as string" do
-        assert %{unquote(field) => 42} =
+    test "correctly parses field as string" do
+      for field <- @int_fields do
+        assert %{^field => 42} =
                  event_fixture()
-                 |> Map.put(to_string(unquote(field)), "42")
+                 |> Map.put(to_string(field), "42")
                  |> Event.cast!()
       end
+    end
 
-      test "raises if #{field} is not a parsable integer" do
-        params = Map.put(event_fixture(), to_string(unquote(field)), "foo")
+    test "raises if field is not a parsable integer" do
+      for field <- @int_fields do
+        params = Map.put(event_fixture(), to_string(field), "foo")
 
-        assert_raise RuntimeError, fn ->
+        assert_raise ArgumentError, fn ->
           Event.cast!(params)
         end
       end
     end
 
-    for type <- [:single_phase, :two_phase_pending, :two_phase_voided, :two_phase_posted, :two_phase_expired] do
-      test "correctly parses #{type} as type" do
-        assert %{type: unquote(type)} =
+    test "correctly parses type as type" do
+      for type <- [:single_phase, :two_phase_pending, :two_phase_voided, :two_phase_posted, :two_phase_expired] do
+        assert %{type: ^type} =
                  event_fixture()
-                 |> Map.put("type", to_string(unquote(type)))
+                 |> Map.put("type", to_string(type))
                  |> Event.cast!()
       end
     end

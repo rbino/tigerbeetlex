@@ -21,12 +21,12 @@ defmodule TigerBeetlex.CDC.AccountTest do
   describe "Account.cast!/1" do
     test "correctly casts the sample debit account on the TigerBeetle docs" do
       assert %Account{
-               id: <<3750::unsigned-little-128>>,
+               id: <<3750::unsigned-integer-size(128)>>,
                debits_pending: 0,
                debits_posted: 8_463_768,
                credits_pending: 0,
                credits_posted: 8_861_179,
-               user_data_128: <<118_966_247_877_720_884_212_341_541_320_399_553_321::unsigned-little-128>>,
+               user_data_128: <<118_966_247_877_720_884_212_341_541_320_399_553_321::unsigned-128>>,
                user_data_64: 526_432_537_153_007_844,
                user_data_32: 4_157_247_332,
                code: 1,
@@ -39,9 +39,9 @@ defmodule TigerBeetlex.CDC.AccountTest do
       end
     end
 
-    for field <- @struct_fields do
-      test "raises if #{field} is missing" do
-        params = Map.delete(account_fixture(), to_string(unquote(field)))
+    test "raises if field is missing" do
+      for field <- @struct_fields do
+        params = Map.delete(account_fixture(), to_string(field))
 
         assert_raise KeyError, fn ->
           Account.cast!(params)
@@ -49,49 +49,57 @@ defmodule TigerBeetlex.CDC.AccountTest do
       end
     end
 
-    for field <- @int_fields do
-      test "correctly parses #{field} as integer" do
-        assert %{unquote(field) => 42} =
+    test "correctly parses field as integer" do
+      for field <- @int_fields do
+        assert %{^field => 42} =
                  account_fixture()
-                 |> Map.put(to_string(unquote(field)), 42)
+                 |> Map.put(to_string(field), 42)
                  |> Account.cast!()
       end
+    end
 
-      test "correctly parses #{field} as string" do
-        assert %{unquote(field) => 42} =
+    test "correctly parses field as string" do
+      for field <- @int_fields do
+        assert %{^field => 42} =
                  account_fixture()
-                 |> Map.put(to_string(unquote(field)), "42")
+                 |> Map.put(to_string(field), "42")
                  |> Account.cast!()
       end
+    end
 
-      test "raises if #{field} is not a parsable integer" do
-        params = Map.put(account_fixture(), to_string(unquote(field)), "foo")
+    test "raises if field is not a parsable integer" do
+      for field <- @int_fields do
+        params = Map.put(account_fixture(), to_string(field), "foo")
 
-        assert_raise RuntimeError, fn ->
+        assert_raise ArgumentError, fn ->
           Account.cast!(params)
         end
       end
     end
 
-    for field <- @id_fields do
-      test "correctly parses #{field} as integer into an ID" do
-        assert %{unquote(field) => <<42_000_000::unsigned-little-128>>} =
+    test "correctly parses field as integer into an ID" do
+      for field <- @id_fields do
+        assert %{^field => <<42_000_000::unsigned-integer-size(128)>>} =
                  account_fixture()
-                 |> Map.put(to_string(unquote(field)), 42_000_000)
+                 |> Map.put(to_string(field), 42_000_000)
                  |> Account.cast!()
       end
+    end
 
-      test "correctly parses #{field} as string into an ID" do
-        assert %{unquote(field) => <<42_000_000::unsigned-little-128>>} =
+    test "correctly parses field as string into an ID" do
+      for field <- @id_fields do
+        assert %{^field => <<42_000_000::unsigned-integer-size(128)>>} =
                  account_fixture()
-                 |> Map.put(to_string(unquote(field)), "42000000")
+                 |> Map.put(to_string(field), "42000000")
                  |> Account.cast!()
       end
+    end
 
-      test "raises if #{field} is not a parsable integer" do
-        params = Map.put(account_fixture(), to_string(unquote(field)), "foo")
+    test "raises if ID field is not a parsable integer" do
+      for field <- @id_fields do
+        params = Map.put(account_fixture(), to_string(field), "foo")
 
-        assert_raise RuntimeError, fn ->
+        assert_raise ArgumentError, fn ->
           Account.cast!(params)
         end
       end

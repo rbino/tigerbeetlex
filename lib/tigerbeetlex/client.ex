@@ -54,6 +54,8 @@ defmodule TigerBeetlex.Client do
   alias TigerBeetlex.Transfer
   alias TigerBeetlex.Types
 
+  require Operation
+
   typedstruct do
     field :ref, reference(), enforce: true
   end

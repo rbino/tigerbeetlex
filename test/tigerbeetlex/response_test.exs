@@ -9,6 +9,8 @@ defmodule TigerBeetlex.ResponseTest do
   alias TigerBeetlex.Response
   alias TigerBeetlex.Transfer
 
+  require Operation
+
   describe "decode/1 returns error" do
     for {error_status_name, error_status_value} <- Map.delete(Response.status_map(), :ok) do
       test "for status #{error_status_name}" do

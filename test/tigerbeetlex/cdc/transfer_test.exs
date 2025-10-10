@@ -19,10 +19,10 @@ defmodule TigerBeetlex.CDC.TransferTest do
   describe "Transfer.cast!/1" do
     test "correctly casts the sample transfer on the TigerBeetle docs" do
       assert %Transfer{
-               id: <<9_082_709::unsigned-little-128>>,
+               id: <<9_082_709::unsigned-integer-size(128)>>,
                amount: 3794,
                pending_id: <<0::128>>,
-               user_data_128: <<79_248_595_801_719_937_611_592_367_840_129_079_151::unsigned-little-128>>,
+               user_data_128: <<79_248_595_801_719_937_611_592_367_840_129_079_151::unsigned-128>>,
                user_data_64: 13_615_171_707_598_273_871,
                user_data_32: 3_229_992_513,
                timeout: 0,
@@ -31,14 +31,14 @@ defmodule TigerBeetlex.CDC.TransferTest do
                timestamp: 1_745_328_372_758_695_656
              } = Transfer.cast!(transfer_fixture())
 
-      for field <- flags |> Map.from_struct() |> Map.keys() do
+      for {field, _} <- Map.from_struct(flags) do
         assert Map.fetch!(flags, field) == false
       end
     end
 
-    for field <- @struct_fields do
-      test "raises if #{field} is missing" do
-        params = Map.delete(transfer_fixture(), to_string(unquote(field)))
+    test "raises if field is missing" do
+      for field <- @struct_fields do
+        params = Map.delete(transfer_fixture(), to_string(field))
 
         assert_raise KeyError, fn ->
           Transfer.cast!(params)
@@ -46,49 +46,57 @@ defmodule TigerBeetlex.CDC.TransferTest do
       end
     end
 
-    for field <- @int_fields do
-      test "correctly parses #{field} as integer" do
-        assert %{unquote(field) => 42} =
+    test "correctly parses field as integer" do
+      for field <- @int_fields do
+        assert %{^field => 42} =
                  transfer_fixture()
-                 |> Map.put(to_string(unquote(field)), 42)
+                 |> Map.put(to_string(field), 42)
                  |> Transfer.cast!()
       end
+    end
 
-      test "correctly parses #{field} as string" do
-        assert %{unquote(field) => 42} =
+    test "correctly parses field as string" do
+      for field <- @int_fields do
+        assert %{^field => 42} =
                  transfer_fixture()
-                 |> Map.put(to_string(unquote(field)), "42")
+                 |> Map.put(to_string(field), "42")
                  |> Transfer.cast!()
       end
+    end
 
-      test "raises if #{field} is not a parsable integer" do
-        params = Map.put(transfer_fixture(), to_string(unquote(field)), "foo")
+    test "raises if field is not a parsable integer" do
+      for field <- @int_fields do
+        params = Map.put(transfer_fixture(), to_string(field), "foo")
 
-        assert_raise RuntimeError, fn ->
+        assert_raise ArgumentError, fn ->
           Transfer.cast!(params)
         end
       end
     end
 
-    for field <- @id_fields do
-      test "correctly parses #{field} as integer into an ID" do
-        assert %{unquote(field) => <<42_000_000::unsigned-little-128>>} =
+    test "correctly parses field as integer into an ID" do
+      for field <- @id_fields do
+        assert %{^field => <<42_000_000::unsigned-integer-size(128)>>} =
                  transfer_fixture()
-                 |> Map.put(to_string(unquote(field)), 42_000_000)
+                 |> Map.put(to_string(field), 42_000_000)
                  |> Transfer.cast!()
       end
+    end
 
-      test "correctly parses #{field} as string into an ID" do
-        assert %{unquote(field) => <<42_000_000::unsigned-little-128>>} =
+    test "correctly parses field as string into an ID" do
+      for field <- @id_fields do
+        assert %{^field => <<42_000_000::unsigned-integer-size(128)>>} =
                  transfer_fixture()
-                 |> Map.put(to_string(unquote(field)), "42000000")
+                 |> Map.put(to_string(field), "42000000")
                  |> Transfer.cast!()
       end
+    end
 
-      test "raises if #{field} is not a parsable integer" do
-        params = Map.put(transfer_fixture(), to_string(unquote(field)), "foo")
+    test "raises if ID field is not a parsable integer" do
+      for field <- @id_fields do
+        params = Map.put(transfer_fixture(), to_string(field), "foo")
 
-        assert_raise RuntimeError, fn ->
+        assert_raise ArgumentError, fn ->
           Transfer.cast!(params)
         end
       end

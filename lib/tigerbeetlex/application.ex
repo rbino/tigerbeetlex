@@ -4,10 +4,8 @@ defmodule TigerBeetlex.Application do
   use Application
 
   def start(_type, _args) do
-    children = [
-      TigerBeetlex.ID.Server
-    ]
-
-    Supervisor.start_link(children, strategy: :one_for_one)
+    atomics = :atomics.new(2, signed: false)
+    :persistent_term.put(:tigerbeetlex_id_atomics, atomics)
+    Supervisor.start_link([], strategy: :one_for_one)
   end
 end

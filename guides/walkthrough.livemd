@@ -2,7 +2,7 @@
 
 ```elixir
 Mix.install([
-  {:tigerbeetlex, "~> 0.16.61"}
+  {:tigerbeetlex, "~> 0.16.62"}
 ])
 ```
 
@@ -17,7 +17,7 @@ The walkthrough can also be executed in Livebook.
 In your `mix.exs` add TigerBeetlex as a dependency
 
 ```elixir
-{:tigerbeetlex, "~> 0.16.61"}
+{:tigerbeetlex, "~> 0.16.62"}
 ```
 
 ## Creating a Client

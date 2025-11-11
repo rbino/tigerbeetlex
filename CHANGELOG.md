@@ -6,6 +6,10 @@
 
 - Add Elixir 1.19 + OTP 28 to CI
 
+### Changed
+
+- Update TigerBeetle client to 0.16.64
+
 ## [0.16.63] - 2025-11-11
 
 ### Changed

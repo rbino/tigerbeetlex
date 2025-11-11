@@ -9,12 +9,12 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: true
       matrix:
-        otp: ["27.2.4"]
-        elixir: ["1.18.2-otp-27"]
+        otp: ["28.1.1"]
+        elixir: ["1.19.2-otp-28"]
         zig: ["0.14.1"]
     steps:
       - name: Clone the repository
@@ -85,11 +85,17 @@ jobs:
             otp: "26.2.5.9"
             elixir: "1.18.4-otp-26"
           - os: ubuntu-24.04
-            otp: "27.3.4.2"
+            otp: "27.3.4.5"
             elixir: "1.18.4-otp-27"
           - os: ubuntu-24.04
-            otp: "28.0.2"
+            otp: "28.1.1"
             elixir: "1.18.4-otp-28"
+          - os: ubuntu-24.04
+            otp: "27.3.4.5"
+            elixir: "1.19.2-otp-27"
+          - os: ubuntu-24.04
+            otp: "28.1.1"
+            elixir: "1.19.2-otp-28"
           - os: macos-14
             # These actually are not relevant since brew just pulls the latest version
             otp: "latest"

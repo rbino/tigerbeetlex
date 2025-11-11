@@ -2,11 +2,6 @@ const std = @import("std");
 const assert = std.debug.assert;
 
 const vsr = @import("vsr");
-const constants = vsr.constants;
-const IO = vsr.io.IO;
-
-const Storage = vsr.storage.StorageType(IO);
-const StateMachine = vsr.state_machine.StateMachineType(Storage, constants.state_machine_config);
 
 const tb = vsr.tigerbeetle;
 const tb_client = vsr.tb_client;
@@ -755,7 +750,7 @@ fn emit_response_module(
 
             const operation: tb_client.Operation = @enumFromInt(field.value);
             if (operation == .pulse or operation == .get_change_events) continue;
-            const result_type = StateMachine.ResultType(operation);
+            const result_type = operation.ResultType();
 
             try buffer.writer().print(
                 \\  - `{[operation_name]s}`: a list of `%TigerBeetlex.{[result_module]s}{{}}`
@@ -808,7 +803,7 @@ fn emit_response_module(
 
             const operation: tb_client.Operation = @enumFromInt(field.value);
             if (operation == .pulse or operation == .get_change_events) continue;
-            const result_type = StateMachine.ResultType(operation);
+            const result_type = operation.ResultType();
 
             try buffer.writer().print(
                 \\  defp build_result_list({[operation_value]}, batch) when rem(bit_size(batch), {[result_bit_size]}) == 0 do

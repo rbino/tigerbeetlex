@@ -90,11 +90,11 @@ jobs:
           - os: ubuntu-24.04
             otp: "28.0.2"
             elixir: "1.18.4-otp-28"
-          - os: macos-13
+          - os: macos-14
             # These actually are not relevant since brew just pulls the latest version
             otp: "latest"
             elixir: "latest"
-          - os: macos-14
+          - os: macos-15-intel
             otp: "latest"
             elixir: "latest"
           - os: macos-15

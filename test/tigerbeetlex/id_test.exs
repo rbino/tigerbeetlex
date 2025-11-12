@@ -5,7 +5,7 @@ defmodule TigerBeetlex.IDTest do
 
   describe "generate/0" do
     test "generates strictly monotonic IDs when called serially" do
-      ids = Enum.map(1..100, fn _ -> ID.generate() end)
+      ids = Enum.map(1..10_000, fn _ -> ID.generate() end)
 
       assert_strictly_monotonic(ids)
     end

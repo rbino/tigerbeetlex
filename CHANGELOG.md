@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.16.65] - Unreleased
+
+### Changed
+
+- Use atomics for ID generation instead of a central agent
+
 ## [0.16.64] - 2025-11-11
 
 ### Added

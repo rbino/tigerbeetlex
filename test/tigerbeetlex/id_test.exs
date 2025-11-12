@@ -4,10 +4,23 @@ defmodule TigerBeetlex.IDTest do
   alias TigerBeetlex.ID
 
   describe "generate/0" do
-    test "generates strictly monotonic IDs" do
+    test "generates strictly monotonic IDs when called serially" do
       ids = Enum.map(1..100, fn _ -> ID.generate() end)
 
       assert_strictly_monotonic(ids)
+    end
+
+    test "generates unique IDs when called concurrently" do
+      expected_count = 10_000
+
+      unique_count =
+        1..expected_count
+        |> Enum.map(fn _ -> Task.async(fn -> ID.generate() end) end)
+        |> Task.await_many()
+        |> Enum.uniq()
+        |> Enum.count()
+
+      assert expected_count == unique_count
     end
   end
 

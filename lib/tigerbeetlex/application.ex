@@ -3,11 +3,11 @@ defmodule TigerBeetlex.Application do
 
   use Application
 
-  def start(_type, _args) do
-    children = [
-      TigerBeetlex.ID.Server
-    ]
+  alias TigerBeetlex.ID
 
-    Supervisor.start_link(children, strategy: :one_for_one)
+  def start(_type, _args) do
+    ID.initialize_atomics()
+
+    Supervisor.start_link([], strategy: :one_for_one)
   end
 end

@@ -6,7 +6,8 @@ defmodule TigerBeetlex.ID do
   @atomics_ref_persistent_term_key __MODULE__.Atomics
 
   @last_time_ms_atomic_idx 1
-  @last_random_atomic_idx 2
+  @last_random_lo_atomic_idx 2
+  @last_random_hi_atomic_idx 3
 
   @doc """
   Generate a TigerBeetle Time-Based Identifier.
@@ -19,16 +20,9 @@ defmodule TigerBeetlex.ID do
     atomics_ref = :persistent_term.get(@atomics_ref_persistent_term_key)
     now_ms = System.system_time(:millisecond)
 
-    {time_ms, random_64} = cas_loop(atomics_ref, now_ms)
+    {time_ms, random} = cas_loop(atomics_ref, now_ms)
 
-    # Erlang atomics are limited to 64 bits, and we need 80 bits of randomness. We generate the 2
-    # least significat bytes randomly. We still guarantee monotonicity since we increase random_64
-    # when the timestamp is the same, we just have a smaller amount of IDs we can generate in the
-    # same millisecond due to this.
-    <<random_padding::little-unsigned-integer-16>> = :rand.bytes(2)
-
-    <<random_padding::unsigned-little-integer-size(16), random_64::unsigned-little-integer-size(64),
-      time_ms::unsigned-little-integer-size(48)>>
+    <<random::unsigned-little-integer-size(80), time_ms::unsigned-little-integer-size(48)>>
   end
 
   defp cas_loop(atomics_ref, now_ms) do
@@ -36,26 +30,40 @@ defmodule TigerBeetlex.ID do
 
     if now_ms <= last_ms do
       # Same millisecond (or time moved backward)
-      # We must use `last_ms` to ensure monotonicity, and increase random by 1.
-      rand_64 =
-        atomics_ref
-        |> :atomics.add_get(@last_random_atomic_idx, 1)
-        |> check_overflow!()
+      # We must use `last_ms` to ensure monotonicity.
 
-      {last_ms, rand_64}
+      # We increase random by 1, first increasing random_lo and then carrying
+      # over to random_hi (checking for overflow)
+
+      random_lo = :atomics.add_get(atomics_ref, @last_random_lo_atomic_idx, 1)
+
+      random_hi =
+        if random_lo == 0 do
+          atomics_ref
+          |> :atomics.add_get(@last_random_hi_atomic_idx, 1)
+          |> check_overflow!()
+        else
+          :atomics.get(atomics_ref, @last_random_hi_atomic_idx)
+        end
+
+      <<random::unsigned-80>> = <<random_hi::unsigned-16, random_lo::unsigned-64>>
+
+      {last_ms, random}
     else
       # Time has moved forward.
       # We must try to "claim" this new millisecond by being the first
       # to swap the `last_time_ms` atomic. We also generate a new random value.
 
-      <<new_rand_64::little-unsigned-integer-64>> = :rand.bytes(8)
+      <<new_random::unsigned-80>> = :rand.bytes(10)
+      <<new_random_hi::unsigned-16, new_random_lo::unsigned-64>> = <<new_random::unsigned-80>>
 
       case :atomics.compare_exchange(atomics_ref, @last_time_ms_atomic_idx, last_ms, now_ms) do
         :ok ->
-          # We won the race, also update last_random
-          :atomics.put(atomics_ref, @last_random_atomic_idx, new_rand_64)
+          # We won the race, also update last_random_hi and last_random_lo
+          :atomics.put(atomics_ref, @last_random_lo_atomic_idx, new_random_lo)
+          :atomics.put(atomics_ref, @last_random_hi_atomic_idx, new_random_hi)
 
-          {now_ms, new_rand_64}
+          {now_ms, new_random}
 
         _changed_value ->
           # Another process beat us to it, we must retry the entire loop.
@@ -65,8 +73,13 @@ defmodule TigerBeetlex.ID do
     end
   end
 
-  defp check_overflow!(0), do: raise("Overflow in TigerBeetlex.ID")
-  defp check_overflow!(n), do: n
+  defp check_overflow!(n) do
+    if <<n::unsigned-16>> == <<0::unsigned-16>> do
+      raise "Overflow in TigerBeetlex.ID"
+    else
+      n
+    end
+  end
 
   @doc """
   Converts an integer to a 128 bit binary id.
@@ -85,7 +98,7 @@ defmodule TigerBeetlex.ID do
   @doc false
   # Called during application initialization to initialize the atomics for ID generation
   def initialize_atomics do
-    atomics_ref = :atomics.new(2, signed: false)
+    atomics_ref = :atomics.new(3, signed: false)
     :persistent_term.put(@atomics_ref_persistent_term_key, atomics_ref)
   end
 end

@@ -1,10 +1,11 @@
 # Changelog
 
-## [0.16.65] - Unreleased
+## [0.16.65] - 2025-11-18
 
 ### Changed
 
 - Use atomics for ID generation instead of a central agent
+- Update TigerBeetle client to 0.16.65
 
 ## [0.16.64] - 2025-11-11
 

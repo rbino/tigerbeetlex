@@ -15,6 +15,6 @@
   "nimble_options": {:hex, :nimble_options, "1.1.1", "e3a492d54d85fc3fd7c5baf411d9d2852922f66e69476317787a7b2bb000a61b", [:mix], [], "hexpm", "821b2470ca9442c4b6984882fe9bb0389371b8ddec4d45a9504f00a66f650b44"},
   "nimble_parsec": {:hex, :nimble_parsec, "1.4.2", "8efba0122db06df95bfaa78f791344a89352ba04baedd3849593bfce4d0dc1c6", [:mix], [], "hexpm", "4b21398942dda052b403bbe1da991ccd03a053668d147d53fb8c4e0efe09c973"},
   "stream_data": {:hex, :stream_data, "1.2.0", "58dd3f9e88afe27dc38bef26fce0c84a9e7a96772b2925c7b32cd2435697a52b", [:mix], [], "hexpm", "eb5c546ee3466920314643edf68943a5b14b32d1da9fe01698dc92b73f89a9ed"},
-  "styler": {:hex, :styler, "1.7.0", "3336e7547b5edaa3c5f7c861d8a45e1a450f9ed4db7d8f27ad54c12ab791bb66", [:mix], [], "hexpm", "ede783606fcd9bf06edfddbbedc36cc3a3af7b042cf0df8503aec0f82e016437"},
+  "styler": {:hex, :styler, "1.9.1", "e30f0e909c02c686c75e47c07a76986483525eeb23c4d136f00dfa1c25fc6499", [:mix], [], "hexpm", "f583bedd92515245801f9ad504766255a27ecd5714fc4f1fd607de0eb951e1cf"},
   "typed_struct": {:hex, :typed_struct, "0.3.0", "939789e3c1dca39d7170c87f729127469d1315dcf99fee8e152bb774b17e7ff7", [:mix], [], "hexpm", "c50bd5c3a61fe4e198a8504f939be3d3c85903b382bde4865579bc23111d1b6d"},
 }

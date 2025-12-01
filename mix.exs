@@ -72,7 +72,7 @@ defmodule TigerBeetlex.MixProject do
     [
       {:typed_struct, "~> 0.3.0"},
       {:nimble_options, "~> 1.0"},
-      {:build_dot_zig, "~> 0.6.1", runtime: false},
+      {:build_dot_zig, "~> 0.7.0", runtime: false},
       {:styler, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.32", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},

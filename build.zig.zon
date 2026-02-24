@@ -24,8 +24,8 @@
     // internet connectivity.
     .dependencies = .{
         .tigerbeetle = .{
-            .url = "https://github.com/tigerbeetle/tigerbeetle/archive/refs/tags/0.16.73.tar.gz",
-            .hash = "N-V-__8AAAx0hABb105kqz9kIF1VRIO1gLK36AIygFg5kB05",
+            .url = "https://github.com/tigerbeetle/tigerbeetle/archive/refs/tags/0.16.74.tar.gz",
+            .hash = "N-V-__8AAEJ3hACLb3T2RtX5aEuPpowJpytB27pjGAca7683",
         },
     },
     .paths = .{

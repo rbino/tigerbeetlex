@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.16.74] - 2026-02-24
+
+### Changed
+
+- Update TigerBeetle client to 0.16.74
+
 ## [0.16.73] - 2026-02-24
 
 ### Changed

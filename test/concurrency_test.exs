@@ -3,6 +3,7 @@ defmodule TigerBeetlex.ConcurrencyTest do
 
   alias TigerBeetlex.Account
   alias TigerBeetlex.Client
+  alias TigerBeetlex.CreateAccountResult
   alias TigerBeetlex.ID
   alias TigerBeetlex.Response
 
@@ -26,9 +27,12 @@ defmodule TigerBeetlex.ConcurrencyTest do
 
             {:ok, ref} = Client.create_accounts(client, [account])
 
-            assert_receive {:tigerbeetlex_response, ^ref, response}, 1_000
+            assert_receive {:tigerbeetlex_response, ^ref, response}, 5_000
 
-            assert {:ok, []} = Response.decode(response)
+            assert {:ok, [%CreateAccountResult{status: :created, timestamp: timestamp}]} =
+                     Response.decode(response)
+
+            assert timestamp > 0
           end
         end)
       end

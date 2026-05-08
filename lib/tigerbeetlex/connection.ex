@@ -13,8 +13,8 @@ defmodule TigerBeetlex.Connection do
   alias TigerBeetlex.AccountBalance
   alias TigerBeetlex.AccountFilter
   alias TigerBeetlex.Client
-  alias TigerBeetlex.CreateAccountsResult
-  alias TigerBeetlex.CreateTransfersResult
+  alias TigerBeetlex.CreateAccountResult
+  alias TigerBeetlex.CreateTransferResult
   alias TigerBeetlex.Operation
   alias TigerBeetlex.QueryFilter
   alias TigerBeetlex.Receiver
@@ -123,10 +123,11 @@ defmodule TigerBeetlex.Connection do
   `accounts` is a list of `TigerBeetlex.Account` structs.
 
   If successful, the function returns `{:ok, results}` where `results` is a list of
-  `TigerBeetlex.CreateAccountsResult` structs which contain the index
-  of the account list and the reason of the failure. An account has a corresponding
-  `TigerBeetlex.CreateAccountsResult` only if it fails to be created, otherwise the account
-  has been created succesfully (so a successful request returns an empty list).
+  `TigerBeetlex.CreateAccountResult` structs.
+
+  The list contains one result for each account in the submitted batch, in the same order.
+  Successful creations have `status: :created`, existing accounts have `status: :exists`, and
+  all other statuses indicate that the account was not created.
 
   See [`create_accounts`](https://docs.tigerbeetle.com/reference/requests/create_accounts/).
 
@@ -138,20 +139,20 @@ defmodule TigerBeetlex.Connection do
       accounts = [%Account{id: ID.generate(), ledger: 3, code: 4}]
 
       TigerBeetlex.Connection.create_accounts(:tb, accounts)
-      #=> {:ok, []}
+      #=> {:ok, [%TigerBeetlex.CreateAccountResult{status: :created}]}
 
       # Creation error
       accounts = [%Account{id: ID.from_int(0), ledger: 3, code: 4}]
 
       TigerBeetlex.Connection.create_accounts(:tb, accounts)
 
-      #=> {:ok, [%TigerBeetlex.CreateAccountsResult{index: 0, result: :id_must_not_be_zero}]}
+      #=> {:ok, [%TigerBeetlex.CreateAccountResult{status: :id_must_not_be_zero}]}
   """
   @spec create_accounts(
           name :: PartitionSupervisor.name(),
           accounts :: [Account.t()]
         ) ::
-          {:ok, [CreateAccountsResult.t()]} | {:error, Types.request_error()}
+          {:ok, [CreateAccountResult.t()]} | {:error, Types.request_error()}
   def create_accounts(name, accounts) when is_list(accounts) do
     submit(name, :create_accounts, accounts)
   end
@@ -164,10 +165,11 @@ defmodule TigerBeetlex.Connection do
   `transfers` is a list of `TigerBeetlex.Transfer` structs.
 
   If successful, the function returns `{:ok, results}` where `results` is a list of
-  `TigerBeetlex.CreateTransfersResult` structs which contain the index
-  of the transfer list and the reason of the failure. A transfer has a corresponding
-  `TigerBeetlex.CreateTransfersResult` only if it fails to be created, otherwise the transfer
-  has been created succesfully (so a successful request returns an empty list).
+  `TigerBeetlex.CreateTransferResult` structs.
+
+  The list contains one result for each transfer in the submitted batch, in the same order.
+  Successful creations have `status: :created`, existing transfers have `status: :exists`, and
+  all other statuses indicate that the transfer was not created.
 
   See [`create_transfers`](https://docs.tigerbeetle.com/reference/requests/create_transfers/).
 
@@ -188,7 +190,7 @@ defmodule TigerBeetlex.Connection do
       ]
 
       TigerBeetlex.Connection.create_transfers(:tb, transfers)
-      #=> {:ok, []}
+      #=> {:ok, [%TigerBeetlex.CreateTransferResult{status: :created}]}
 
       # Creation error
       transfers = [
@@ -203,13 +205,13 @@ defmodule TigerBeetlex.Connection do
       ]
 
       TigerBeetlex.Connection.create_transfers(:tb, transfers)
-      #=> {:ok, [%TigerBeetlex.CreateTransferError{index: 0, result: :id_must_not_be_zero}]}
+      #=> {:ok, [%TigerBeetlex.CreateTransferResult{status: :id_must_not_be_zero}]}
   """
   @spec create_transfers(
           name :: PartitionSupervisor.name(),
           transfers :: [Transfer.t()]
         ) ::
-          {:ok, [CreateTransfersResult.t()]} | {:error, Types.request_error()}
+          {:ok, [CreateTransferResult.t()]} | {:error, Types.request_error()}
   def create_transfers(name, transfers) when is_list(transfers) do
     submit(name, :create_transfers, transfers)
   end

@@ -97,10 +97,11 @@ defmodule TigerBeetlex.Client do
 
   `accounts` is a list of `TigerBeetlex.Account` structs.
 
-  The decoded `results` are a list of `TigerBeetlex.CreateAccountsResult` structs
-  which contain the index of the account list and the reason of the failure. An account has a
-  corresponding `TigerBeetlex.CreateAccountsResult` only if it fails to be created, otherwise
-  the account has been created succesfully (so a successful request returns an empty list).
+  The decoded `results` are a list of `TigerBeetlex.CreateAccountResult` structs.
+
+  The list contains one result for each account in the submitted batch, in the same order.
+  Successful creations have `status: :created`, existing accounts have `status: :exists`, and
+  all other statuses indicate that the account was not created.
 
   See [`create_accounts`](https://docs.tigerbeetle.com/reference/requests/create_accounts/).
 
@@ -115,7 +116,7 @@ defmodule TigerBeetlex.Client do
 
       Client.receive_and_decode(ref)
 
-      #=> {:ok, []}
+      #=> {:ok, [%TigerBeetlex.CreateAccountResult{status: :created}]}
 
       # Creation error
       accounts = [%Account{id: ID.from_int(0), ledger: 3, code: 4}]
@@ -124,7 +125,7 @@ defmodule TigerBeetlex.Client do
 
       Client.receive_and_decode(ref)
 
-      #=> {:ok, [%TigerBeetlex.CreateAccountsResult{index: 0, result: :id_must_not_be_zero}]}
+      #=> {:ok, [%TigerBeetlex.CreateAccountResult{status: :id_must_not_be_zero}]}
   """
   @spec create_accounts(client :: t(), accounts :: [Account.t()]) ::
           {:ok, reference()} | {:error, Types.request_error()}
@@ -141,10 +142,11 @@ defmodule TigerBeetlex.Client do
 
   `transfers` is a list of `TigerBeetlex.Transfer` structs.
 
-  The decoded `results` are a list of `TigerBeetlex.CreateTransfersResult` structs
-  which contain the index of the transfer list and the reason of the failure. A transfer has a
-  corresponding `TigerBeetlex.CreateTransfersResult` only if it fails to be created, otherwise
-  the transfer has been created succesfully (so a successful request returns an empty list).
+  The decoded `results` are a list of `TigerBeetlex.CreateTransferResult` structs.
+
+  The list contains one result for each transfer in the submitted batch, in the same order.
+  Successful creations have `status: :created`, existing transfers have `status: :exists`, and
+  all other statuses indicate that the transfer was not created.
 
   See [`create_transfers`](https://docs.tigerbeetle.com/reference/requests/create_transfers/).
 
@@ -168,7 +170,7 @@ defmodule TigerBeetlex.Client do
 
       Client.receive_and_decode(ref)
 
-      #=> {:ok, []}
+      #=> {:ok, [%TigerBeetlex.CreateTransferResult{status: :created}]}
 
       # Creation error
       transfers = [
@@ -186,7 +188,7 @@ defmodule TigerBeetlex.Client do
 
       Client.receive_and_decode(ref)
 
-      #=> {:ok, [%TigerBeetlex.CreateTransfersResult{index: 0, result: :id_must_not_be_zero}]}
+      #=> {:ok, [%TigerBeetlex.CreateTransferResult{status: :id_must_not_be_zero}]}
   """
   @spec create_transfers(client :: t(), transfers :: [Transfer.t()]) ::
           {:ok, reference()} | {:error, Types.request_error()}

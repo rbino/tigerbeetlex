@@ -4,68 +4,51 @@
 #######################################################
 
 defmodule TigerBeetlex.CreateAccountResult do
-  @moduledoc false
-
-  @doc """
-  Obtains the atom representation of a result from its integer value.
-  """
-  def to_atom(0), do: :ok
-  def to_atom(1), do: :linked_event_failed
-  def to_atom(2), do: :linked_event_chain_open
-  def to_atom(22), do: :imported_event_expected
-  def to_atom(23), do: :imported_event_not_expected
-  def to_atom(3), do: :timestamp_must_be_zero
-  def to_atom(24), do: :imported_event_timestamp_out_of_range
-  def to_atom(25), do: :imported_event_timestamp_must_not_advance
-  def to_atom(4), do: :reserved_field
-  def to_atom(5), do: :reserved_flag
-  def to_atom(6), do: :id_must_not_be_zero
-  def to_atom(7), do: :id_must_not_be_int_max
-  def to_atom(15), do: :exists_with_different_flags
-  def to_atom(16), do: :exists_with_different_user_data_128
-  def to_atom(17), do: :exists_with_different_user_data_64
-  def to_atom(18), do: :exists_with_different_user_data_32
-  def to_atom(19), do: :exists_with_different_ledger
-  def to_atom(20), do: :exists_with_different_code
-  def to_atom(21), do: :exists
-  def to_atom(8), do: :flags_are_mutually_exclusive
-  def to_atom(9), do: :debits_pending_must_be_zero
-  def to_atom(10), do: :debits_posted_must_be_zero
-  def to_atom(11), do: :credits_pending_must_be_zero
-  def to_atom(12), do: :credits_posted_must_be_zero
-  def to_atom(13), do: :ledger_must_not_be_zero
-  def to_atom(14), do: :code_must_not_be_zero
-  def to_atom(26), do: :imported_event_timestamp_must_not_regress
-
-  @doc """
-  Obtains the integer representation of a result reason from its atom value.
+  @moduledoc """
+  See [CreateAccountResult](https://docs.tigerbeetle.com/reference/requests/create_accounts#result).
   """
 
-  def from_atom(:ok), do: 0
-  def from_atom(:linked_event_failed), do: 1
-  def from_atom(:linked_event_chain_open), do: 2
-  def from_atom(:imported_event_expected), do: 22
-  def from_atom(:imported_event_not_expected), do: 23
-  def from_atom(:timestamp_must_be_zero), do: 3
-  def from_atom(:imported_event_timestamp_out_of_range), do: 24
-  def from_atom(:imported_event_timestamp_must_not_advance), do: 25
-  def from_atom(:reserved_field), do: 4
-  def from_atom(:reserved_flag), do: 5
-  def from_atom(:id_must_not_be_zero), do: 6
-  def from_atom(:id_must_not_be_int_max), do: 7
-  def from_atom(:exists_with_different_flags), do: 15
-  def from_atom(:exists_with_different_user_data_128), do: 16
-  def from_atom(:exists_with_different_user_data_64), do: 17
-  def from_atom(:exists_with_different_user_data_32), do: 18
-  def from_atom(:exists_with_different_ledger), do: 19
-  def from_atom(:exists_with_different_code), do: 20
-  def from_atom(:exists), do: 21
-  def from_atom(:flags_are_mutually_exclusive), do: 8
-  def from_atom(:debits_pending_must_be_zero), do: 9
-  def from_atom(:debits_posted_must_be_zero), do: 10
-  def from_atom(:credits_pending_must_be_zero), do: 11
-  def from_atom(:credits_posted_must_be_zero), do: 12
-  def from_atom(:ledger_must_not_be_zero), do: 13
-  def from_atom(:code_must_not_be_zero), do: 14
-  def from_atom(:imported_event_timestamp_must_not_regress), do: 26
+  use TypedStruct
+
+  alias TigerBeetlex.CreateAccountStatus
+
+  typedstruct do
+    field :timestamp, non_neg_integer(), default: 0
+    field :status, atom()
+  end
+
+  @doc """
+  Creates a `TigerBeetlex.CreateAccountResult` struct from its binary representation.
+  """
+  @spec from_binary(binary :: <<_::128>>) :: t()
+  def from_binary(<<_::binary-size(16)>> = bin) do
+    <<
+      timestamp::unsigned-little-64,
+      status::unsigned-little-32,
+      _reserved::unsigned-little-32
+    >> = bin
+
+    %__MODULE__{
+      timestamp: timestamp,
+      status: CreateAccountStatus.to_atom(status)
+    }
+  end
+
+  @doc """
+  Converts a `TigerBeetlex.CreateAccountResult` struct to its binary representation.
+  """
+  @spec to_binary(struct :: t()) :: <<_::128>>
+  def to_binary(struct) do
+    %__MODULE__{
+      timestamp: timestamp,
+      status: status
+    } = struct
+
+    <<
+      timestamp::unsigned-little-64,
+      CreateAccountStatus.from_atom(status)::unsigned-little-32,
+      # reserved
+      0::unit(8)-size(4)
+    >>
+  end
 end

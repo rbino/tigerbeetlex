@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.17.0] - 2026-05-08
+
+### Changed
+
+- Update TigerBeetle client to 0.17.0
+
+### Breaking Changes
+
+- `create_accounts/2` and `create_transfers/2` now return one result per submitted event, using
+  `CreateAccountResult` and `CreateTransferResult` with `status` and `timestamp` fields.
+- Remove the old sparse `CreateAccountsResult` and `CreateTransfersResult` structs in favor of the
+  new per-event result API and `CreateAccountStatus` / `CreateTransferStatus` enums.
+
 ## [0.16.78] - 2026-03-25
 
 ### Changed

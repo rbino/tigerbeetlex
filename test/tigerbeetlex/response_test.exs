@@ -3,8 +3,8 @@ defmodule TigerBeetlex.ResponseTest do
 
   alias TigerBeetlex.Account
   alias TigerBeetlex.AccountBalance
-  alias TigerBeetlex.CreateAccountsResult
-  alias TigerBeetlex.CreateTransfersResult
+  alias TigerBeetlex.CreateAccountResult
+  alias TigerBeetlex.CreateTransferResult
   alias TigerBeetlex.Operation
   alias TigerBeetlex.Response
   alias TigerBeetlex.Transfer
@@ -33,19 +33,23 @@ defmodule TigerBeetlex.ResponseTest do
   end
 
   describe "decode/1" do
-    test "returns list of CreateAccountsResult for create_accounts operation" do
-      assert {:ok, [%CreateAccountsResult{}]} =
+    test "returns list of CreateAccountResult for create_accounts operation" do
+      result = CreateAccountResult.to_binary(%CreateAccountResult{timestamp: 42, status: :created})
+
+      assert {:ok, [%CreateAccountResult{timestamp: 42, status: :created}]} =
                :create_accounts
                |> Operation.from_atom()
-               |> ok_response(<<0::unsigned-little-32, 1::unsigned-little-32>>)
+               |> ok_response(result)
                |> Response.decode()
     end
 
-    test "returns list of CreateTransfersResult for create_transfers operation" do
-      assert {:ok, [%CreateTransfersResult{}]} =
+    test "returns list of CreateTransferResult for create_transfers operation" do
+      result = CreateTransferResult.to_binary(%CreateTransferResult{timestamp: 42, status: :created})
+
+      assert {:ok, [%CreateTransferResult{timestamp: 42, status: :created}]} =
                :create_transfers
                |> Operation.from_atom()
-               |> ok_response(<<0::unsigned-little-32, 1::unsigned-little-32>>)
+               |> ok_response(result)
                |> Response.decode()
     end
 

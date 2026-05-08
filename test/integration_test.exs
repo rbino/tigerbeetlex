@@ -6,8 +6,8 @@ defmodule TigerBeetlex.IntegrationTest do
   alias TigerBeetlex.AccountFilter
   alias TigerBeetlex.AccountFlags
   alias TigerBeetlex.Connection
-  alias TigerBeetlex.CreateAccountsResult
-  alias TigerBeetlex.CreateTransfersResult
+  alias TigerBeetlex.CreateAccountResult
+  alias TigerBeetlex.CreateTransferResult
   alias TigerBeetlex.ID
   alias TigerBeetlex.QueryFilter
   alias TigerBeetlex.QueryFilterFlags
@@ -44,7 +44,7 @@ defmodule TigerBeetlex.IntegrationTest do
         flags: %AccountFlags{credits_must_not_exceed_debits: true}
       }
 
-      assert {:ok, []} = Connection.create_accounts(conn, [account])
+      assert_accounts_created(conn, [account])
 
       assert %Account{
                id: ^id,
@@ -73,7 +73,7 @@ defmodule TigerBeetlex.IntegrationTest do
         }
       ]
 
-      assert {:ok, []} = Connection.create_accounts(conn, accounts)
+      assert_accounts_created(conn, accounts)
 
       assert [
                %Account{
@@ -100,9 +100,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       assert {:ok, results} = Connection.create_accounts(conn, [account])
 
-      assert [
-               %CreateAccountsResult{index: 0, result: :id_must_not_be_zero}
-             ] == results
+      assert_account_results(results, [:id_must_not_be_zero])
     end
 
     test "failed linked account creation", %{conn: conn} do
@@ -126,10 +124,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       assert {:ok, results} = Connection.create_accounts(conn, accounts)
 
-      assert [
-               %CreateAccountsResult{index: 0, result: :linked_event_failed},
-               %CreateAccountsResult{index: 1, result: :ledger_must_not_be_zero}
-             ] == results
+      assert_account_results(results, [:linked_event_failed, :ledger_must_not_be_zero])
 
       assert_account_not_existing(conn, id_1)
       assert_account_not_existing(conn, id_2)
@@ -159,9 +154,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       assert {:ok, results} = Connection.create_accounts(conn, accounts)
 
-      assert [
-               %CreateAccountsResult{index: 1, result: :flags_are_mutually_exclusive}
-             ] == results
+      assert_account_results(results, [:created, :flags_are_mutually_exclusive])
 
       assert %Account{
                id: ^id_1,
@@ -184,7 +177,7 @@ defmodule TigerBeetlex.IntegrationTest do
           }
         end
 
-      assert {:ok, []} = Connection.create_accounts(conn, accounts)
+      assert_accounts_created(conn, accounts)
     end
   end
 
@@ -220,7 +213,7 @@ defmodule TigerBeetlex.IntegrationTest do
         amount: 100
       }
 
-      assert {:ok, []} = Connection.create_transfers(conn, [transfer])
+      assert_transfers_created(conn, [transfer])
 
       assert %Transfer{
                id: ^id,
@@ -277,7 +270,7 @@ defmodule TigerBeetlex.IntegrationTest do
         }
       ]
 
-      assert {:ok, []} = Connection.create_transfers(conn, transfers)
+      assert_transfers_created(conn, transfers)
 
       assert [
                %Transfer{
@@ -332,7 +325,7 @@ defmodule TigerBeetlex.IntegrationTest do
         flags: %TransferFlags{pending: true}
       }
 
-      assert {:ok, []} = Connection.create_transfers(conn, [pending_transfer])
+      assert_transfers_created(conn, [pending_transfer])
 
       assert %Transfer{
                id: ^pending_id,
@@ -371,7 +364,7 @@ defmodule TigerBeetlex.IntegrationTest do
         flags: %TransferFlags{post_pending_transfer: true}
       }
 
-      assert {:ok, []} = Connection.create_transfers(conn, [post_pending_transfer])
+      assert_transfers_created(conn, [post_pending_transfer])
 
       assert %Transfer{
                id: ^post_pending_id,
@@ -420,7 +413,7 @@ defmodule TigerBeetlex.IntegrationTest do
         flags: %TransferFlags{pending: true}
       }
 
-      assert {:ok, []} = Connection.create_transfers(conn, [pending_transfer])
+      assert_transfers_created(conn, [pending_transfer])
 
       assert %Transfer{
                id: ^pending_id,
@@ -456,7 +449,7 @@ defmodule TigerBeetlex.IntegrationTest do
         flags: %TransferFlags{void_pending_transfer: true}
       }
 
-      assert {:ok, []} = Connection.create_transfers(conn, [void_pending_transfer])
+      assert_transfers_created(conn, [void_pending_transfer])
 
       assert %Transfer{
                id: ^void_pending_id,
@@ -505,9 +498,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       assert {:ok, results} = Connection.create_transfers(conn, [transfer])
 
-      assert [
-               %CreateTransfersResult{index: 0, result: :accounts_must_be_different}
-             ] == results
+      assert_transfer_results(results, [:accounts_must_be_different])
 
       assert_transfer_not_existing(conn, id)
     end
@@ -544,13 +535,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       assert {:ok, results} = Connection.create_transfers(conn, transfers)
 
-      assert [
-               %CreateTransfersResult{index: 0, result: :linked_event_failed},
-               %CreateTransfersResult{
-                 index: 1,
-                 result: :transfer_must_have_the_same_ledger_as_accounts
-               }
-             ] == results
+      assert_transfer_results(results, [:linked_event_failed, :transfer_must_have_the_same_ledger_as_accounts])
 
       assert_transfer_not_existing(conn, id_1)
       assert_transfer_not_existing(conn, id_2)
@@ -587,12 +572,7 @@ defmodule TigerBeetlex.IntegrationTest do
 
       assert {:ok, results} = Connection.create_transfers(conn, transfers)
 
-      assert [
-               %CreateTransfersResult{
-                 index: 1,
-                 result: :code_must_not_be_zero
-               }
-             ] == results
+      assert_transfer_results(results, [:created, :code_must_not_be_zero])
 
       assert %Transfer{
                id: ^id_1,
@@ -752,7 +732,7 @@ defmodule TigerBeetlex.IntegrationTest do
         }
       ]
 
-      assert {:ok, []} = Connection.create_accounts(conn, accounts)
+      assert_accounts_created(conn, accounts)
 
       transfers = [
         %Transfer{
@@ -775,7 +755,7 @@ defmodule TigerBeetlex.IntegrationTest do
         }
       ]
 
-      assert {:ok, []} = Connection.create_transfers(conn, transfers)
+      assert_transfers_created(conn, transfers)
 
       assert %Account{
                ledger: 1,
@@ -853,7 +833,7 @@ defmodule TigerBeetlex.IntegrationTest do
         }
       ]
 
-      assert {:ok, []} = Connection.create_accounts(conn, accounts)
+      assert_accounts_created(conn, accounts)
 
       transfers = [
         %Transfer{
@@ -876,7 +856,7 @@ defmodule TigerBeetlex.IntegrationTest do
         }
       ]
 
-      assert {:ok, []} = Connection.create_transfers(conn, transfers)
+      assert_transfers_created(conn, transfers)
 
       assert %Account{
                ledger: 1,
@@ -948,7 +928,7 @@ defmodule TigerBeetlex.IntegrationTest do
         other_user_data_account
       ]
 
-      assert {:ok, []} = Connection.create_accounts(conn, accounts)
+      assert_accounts_created(conn, accounts)
 
       query_filter = %QueryFilter{user_data_128: <<42::128>>, code: target_code, limit: 10}
 
@@ -974,7 +954,7 @@ defmodule TigerBeetlex.IntegrationTest do
         code: target_code
       }
 
-      assert {:ok, []} = Connection.create_accounts(conn, [account_1, account_2])
+      assert_accounts_created(conn, [account_1, account_2])
 
       query_filter = %QueryFilter{
         code: target_code,
@@ -1043,7 +1023,7 @@ defmodule TigerBeetlex.IntegrationTest do
         other_user_data_transfer
       ]
 
-      assert {:ok, []} = Connection.create_transfers(conn, transfers)
+      assert_transfers_created(conn, transfers)
 
       query_filter = %QueryFilter{user_data_128: <<42::128>>, code: target_code, limit: 10}
 
@@ -1079,7 +1059,7 @@ defmodule TigerBeetlex.IntegrationTest do
         code: target_code
       }
 
-      assert {:ok, []} = Connection.create_transfers(conn, [transfer_1, transfer_2])
+      assert_transfers_created(conn, [transfer_1, transfer_2])
 
       query_filter = %QueryFilter{
         code: target_code,
@@ -1101,8 +1081,7 @@ defmodule TigerBeetlex.IntegrationTest do
       code: 1
     }
 
-    {:ok, results} = Connection.create_accounts(conn, [account])
-    assert [] = results
+    assert_accounts_created(conn, [account])
 
     id
   end
@@ -1122,10 +1101,37 @@ defmodule TigerBeetlex.IntegrationTest do
       amount: 100
     }
 
-    {:ok, results} = Connection.create_transfers(conn, [transfer])
-    assert [] = results
+    assert_transfers_created(conn, [transfer])
 
     id
+  end
+
+  defp assert_accounts_created(conn, accounts) do
+    assert {:ok, results} = Connection.create_accounts(conn, accounts)
+    assert_account_results(results, List.duplicate(:created, length(accounts)))
+    results
+  end
+
+  defp assert_transfers_created(conn, transfers) do
+    assert {:ok, results} = Connection.create_transfers(conn, transfers)
+    assert_transfer_results(results, List.duplicate(:created, length(transfers)))
+    results
+  end
+
+  defp assert_account_results(results, expected_statuses) do
+    assert Enum.all?(results, &match?(%CreateAccountResult{}, &1))
+    assert_result_statuses(results, expected_statuses)
+  end
+
+  defp assert_transfer_results(results, expected_statuses) do
+    assert Enum.all?(results, &match?(%CreateTransferResult{}, &1))
+    assert_result_statuses(results, expected_statuses)
+  end
+
+  defp assert_result_statuses(results, expected_statuses) do
+    assert length(results) == length(expected_statuses)
+    assert Enum.map(results, & &1.status) == expected_statuses
+    assert Enum.all?(results, &(&1.timestamp > 0))
   end
 
   defp get_balances!(conn, account_id) do

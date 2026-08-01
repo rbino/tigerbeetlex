@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.17.8] - 2026-08-01
+
+### Changed
+
+- Update TigerBeetle client to 0.17.8
+- Versions 0.17.5 to 0.17.7 were skipped since upstream TigerBeetle advises to
+  [skip them](https://github.com/tigerbeetle/tigerbeetle/issues/2231#issuecomment-4779780538)
+
 ## [0.17.4] - 2026-08-01
 
 ### Changed

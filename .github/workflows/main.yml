@@ -13,12 +13,12 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        otp: ["28.1.1"]
-        elixir: ["1.19.2-otp-28"]
+        otp: ["28.5"]
+        elixir: ["1.19.4-otp-28"]
         zig: ["0.14.1"]
     steps:
       - name: Clone the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install OTP and Elixir
         uses: erlef/setup-beam@v1
@@ -94,8 +94,8 @@ jobs:
             otp: "27.3.4.5"
             elixir: "1.19.2-otp-27"
           - os: ubuntu-24.04
-            otp: "28.1.1"
-            elixir: "1.19.2-otp-28"
+            otp: "28.5"
+            elixir: "1.19.4-otp-28"
           - os: macos-14
             # These actually are not relevant since brew just pulls the latest version
             otp: "latest"

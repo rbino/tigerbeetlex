@@ -1,7 +1,7 @@
 defmodule TigerBeetlex.MixProject do
   use Mix.Project
 
-  @version "0.16.78"
+  @version "0.17.0"
 
   @repo_url "https://github.com/rbino/tigerbeetlex"
 
@@ -30,8 +30,10 @@ defmodule TigerBeetlex.MixProject do
             TigerBeetlex.AccountFilter,
             TigerBeetlex.AccountFilterFlags,
             TigerBeetlex.AccountFlags,
-            TigerBeetlex.CreateAccountsResult,
-            TigerBeetlex.CreateTransfersResult,
+            TigerBeetlex.CreateAccountResult,
+            TigerBeetlex.CreateAccountStatus,
+            TigerBeetlex.CreateTransferResult,
+            TigerBeetlex.CreateTransferStatus,
             TigerBeetlex.QueryFilter,
             TigerBeetlex.QueryFilterFlags,
             TigerBeetlex.Transfer,

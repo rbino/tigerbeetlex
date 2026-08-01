@@ -36,6 +36,21 @@ fn resolve_target(b: *std.Build, target_requested: ?[]const u8) !std.Build.Resol
     return b.resolveTargetQuery(query);
 }
 
+fn dependency_root_path(b: *std.Build, name: []const u8) std.Build.LazyPath {
+    const deps = @import("root").dependencies;
+    const pkg_hash = for (b.available_deps) |dep| {
+        if (std.mem.eql(u8, dep[0], name)) break dep[1];
+    } else std.debug.panic("no dependency named '{s}' in build.zig.zon", .{name});
+
+    inline for (@typeInfo(deps.packages).@"struct".decls) |decl| {
+        if (std.mem.eql(u8, decl.name, pkg_hash)) {
+            return .{ .cwd_relative = @field(deps.packages, decl.name).build_root };
+        }
+    }
+
+    unreachable;
+}
+
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
@@ -64,18 +79,13 @@ pub fn build(b: *std.Build) !void {
         break :blk b.run(&argv);
     };
 
-    // In its build.zig, TigerBeetle accepts a git commit hash that gets passed around to different modules (CI, VSR etc).
-    // If no one is explicitly passed, it falls back to reading it by shelling out to git.
-    // This is a problem because it means that it's a compile-time requirement to build inside a git repo, which could be
-    // false if we're using TigerBeetlex, e.g., in an .exs script.
-    // To avoid this, we just pass a fake git commit hash, since the git commit hash doesn't change the client behavior
-    // in any way.
-    const fake_git_commit_hash = "bee71e0000000000000000000000000000bee71e"; // Beetle-hash!
-    const tigerbeetle_dep = b.dependency("tigerbeetle", .{ .@"git-commit" = @as([]const u8, fake_git_commit_hash) });
-
-    const stdx_mod = b.createModule(.{ .root_source_file = tigerbeetle_dep.path("src/stdx/stdx.zig") });
+    // We only need TigerBeetle's source files. Running its build.zig would shell out to git while
+    // configuring unrelated release/test steps, which fails when TigerBeetlex is built from a
+    // non-git directory such as a Hex dependency checkout.
+    const tigerbeetle_root = dependency_root_path(b, "tigerbeetle");
+    const stdx_mod = b.createModule(.{ .root_source_file = tigerbeetle_root.path(b, "src/stdx/stdx.zig") });
     const vsr_mod = b.createModule(.{
-        .root_source_file = tigerbeetle_dep.path("src/vsr.zig"),
+        .root_source_file = tigerbeetle_root.path(b, "src/vsr.zig"),
     });
     vsr_mod.addImport("stdx", stdx_mod);
 

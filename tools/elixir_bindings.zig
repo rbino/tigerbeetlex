@@ -100,25 +100,27 @@ const type_mappings = .{
         .hidden_fields = &.{"reserved"},
         .docs_link = "reference/account-filter#",
     } },
+    .{ tb.CreateAccountStatus, TypeMapping{
+        .file_name = "create_account_status",
+        .module_name = "CreateAccountStatus",
+        .docs_link = "reference/requests/create_accounts#status",
+    } },
     .{ tb.CreateAccountResult, TypeMapping{
         .file_name = "create_account_result",
         .module_name = "CreateAccountResult",
+        .hidden_fields = &.{"reserved"},
         .docs_link = "reference/requests/create_accounts#result",
+    } },
+    .{ tb.CreateTransferStatus, TypeMapping{
+        .file_name = "create_transfer_status",
+        .module_name = "CreateTransferStatus",
+        .docs_link = "reference/requests/create_transfers#status",
     } },
     .{ tb.CreateTransferResult, TypeMapping{
         .file_name = "create_transfer_result",
         .module_name = "CreateTransferResult",
+        .hidden_fields = &.{"reserved"},
         .docs_link = "reference/requests/create_transfers#result",
-    } },
-    .{ tb.CreateAccountsResult, TypeMapping{
-        .file_name = "create_accounts_result",
-        .module_name = "CreateAccountsResult",
-        .docs_link = "reference/requests/create_accounts#",
-    } },
-    .{ tb.CreateTransfersResult, TypeMapping{
-        .file_name = "create_transfers_result",
-        .module_name = "CreateTransfersResult",
-        .docs_link = "reference/requests/create_transfers#",
     } },
 };
 

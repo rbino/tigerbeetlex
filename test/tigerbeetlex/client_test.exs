@@ -3,7 +3,7 @@ defmodule Tigerbeetlex.ClientTest do
 
   alias TigerBeetlex.Account
   alias TigerBeetlex.Client
-  alias TigerBeetlex.CreateAccountsResult
+  alias TigerBeetlex.CreateAccountResult
   alias TigerBeetlex.ID
 
   describe "new/2" do
@@ -33,8 +33,10 @@ defmodule Tigerbeetlex.ClientTest do
 
       {:ok, ref} = Client.create_accounts(client, accounts)
 
-      assert Client.receive_and_decode(ref) ==
-               {:ok, [%CreateAccountsResult{index: 0, result: :id_must_not_be_zero}]}
+      assert {:ok, [%CreateAccountResult{status: :id_must_not_be_zero, timestamp: timestamp}]} =
+               Client.receive_and_decode(ref)
+
+      assert timestamp > 0
     end
   end
 end

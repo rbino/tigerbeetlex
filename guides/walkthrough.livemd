@@ -2,7 +2,7 @@
 
 ```elixir
 Mix.install([
-  {:tigerbeetlex, "~> 0.16.78"}
+  {:tigerbeetlex, "~> 0.17.0"}
 ])
 ```
 
@@ -17,7 +17,7 @@ The walkthrough can also be executed in Livebook.
 In your `mix.exs` add TigerBeetlex as a dependency
 
 ```elixir
-{:tigerbeetlex, "~> 0.16.78"}
+{:tigerbeetlex, "~> 0.17.0"}
 ```
 
 ## Creating a Client
@@ -25,7 +25,7 @@ In your `mix.exs` add TigerBeetlex as a dependency
 A client is created with a cluster ID and replica addresses for all replicas in the cluster. The
  cluster ID and replica addresses are both chosen by the system that starts the TigerBeetle cluster.
 
-Clients are thread-safe and a single instance should be shared between multiple concurrent tasks. In the case of `TigerBeetlex.Connection`, the client is stored in the state of the underlying processes, so it's already shared across callers.
+Clients are thread-safe and a single instance should be shared between multiple concurrent tasks. This allows events to be automatically batched. In the case of `TigerBeetlex.Connection`, the client is stored in the state of the underlying processes, so it's already shared across callers.
 
 Multiple clients are useful when connecting to more than one TigerBeetle cluster.
 
@@ -63,7 +63,7 @@ account =
     code: 718
   }
 
-{:ok, _account_errors} = Connection.create_accounts(:tb, [account])
+{:ok, _account_results} = Connection.create_accounts(:tb, [account])
 # Error handling omitted.
 ```
 
@@ -73,13 +73,13 @@ See details for the recommended ID scheme in [time-based identifiers](https://do
 
 ### Account Flags
 
-The account `flags` value is a struct with binary fields. See details for these flags in the [Accounts reference](https://docs.tigerbeetle.com/reference/account#flags).
+The account `flags` value is a struct with boolean fields. See details for these flags in the [Accounts reference](https://docs.tigerbeetle.com/reference/account#flags).
 
-To toggle behavior for an account, set the relative field to `true`:
+To toggle behavior for an account, set the relevant field to `true`:
 
 * `AccountFlags.linked`
 * `AccountFlags.debits_must_not_exceed_credits`
-* `AccountFlags.credits_must_not_exceed_credits`
+* `AccountFlags.credits_must_not_exceed_debits`
 * `AccountFlags.history`
 
 For example, to link two accounts where the first account additionally has the `debits_must_not_exceed_credits` constraint:
@@ -103,18 +103,24 @@ account1 =
     flags: %AccountFlags{history: true}
   }
 
-{:ok, _account_errors} = Connection.create_accounts(:tb, [account0, account1])
+{:ok, _account_results} = Connection.create_accounts(:tb, [account0, account1])
 # Error handling omitted.
 ```
 
 ### Response and Errors
 
-The response is an empty list if all accounts were created successfully. If the response is non-empty, each struct in the response list contains error information for an account that failed. The error struct contains an error result as atom and the index of the account in the request batch.
+The response contains one `%TigerBeetlex.CreateAccountResult{}` for each account in the request batch, in the same order as the submitted accounts:
+
+* Successfully created accounts with status `:created` return the timestamp assigned to the `Account`.
+* Already existing accounts with status `:exists` return the timestamp of the original existing `Account`.
+* Failed accounts return the status along with the timestamp when validation occurred.
+
+Treat `:created` and `:exists` as successful outcomes according to your application's idempotency policy.
 
 See all error conditions in the [create_accounts reference](https://docs.tigerbeetle.com/reference/requests/create_accounts/).
 
 ```elixir
-alias TigerBeetlex.CreateAccountsResult
+alias TigerBeetlex.CreateAccountResult
 
 account0 =
   %Account{
@@ -137,18 +143,21 @@ account2 =
     code: 1
   }
 
-{:ok, account_errors} = Connection.create_accounts(:tb, [account0, account1, account2])
+{:ok, account_results} = Connection.create_accounts(:tb, [account0, account1, account2])
 
-Enum.each(account_errors, fn
-  %CreateAccountsResult{result: :exists} = error ->
-    IO.puts("Batch account at index #{error.index} already exists")
+account_results
+|> Enum.with_index()
+|> Enum.each(fn
+  {%CreateAccountResult{status: status, timestamp: timestamp}, index}
+  when status in [:created, :exists] ->
+    IO.puts("Batch account at index #{index} was accepted with status #{status} at #{timestamp}")
 
-  error ->
-    IO.puts("Batch account at index #{error.index} failed to create: #{error.result}")
+  {%CreateAccountResult{status: status}, index} ->
+    IO.puts("Batch account at index #{index} failed to create: #{status}")
 end)
 ```
 
-To handle errors you can compare the result atom contained in the struct with the ones present in the `create_accounts` reference above.
+To handle errors you can compare the `status` atom contained in the struct with the ones present in the `create_accounts` reference above.
 
 ## Account Lookup
 
@@ -181,7 +190,7 @@ transfers = [
   }
 ]
 
-{:ok, _transfer_errors} = Connection.create_transfers(:tb, transfers)
+{:ok, _transfer_results} = Connection.create_transfers(:tb, transfers)
 # Error handling omitted.
 ```
 
@@ -191,12 +200,18 @@ See details for the recommended ID scheme in [time-based identifiers](https://do
 
 ### Response and Errors
 
-The response is an empty list if all transfers were created successfully. If the response is non-empty, each struct in the response list contains error information for a transfer that failed. The error struct contains an error result as atom and the index of the transfer in the request batch.
+The response contains one `%TigerBeetlex.CreateTransferResult{}` for each transfer in the request batch, in the same order as the submitted transfers:
+
+* Successfully created transfers with status `:created` return the timestamp assigned to the `Transfer`.
+* Already existing transfers with status `:exists` return the timestamp of the original existing `Transfer`.
+* Failed transfers return the status along with the timestamp when validation occurred.
+
+Treat `:created` and `:exists` as successful outcomes according to your application's idempotency policy.
 
 See all error conditions in the [create_transfers reference](https://docs.tigerbeetle.com/reference/requests/create_transfers/).
 
 ```elixir
-alias TigerBeetlex.CreateTransfersResult
+alias TigerBeetlex.CreateTransferResult
 
 transfers = [
   %Transfer{
@@ -225,18 +240,21 @@ transfers = [
   }
 ]
 
-{:ok, transfer_errors} = Connection.create_transfers(:tb, transfers)
+{:ok, transfer_results} = Connection.create_transfers(:tb, transfers)
 
-Enum.each(transfer_errors, fn
-  %CreateTransfersResult{result: :exists} = error ->
-    IO.puts("Batch transfer at index #{error.index} already exists")
+transfer_results
+|> Enum.with_index()
+|> Enum.each(fn
+  {%CreateTransferResult{status: status, timestamp: timestamp}, index}
+  when status in [:created, :exists] ->
+    IO.puts("Batch transfer at index #{index} was accepted with status #{status} at #{timestamp}")
 
-  error ->
-    IO.puts("Batch transfer at index #{error.index} failed to create: #{error.result}")
+  {%CreateTransferResult{status: status}, index} ->
+    IO.puts("Batch transfer at index #{index} failed to create: #{status}")
 end)
 ```
 
-To handle errors you can compare the result atom contained in the struct with the ones present in the `create_transfers` reference above.
+To handle errors you can compare the `status` atom contained in the struct with the ones present in the `create_transfers` reference above.
 
 ## Batching
 
@@ -247,7 +265,7 @@ TigerBeetle performance is maximized when you batch API requests. A client insta
 batch = []
 
 Enum.each(batch, fn transfer ->
-  {:ok, _transfer_errors} = Connection.create_transfers(:tb, [transfer])
+  {:ok, _transfer_results} = Connection.create_transfers(:tb, [transfer])
   # Error handling omitted
 end)
 ```
@@ -263,7 +281,7 @@ batch_size = 8189
 batch
 |> Enum.chunk_every(batch_size)
 |> Enum.each(fn transfers ->
-  {:ok, _transfer_errors} = Connection.create_transfers(:tb, transfers)
+  {:ok, _transfer_results} = Connection.create_transfers(:tb, transfers)
   # Error handling omitted
 end)
 ```
@@ -274,14 +292,14 @@ If you are making requests to TigerBeetle from workers pulling jobs from a queue
 
 ## Transfer Flags
 
-The transfer `flags` value is a struct with boolean fields. See details for these flags in the [Accounts reference](https://docs.tigerbeetle.com/reference/transfer#flags).
+The transfer `flags` value is a struct with boolean fields. See details for these flags in the [Transfers reference](https://docs.tigerbeetle.com/reference/transfer#flags).
 
-To toggle behavior for an account, set the relative field to `true`:
+To toggle behavior for a transfer, set the relevant field to `true`:
 
-* `AccountFlags.linked`
-* `AccountFlags.pending`
-* `AccountFlags.post_pending_transfer`
-* `AccountFlags.void_pending_transfer`
+* `TransferFlags.linked`
+* `TransferFlags.pending`
+* `TransferFlags.post_pending_transfer`
+* `TransferFlags.void_pending_transfer`
 
 For example, to link `transfer0` and `transfer1`:
 
@@ -311,7 +329,7 @@ transfer1 =
     code: 720
   }
 
-{:ok, _transfer_errors} = Connection.create_transfers(:tb, [transfer0, transfer1])
+{:ok, _transfer_results} = Connection.create_transfers(:tb, [transfer0, transfer1])
 # Error handling omitted
 ```
 
@@ -336,7 +354,7 @@ transfer0 =
     flags: %TransferFlags{pending: true}
   }
 
-{:ok, _transfer_errors} = Connection.create_transfers(:tb, [transfer0])
+{:ok, _transfer_results} = Connection.create_transfers(:tb, [transfer0])
 # Error handling omitted
 
 transfer1 =
@@ -353,7 +371,7 @@ transfer1 =
     flags: %TransferFlags{post_pending_transfer: true}
   }
 
-{:ok, _transfer_errors} = Connection.create_transfers(:tb, [transfer1])
+{:ok, _transfer_results} = Connection.create_transfers(:tb, [transfer1])
 # Error handling omitted
 ```
 
@@ -374,7 +392,7 @@ transfer0 =
     flags: %TransferFlags{pending: true}
   }
 
-{:ok, _transfer_errors} = Connection.create_transfers(:tb, [transfer0])
+{:ok, _transfer_results} = Connection.create_transfers(:tb, [transfer0])
 # Error handling omitted
 
 transfer1 =
@@ -383,14 +401,14 @@ transfer1 =
     id: ID.from_int(9),
     debit_account_id: ID.from_int(102),
     credit_account_id: ID.from_int(103),
-    amount: 10,
+    amount: 0,
     pending_id: ID.from_int(8),
     ledger: 1,
     code: 720,
     flags: %TransferFlags{void_pending_transfer: true}
   }
 
-{:ok, _transfer_errors} = Connection.create_transfers(:tb, [transfer1])
+{:ok, _transfer_results} = Connection.create_transfers(:tb, [transfer1])
 # Error handling omitted
 ```
 
@@ -431,7 +449,7 @@ filter =
     timestamp_min: 0,
     # No filter by Timestamp.
     timestamp_max: 0,
-    # Limit to ten transfers at most.
+    # Limit to ten accounts at most.
     limit: 10,
     flags: %AccountFilterFlags{
       # Include transfer from the debit side.
@@ -586,7 +604,7 @@ batch = [
   %Transfer{id: ID.from_int(4)}
 ]
 
-{:ok, _transfer_errors} = Connection.create_transfers(:tb, batch)
+{:ok, _transfer_results} = Connection.create_transfers(:tb, batch)
 # Error handling omitted.
 ```
 
@@ -635,12 +653,12 @@ accounts =
   # We reverse everything to obtain the correct order
   |> Enum.reverse()
 
-{:ok, _account_errors} = Connection.create_accounts(:tb, accounts)
+{:ok, _account_results} = Connection.create_accounts(:tb, accounts)
 # Error handling omitted.
 
 # Then, load and import all transfers with their timestamps from the historical source.
 {reversed_transfers, _historical_timestamp} =
-  Enum.reduce(historical_transfers, {[], historical_timestamp}, fn _historical_account,
+  Enum.reduce(historical_transfers, {[], historical_timestamp}, fn _historical_transfer,
                                                                    {acc, last_timestamp} ->
     # Set a unique and strictly increasing timestamp.
     timestamp = last_timestamp + 1
@@ -649,8 +667,8 @@ accounts =
       timestamp: timestamp,
       # To ensure atomicity, the entire batch (except the last event in the chain)
       # must be `linked`.
-      flags: %AccountFlags{imported: true, linked: true}
-      # Bring over other fields from historical_account
+      flags: %TransferFlags{imported: true, linked: true}
+      # Bring over other fields from historical_transfer
     }
 
     {[transfer | acc], timestamp}
@@ -660,13 +678,13 @@ transfers =
   reversed_transfers
   # We "unset" the linked flag to the "last" event in the chain, which is actually the
   # first one since we're accumulating by prepending
-  |> List.update_at(0, fn account ->
-    %{account | flags: %TransferFlags{imported: true}}
+  |> List.update_at(0, fn transfer ->
+    %{transfer | flags: %TransferFlags{imported: true}}
   end)
   # We reverse everything to obtain the correct order
   |> Enum.reverse()
 
-{:ok, _transfer_errors} = Connection.create_transfers(:tb, transfers)
+{:ok, _transfer_results} = Connection.create_transfers(:tb, transfers)
 # Error handling omitted.
 ```
 

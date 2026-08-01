@@ -2,7 +2,7 @@
 
 ```elixir
 Mix.install([
-  {:tigerbeetlex, "~> 0.16.78"},
+  {:tigerbeetlex, "~> 0.17.0"},
   {:broadway, "~> 1.2"},
   {:broadway_rabbitmq, "~> 0.7"},
   {:jason, "~> 1.2"}
@@ -35,7 +35,7 @@ In your `mix.exs` add TigerBeetlex, Broadway and Jason as dependencies
 
 ```elixir
 [
-  {:tigerbeetlex, "~> 0.16.78"},
+  {:tigerbeetlex, "~> 0.17.0"},
   {:broadway, "~> 1.2"},
   {:broadway_rabbitmq, "~> 0.7"},
   {:jason, "~> 1.2"}
@@ -171,7 +171,7 @@ account_2 =
     code: 3
   }
 
-{:ok, _account_errors} = Connection.create_accounts(:tb, [account_1, account_2])
+{:ok, _account_results} = Connection.create_accounts(:tb, [account_1, account_2])
 # Error handling omitted
 ```
 

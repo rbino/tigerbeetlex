@@ -1,7 +1,7 @@
 defmodule TigerBeetlex.MixProject do
   use Mix.Project
 
-  @version "0.17.0"
+  @version "0.17.1"
 
   @repo_url "https://github.com/rbino/tigerbeetlex"
 
